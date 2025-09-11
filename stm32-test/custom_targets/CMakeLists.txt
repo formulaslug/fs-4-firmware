@@ -1,0 +1,2 @@
+add_library(stm32_test_board_v1 INTERFACE)
+target_link_libraries(stm32_test_board_v1 INTERFACE mbed-stm32g441xb)

@@ -4,12 +4,15 @@ cmake_policy(VERSION 3.19...3.22)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(MBED_APP_JSON_PATH mbed_app.json5)
 
+set(MBED_TARGET stm32g441xb)
+set(UPLOAD_METHOD mbed)
+
 include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
 project(TelemetryMain
         LANGUAGES C CXX ASM)
 include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 
-add_subdirectory(../mbed-os ../mbed-os-build)
+add_subdirectory(../mbed-os mbed-os)
 
 set(CMAKE_CXX_STANDARD 20)
 
