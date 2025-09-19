@@ -1,0 +1,27 @@
+{
+  // This target clones the existing NUCLEO_L452RE_P target without making
+  // any changes other than an extra define.
+  "STM32_TEST_BOARD_V1": {
+    // Which MBED target to base this off of
+    "inherits": ["MCU_STM32G441xB"],
+
+    // Maps from a target in Mbed OS to a device in a CMSIS Pack - helps some IDEs
+    "device_name": "STM32G441KBTx"
+  },
+
+}
+
+//{
+//    "BLUEPILL_F103C8": {
+//        "inherits": [
+//            "MCU_STM32F103x8"
+//        ],
+//        "overrides": {
+//            "clock_source": "USE_PLL_HSE_XTAL"
+//        },
+//        "device_has_remove": [
+//            "STDIO_MESSAGES"
+//        ],
+//        "device_name": "STM32F103C8"
+//    }
+//}

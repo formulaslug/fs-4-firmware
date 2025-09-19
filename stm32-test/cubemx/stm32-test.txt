@@ -1,0 +1,108 @@
+Configuration	stm32-test
+STM32CubeMX 	6.14.0
+Date	09/19/2025
+MCU	STM32G441KBTx
+
+
+
+PERIPHERALS	MODES	FUNCTIONS	PINS
+FDCAN1	Activated	FDCAN1_RX	PA11
+FDCAN1	Activated	FDCAN1_TX	PA12
+I2C2	I2C	I2C2_SCL	PA9
+I2C2	I2C	I2C2_SDA	PA8
+RCC	Crystal/Ceramic Resonator	RCC_OSC_IN	PF0-OSC_IN
+RCC	Crystal/Ceramic Resonator	RCC_OSC_OUT	PF1-OSC_OUT
+SPI1	Full-Duplex Master	SPI1_MISO	PA6
+SPI1	Full-Duplex Master	SPI1_MOSI	PA7
+SPI1	Full-Duplex Master	SPI1_SCK	PA5
+SPI1	Hardware NSS Output Signal	SPI1_NSS	PA4
+SYS	Trace Asynchronous Sw	SYS_JTMS-SWDIO	PA13
+SYS	Trace Asynchronous Sw	SYS_JTCK-SWCLK	PA14
+SYS	Trace Asynchronous Sw	SYS_JTDO-SWO	PB3
+SYS	SysTick	SYS_VS_Systick	VP_SYS_VS_Systick
+SYS	Dead Battery Signals disabled	SYS_VS_DBSignals	VP_SYS_VS_DBSignals
+USART2	Asynchronous	USART2_RX	PA3
+USART2	Asynchronous	USART2_TX	PA2
+
+
+
+Pin Nb	PINs	FUNCTIONs	LABELs
+2	PF0-OSC_IN	RCC_OSC_IN	
+3	PF1-OSC_OUT	RCC_OSC_OUT	
+7	PA2	USART2_TX	
+8	PA3	USART2_RX	
+9	PA4	SPI1_NSS	
+10	PA5	SPI1_SCK	
+11	PA6	SPI1_MISO	
+12	PA7	SPI1_MOSI	
+18	PA8	I2C2_SDA	
+19	PA9	I2C2_SCL	
+21	PA11	FDCAN1_RX	
+22	PA12	FDCAN1_TX	
+23	PA13	SYS_JTMS-SWDIO	
+24	PA14	SYS_JTCK-SWCLK	
+26	PB3	SYS_JTDO-SWO	
+PERIPHERALS	MODES	FUNCTIONS	PINS
+FDCAN1	Activated	FDCAN1_RX	PA11
+FDCAN1	Activated	FDCAN1_TX	PA12
+I2C2	I2C	I2C2_SCL	PA9
+I2C2	I2C	I2C2_SDA	PA8
+RCC	Crystal/Ceramic Resonator	RCC_OSC_IN	PF0-OSC_IN
+RCC	Crystal/Ceramic Resonator	RCC_OSC_OUT	PF1-OSC_OUT
+SPI1	Full-Duplex Master	SPI1_MISO	PA6
+SPI1	Full-Duplex Master	SPI1_MOSI	PA7
+SPI1	Full-Duplex Master	SPI1_SCK	PA5
+SPI1	Hardware NSS Output Signal	SPI1_NSS	PA4
+SYS	Trace Asynchronous Sw	SYS_JTMS-SWDIO	PA13
+SYS	Trace Asynchronous Sw	SYS_JTCK-SWCLK	PA14
+SYS	Trace Asynchronous Sw	SYS_JTDO-SWO	PB3
+SYS	SysTick	SYS_VS_Systick	VP_SYS_VS_Systick
+SYS	Dead Battery Signals disabled	SYS_VS_DBSignals	VP_SYS_VS_DBSignals
+USART2	Asynchronous	USART2_RX	PA3
+USART2	Asynchronous	USART2_TX	PA2
+
+
+
+Pin Nb	PINs	FUNCTIONs	LABELs
+2	PF0-OSC_IN	RCC_OSC_IN	
+3	PF1-OSC_OUT	RCC_OSC_OUT	
+7	PA2	USART2_TX	
+8	PA3	USART2_RX	
+9	PA4	SPI1_NSS	
+10	PA5	SPI1_SCK	
+11	PA6	SPI1_MISO	
+12	PA7	SPI1_MOSI	
+18	PA8	I2C2_SDA	
+19	PA9	I2C2_SCL	
+21	PA11	FDCAN1_RX	
+22	PA12	FDCAN1_TX	
+23	PA13	SYS_JTMS-SWDIO	
+24	PA14	SYS_JTCK-SWCLK	
+26	PB3	SYS_JTDO-SWO	
+
+
+
+SOFTWARE PROJECT
+
+Project Settings : 
+Project Name : stm32-test
+Project Folder : /home/jack/dev/formula-slug/fs-4-firmware/stm32-test/cubemx
+Toolchain / IDE : CMake
+Firmware Package Name and Version : STM32Cube FW_G4 V1.6.1
+
+
+Code Generation Settings : 
+STM32Cube MCU packages and embedded software packs : Copy all used libraries into the project folder
+Generate peripheral initialization as a pair of '.c/.h' files per peripheral : No
+Backup previously generated files when re-generating : No
+Delete previously generated files when not re-generated : Yes
+Set all free pins as analog (to optimize the power consumption) : No
+
+
+Toolchains Settings : 
+Compiler Optimizations : 
+
+
+
+
+
