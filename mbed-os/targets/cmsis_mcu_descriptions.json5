@@ -7707,6 +7707,97 @@
         "sub_family": "STM32G431",
         "vendor": "STMicroelectronics:13"
     },
+    "STM32G441KBTx": {
+        "algorithms": [
+            {
+                "default": true,
+                "file_name": "CMSIS/Flash/STM32G43x-4x_128.FLM",
+                "ram_size": 32768,
+                "ram_start": 536870912,
+                "size": 131072,
+                "start": 134217728,
+                "style": "Keil"
+            },
+            {
+                "default": false,
+                "file_name": "CMSIS/Flash/STM32G4xx_SB_OPT.FLM",
+                "ram_size": 32768,
+                "ram_start": 536870912,
+                "size": 24,
+                "start": 536836096,
+                "style": "Keil"
+            },
+            {
+                "default": false,
+                "file_name": "CMSIS/Flash/MT25QL512ABB_STM32G474E-EVAL.FLM",
+                "ram_size": 655360,
+                "ram_start": 536870912,
+                "size": 134217728,
+                "start": 2415919104,
+                "style": "Keil"
+            }
+        ],
+        "family": "STM32G4 Series",
+        "from_pack": {
+            "pack": "STM32G4xx_DFP",
+            "url": "https://www.keil.com/pack/",
+            "vendor": "Keil",
+            "version": "2.1.0"
+        },
+        "memories": {
+            "Main_Flash": {
+                "access": {
+                    "execute": true,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": true,
+                "p_name": null,
+                "size": 131072,
+                "start": 134217728,
+                "startup": true
+            },
+            "SRAM": {
+                "access": {
+                    "execute": true,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": true,
+                "p_name": null,
+                "size": 32768,
+                "start": 536870912,
+                "startup": false
+            }
+        },
+        "name": "STM32G441KBTx",
+        "processors": [
+            {
+                "address": null,
+                "ap": {
+                    "Index": 0
+                },
+                "core": "CortexM4",
+                "default_reset_sequence": null,
+                "dp": 0,
+                "fpu": "SinglePrecision",
+                "mpu": "Present",
+                "name": null,
+                "svd": "CMSIS/SVD/STM32G441.svd",
+                "unit": 0
+            }
+        ],
+        "sub_family": "STM32G441",
+        "vendor": "STMicroelectronics:13"
+    },
     "STM32G474RETx": {
         "algorithms": [
             {
