@@ -12,7 +12,7 @@ add_subdirectory(../custom_targets custom_targets)
 set(MBED_TARGET STM32_TEST_BOARD_V1)
 
 include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
-project(TelemetryMain
+project(stm32-test
         LANGUAGES C CXX ASM)
 include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 

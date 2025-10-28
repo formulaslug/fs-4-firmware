@@ -13,6 +13,7 @@
       "STDIO_UART_RX": "PA_3",
       "CLOCK_SOURCE": "USE_PLL_HSE_XTAL",
       "HSE_VALUE": 8000000,
+      "SYSCLOCK": 160000000
       //"LSE_AVAILABLE": 0,
     },
   },
