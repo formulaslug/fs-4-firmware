@@ -19,7 +19,7 @@
 			"label": "GDB Server",
 			"type": "shell",
 			"command": "/nix/store/853hbl2njzd679j0sbd5sw8d45hza3p8-openocd-0.12.0/bin/openocd",
-			"args": ["-f", "/interface/stlink.cfg", "-f", "/target/stm32g4x.cfg", "-c", "[target current] configure -event gdb-detach {shutdown}", "-c", "gdb_port 23331"],
+			"args": ["-f", "interface/stlink-dap.cfg", "-c", "transport select dapdirect_swd", "-f", "target/stm32g4x.cfg", "-c", "[target current] configure -event gdb-detach {shutdown}", "-c", "gdb_port 23331"],
 			"isBackground": true,
 			// This task is run to start the GDB server, so that the launch configuration can connect to it.
       		// Problem is, it's a GDB server, and since it never exits, VSCode
