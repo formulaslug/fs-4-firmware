@@ -5,7 +5,7 @@
 #include "smooth_to_analog_in.h"
 
 float SmoothToAnalogIn::read() {
-    float readOutput = _analog_pin.read();
+    float read_output = _analog_pin.read();
     const auto time_dif = chrono::duration_cast<std::chrono::milliseconds>(_timer.elapsed_time());
     _timer.reset();
 
@@ -13,7 +13,7 @@ float SmoothToAnalogIn::read() {
         _prepopulated = false;
     }
 
-    _add_sample(readOutput);
+    _add_sample(read_output);
 
     return _held_values_summed / static_cast<float>(_window_size);
 }
@@ -39,14 +39,14 @@ void SmoothToAnalogIn::_add_sample(float sample) {
     if (!_prepopulated) {
         _held_values_summed = sample;
         _held_values[_window_size - 1] = sample;
-        float readOutput;
+        float read_output;
 
         for (int i = _window_size - 2; i >= 0; i--) {
             ThisThread::sleep_for(1ms);
 
-            readOutput = _analog_pin.read();
-            _held_values_summed += readOutput;
-            _held_values[i] = readOutput;
+            read_output = _analog_pin.read();
+            _held_values_summed += read_output;
+            _held_values[i] = read_output;
         }
 
         _prepopulated = true;
