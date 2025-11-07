@@ -14,10 +14,10 @@ public:
     /** Create a smoothed AnalogIn using EMA (exponential moving average)
      *
      * @param analog_pin Reference to an AnalogIn to use for reading
-     * @param alpha (optional) Smoothing factor used for EMA (larger the value, the less impact recent values hold)
+     * @param alpha (optional) Smoothing factor used for EMA, larger the value = the more impact new/recent values hold (defaults to 0.3)
      * @param force_reset_time (optional) Time (in milliseconds) where the EMA resets if the last read's difference in time was greater than this (defaults to 100ms)
     */
-    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float alpha=0.7, const uint16_t force_reset_time=100) :
+    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float alpha=0.3, const uint16_t force_reset_time=100) :
         _analog_pin(analog_pin),
         _force_reset_time(force_reset_time),
         _alpha(alpha)
@@ -69,7 +69,7 @@ public:
 
     /** Sets how much recent reads affect the returned value of read()
      *
-     * @param alpha Smoothing factor used for EMA (larger the value, the less impact recent values hold)
+     * @param alpha Smoothing factor used for EMA (larger the value = the more impact new/recent values hold)
      *
      * @note 0 < alpha < 1 for proper EMA smoothing
     */

@@ -37,12 +37,12 @@ void SmoothToAnalogIn::set_alpha(const float alpha) {
 }
 
 float SmoothToAnalogIn::_compute_EMA(const float raw_value) {
-
     if (!_is_initialized) {
         _smoothed_value = raw_value;
         _is_initialized = true;
     } else {
         _smoothed_value = (_alpha * raw_value) + ((1.0f - _alpha) * _smoothed_value);
     }
+
     return _smoothed_value;
 }
