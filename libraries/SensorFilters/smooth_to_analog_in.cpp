@@ -6,14 +6,18 @@
 
 float SmoothToAnalogIn::read() {
     const auto time_dif = chrono::duration_cast<std::chrono::milliseconds>(_timer.elapsed_time());
+    const float raw_value = _analog_pin.read();
     _timer.reset();
 
-    if (time_dif >= static_cast<std::chrono::milliseconds>(_force_reset_time)) {
-        _is_initialized = false;
+    if (!_is_initialized) {
+        _smoothed_value = raw_value;
+        _is_initialized = true;
+    } else {
+        const float exponent = -0.48 * _alpha * static_cast<float>(time_dif.count()) / 1000.0;
+        _smoothed_value = (1 - exp(exponent)) * raw_value + exp(exponent) * _smoothed_value;
     }
 
-    const float raw_value = _analog_pin.read();
-    return SmoothToAnalogIn::_compute_EMA(raw_value);
+    return _smoothed_value;
 }
 
 unsigned short SmoothToAnalogIn::read_u16() {
@@ -36,13 +40,14 @@ void SmoothToAnalogIn::set_alpha(const float alpha) {
     _alpha = alpha;
 }
 
-float SmoothToAnalogIn::_compute_EMA(const float raw_value) {
-    if (!_is_initialized) {
-        _smoothed_value = raw_value;
-        _is_initialized = true;
-    } else {
-        _smoothed_value = (_alpha * raw_value) + ((1.0f - _alpha) * _smoothed_value);
-    }
+void SmoothToAnalogIn::set_alpha(const float alpha, const float sinusoidal_frequency) {
+    float log_alpha = log10(alpha);
+    float log_sin = log10(sinusoidal_frequency);
 
-    return _smoothed_value;
+    if (log_alpha > log_sin * 2.5) {
+        _alpha = alpha * (2.3 - 0.75 * log_alpha + 0.7 * log_sin);
+    }
+    else {
+        _alpha = alpha * (2.9 - log_alpha + log_sin);
+    }
 }
