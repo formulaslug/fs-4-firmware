@@ -14,7 +14,8 @@ float SmoothToAnalogIn::read() {
         _is_initialized = true;
     } else {
         const float exponent = -0.48 * _alpha * static_cast<float>(time_dif.count()) / 1000.0;
-        _smoothed_value = (1 - exp(exponent)) * raw_value + exp(exponent) * _smoothed_value;
+        const float exponential_component = exp(exponent);
+        _smoothed_value = (1 - exponential_component) * raw_value + exponential_component * _smoothed_value;
     }
 
     return _smoothed_value;
