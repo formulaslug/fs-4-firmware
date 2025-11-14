@@ -26,7 +26,6 @@ public:
     explicit DebounceToDigitalIn(DigitalIn &digital_pin, const uint16_t valid_read_count=5) :
         _digital_pin(digital_pin),
         _valid_read_count(valid_read_count) {
-        _timer.start();
         digital_pins.push_back(this);
 
         if (!ticker_started) {
@@ -62,7 +61,6 @@ private:
     bool _current_state = false;        //  current debounced state
     uint16_t _valid_read_count;         //  amount of consecutive reads of the same value to change current_state
     uint16_t _changed_state_time = 0;   //  how many consecutive reads (that aren't the same as current_state) have occurred
-    Timer _timer;                       //  timer to detect when a forced recheck should occur
 };
 
 inline void sample_all_digital_pins() {

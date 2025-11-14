@@ -14,37 +14,39 @@ public:
     /** Create a smoothed AnalogIn using EWMA (exponential weighted moving average)
      *
      * @param analog_pin Reference to an AnalogIn to use for reading
-     * @param alpha Smoothing factor used for EWMA (larger the value = the more impact time differences hold)
+     *
+     * @note With this constructor, alpha (the estimated sampling frequency and smoothing) is automatically calculated based off the average time difference between recent reads
+    */
+    explicit SmoothToAnalogIn(AnalogIn &analog_pin) :
+        _analog_pin(analog_pin),
+        _auto_update_alpha(true)
+    { _timer.start(); }
+
+    /** Create a smoothed AnalogIn using EWMA (exponential weighted moving average)
+     *
+     * @param analog_pin Reference to an AnalogIn to use for reading
+     * @param sampling_frequency Smoothing factor used for EWMA (larger the value = the more impact time differences hold)
      *
      * @note Alpha is tuned by default to use your SAMPLING frequency as its value (however, the more smoothing you want, the lower the value should be)
     */
-    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float alpha) :
+    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float sampling_frequency) :
         _analog_pin(analog_pin),
-        _alpha(alpha)
-        { _timer.start(); }
+        _sampling_frequency(sampling_frequency)
+    { _timer.start(); }
 
     /** Create a smoothed AnalogIn using EWMA (exponential weighted moving average) with some sinusoidal as your reads
      *
      * @param analog_pin Reference to an AnalogIn to use for reading
-     * @param alpha Smoothing factor used for EWMA (put your SAMPLING frequency)
+     * @param sampling_frequency Smoothing factor used for EWMA (put your SAMPLING frequency)
      * @param sinusoidal_frequency Approximate frequency of the main sinusoidal you are sampling from
      *
      * @note Alpha is tuned by default to use your SAMPLING frequency as its value
      * @note This constructor should ONLY be used when sampling from a noisy sinusoidal pattern
     */
-    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float alpha, const float sinusoidal_frequency) :
+    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float sampling_frequency, const float sinusoidal_frequency) :
         _analog_pin(analog_pin) {
         _timer.start();
-
-        float log_alpha = log10(alpha);
-        float log_sin = log10(sinusoidal_frequency);
-
-        if (log_alpha > log_sin * 2.5) {
-            _alpha = alpha * (2.3 - 0.75 * log_alpha + 0.7 * log_sin);
-        }
-        else {
-            _alpha = alpha * (2.9 - log_alpha + log_sin);
-        }
+        set_alpha(sampling_frequency, sinusoidal_frequency);
     }
 
     /** Read the referenced AnalogIn input voltage as an EWMA value, represented as a float in the range [0.0, 1.0]
@@ -87,28 +89,33 @@ public:
 
     /** Sets how much time differences affect the returned value of read()
      *
-     * @param alpha Smoothing factor used for EWMA (larger the value = the more impact time differences hold)
+     * @param sampling_frequency Smoothing factor used for EWMA (larger the value = the more impact time differences hold)
      *
      * @note Alpha is tuned by default to use your sampling frequency as its value (however, the more smoothing you want, the lower the value should be)
     */
-    void set_alpha(float alpha);
+    void set_alpha(float sampling_frequency);
 
     /** Sets how much time differences affect the returned value of read() with some sinusoidal as your reads
      *
-     * @param alpha Smoothing factor used for EWMA (put your SAMPLING frequency)
+     * @param sampling_frequency Smoothing factor used for EWMA (put your SAMPLING frequency)
      * @param sinusoidal_frequency Approximate frequency of the main sinusoidal you are sampling from
      *
      * @note Alpha is tuned by default to use your SAMPLING frequency as its value
      * @note This version of set_alpha should ONLY be used when sampling from a noisy sinusoidal pattern
     */
-    void set_alpha(float alpha, float sinusoidal_frequency);
+    void set_alpha(float sampling_frequency, float sinusoidal_frequency);
 
 private:
-    AnalogIn &_analog_pin;          //  Referenced AnalogIn which is used for reads
-    float _alpha;                   //  The EWMA smoothing factor
-    float _smoothed_value = 0;      //  The current value that should be returned by read()
-    bool _is_initialized = false;   //  States whether the EWMA has started
-    Timer _timer;                   //  Find the difference in times between reads
+    AnalogIn &_analog_pin;                      //  Referenced AnalogIn which is used for reads
+    float _sampling_frequency;                               //  The EWMA smoothing factor
+    float _smoothed_value = 0;                  //  The current value that should be returned by read()
+    bool _is_initialized = false;               //  States whether the EWMA has started
+    bool _auto_update_alpha;                    //  Tracks whether alpha needs to be updated
+    Timer _timer;                               //  Find the difference in times between reads
+    unsigned long _time_differences[10] = {0};        //  Holds the time differences between reads
+    unsigned long _time_differences_summed = 0; //  Holds the sum of the time differences between reads
+
+    float _add_time_difference(unsigned long time_difference);
 };
 
 #endif //MBED_OS_SMOOTHTOANALOGIN_H
