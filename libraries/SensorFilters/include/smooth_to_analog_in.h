@@ -14,39 +14,12 @@ public:
     /** Create a smoothed AnalogIn using EWMA (exponential weighted moving average)
      *
      * @param analog_pin Reference to an AnalogIn to use for reading
-     *
-     * @note With this constructor, alpha (the estimated sampling frequency and smoothing) is automatically calculated based off the average time difference between recent reads
+     * @param cutoff_frequency Cutoff frequency at the -3db level (see **URL**, 𝜏 = 1 / (2π * f_c))
     */
-    explicit SmoothToAnalogIn(AnalogIn &analog_pin) :
-        _analog_pin(analog_pin),
-        _auto_update_alpha(true)
-    { _timer.start(); }
-
-    /** Create a smoothed AnalogIn using EWMA (exponential weighted moving average)
-     *
-     * @param analog_pin Reference to an AnalogIn to use for reading
-     * @param sampling_frequency Smoothing factor used for EWMA (larger the value = the more impact time differences hold)
-     *
-     * @note Alpha is tuned by default to use your SAMPLING frequency as its value (however, the more smoothing you want, the lower the value should be)
-    */
-    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float sampling_frequency) :
-        _analog_pin(analog_pin),
-        _sampling_frequency(sampling_frequency)
-    { _timer.start(); }
-
-    /** Create a smoothed AnalogIn using EWMA (exponential weighted moving average) with some sinusoidal as your reads
-     *
-     * @param analog_pin Reference to an AnalogIn to use for reading
-     * @param sampling_frequency Smoothing factor used for EWMA (put your SAMPLING frequency)
-     * @param sinusoidal_frequency Approximate frequency of the main sinusoidal you are sampling from
-     *
-     * @note Alpha is tuned by default to use your SAMPLING frequency as its value
-     * @note This constructor should ONLY be used when sampling from a noisy sinusoidal pattern
-    */
-    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float sampling_frequency, const float sinusoidal_frequency) :
+    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float cutoff_frequency) :
         _analog_pin(analog_pin) {
         _timer.start();
-        set_alpha(sampling_frequency, sinusoidal_frequency);
+        set_time_constant(cutoff_frequency);
     }
 
     /** Read the referenced AnalogIn input voltage as an EWMA value, represented as a float in the range [0.0, 1.0]
@@ -87,35 +60,18 @@ public:
     */
     float get_reference_voltage() const;
 
-    /** Sets how much time differences affect the returned value of read()
+    /** Changes the time constant to reflect the cutoff frequency at the -3db level
      *
-     * @param sampling_frequency Smoothing factor used for EWMA (larger the value = the more impact time differences hold)
-     *
-     * @note Alpha is tuned by default to use your sampling frequency as its value (however, the more smoothing you want, the lower the value should be)
+     * @param cutoff_frequency Cutoff frequency at the -3db level (see **URL**, 𝜏 = 1 / (2π * f_c))
     */
-    void set_alpha(float sampling_frequency);
-
-    /** Sets how much time differences affect the returned value of read() with some sinusoidal as your reads
-     *
-     * @param sampling_frequency Smoothing factor used for EWMA (put your SAMPLING frequency)
-     * @param sinusoidal_frequency Approximate frequency of the main sinusoidal you are sampling from
-     *
-     * @note Alpha is tuned by default to use your SAMPLING frequency as its value
-     * @note This version of set_alpha should ONLY be used when sampling from a noisy sinusoidal pattern
-    */
-    void set_alpha(float sampling_frequency, float sinusoidal_frequency);
+    void set_time_constant(float cutoff_frequency);
 
 private:
-    AnalogIn &_analog_pin;                      //  Referenced AnalogIn which is used for reads
-    float _sampling_frequency;                               //  The EWMA smoothing factor
-    float _smoothed_value = 0;                  //  The current value that should be returned by read()
-    bool _is_initialized = false;               //  States whether the EWMA has started
-    bool _auto_update_alpha;                    //  Tracks whether alpha needs to be updated
-    Timer _timer;                               //  Find the difference in times between reads
-    unsigned long _time_differences[10] = {0};        //  Holds the time differences between reads
-    unsigned long _time_differences_summed = 0; //  Holds the sum of the time differences between reads
-
-    float _add_time_difference(unsigned long time_difference);
+    AnalogIn &_analog_pin;          //  Referenced AnalogIn which is used for reads
+    float _time_constant;           //  Time constant for RC sampling (set using cutoff frequency at the -3db level)
+    float _smoothed_value = 0;      //  The current value that should be returned by read()
+    bool _is_initialized = false;   //  States whether the EWMA has started
+    Timer _timer;                   //  Find the difference in times between reads
 };
 
 #endif //MBED_OS_SMOOTHTOANALOGIN_H
