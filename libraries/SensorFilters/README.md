@@ -52,4 +52,14 @@ This way, the cutoff frequency, which is used in determining the time constant a
 <br />
 <br />
 
+Here's a graph of a test run which shows how effective this method is at filtering noisy analog sensor input:
+<br />
+<br />
+![ewma-graph-resize](https://github.com/user-attachments/assets/ff50976d-4ede-44f0-9e32-5e186e9443f4)
+
+
+
+<br />
+<br />
 ___
+
