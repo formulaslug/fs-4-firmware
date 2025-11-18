@@ -24,7 +24,7 @@ ___
 #### Code sample
 ```TODO: put code here```
 
-### Implementation
+#### Implementation
 The SmoothToAnalogIn class implements an Exponential Weighted Moving Average filter to smooth out erratic analog inputs by applying a kind of digital low pass filter. 
 The EWMA filter works according to the following formula:
 <br />
@@ -57,11 +57,28 @@ Here's a graph of a test run which shows how effective this method is at filteri
 <br />
 ![ewma-graph-resize](https://github.com/user-attachments/assets/ff50976d-4ede-44f0-9e32-5e186e9443f4)
 
+<br />
 
-
+##### Other Methods
+Two other options for smoothing are Rolling Average and Exponential Moving Average. 
+- Rolling Average: Yellow
+    - Treats all data points within a fixed window equally.
+    - Causes a lag where smoothed output is slow to react to a sudden change in sensor reading (step change).
+    - **Code Sample:** 
+- Exponential Moving Average: Blue
+    - Uses an exponentially decreasing weighting factor ($\alpha$) for older observations. Recent data points contribute more significantly to the average than data points further in the past.
+    - Reduces lag compared to the Rolling Average because it reacts faster to recent changes.
+    - **Code Sample:** 
+- Exponential Weighted Moving Average: Purple
+  - An exponential decaying weight is implemented to past data points. Same fundamental weighting scheme as the EMA.
+  -  Giving it a direct physical meaning as a First-Order Low-Pass Filter, where the $\alpha$ factor determines the filter's time constant or cutoff frequency.
+      -  Low-Pass Filter: Allows low-frequency signals (the underlying trend) to pass through, while attenuating high-frequency signals (noise or rapid fluctuations).
+  -  **Code Sample:**
 <br />
 <br />
+<img width="550" height="300" alt="RA vs EMA vs EWMA" src="https://github.com/user-attachments/assets/5ce7f78b-eba7-496a-badc-cb864d6f9f4e" />
 
 ___
+
 
 
