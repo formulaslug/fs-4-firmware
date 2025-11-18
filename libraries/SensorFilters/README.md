@@ -9,7 +9,7 @@ ___
 ### DebounceToDigitalIn
 Debounces a digital input
 
-#### Code sample
+#### Code Sample
 ```TODO: put code here```
 
 #### Implementation
@@ -21,7 +21,7 @@ ___
 
 ### SmoothToAnalogIn
 
-#### Code sample
+#### Code Sample
 ```TODO: put code here```
 
 #### Implementation
@@ -79,6 +79,7 @@ Two other options for smoothing are Rolling Average and Exponential Moving Avera
 <img width="550" height="300" alt="RA vs EMA vs EWMA" src="https://github.com/user-attachments/assets/5ce7f78b-eba7-496a-badc-cb864d6f9f4e" />
 
 ___
+
 
 
 
