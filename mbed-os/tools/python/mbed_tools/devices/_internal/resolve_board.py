@@ -9,16 +9,12 @@ located on an "Mbed Enabled" device's USB MSD.
 
 For more information on the mbed-targets package visit https://github.com/ARMmbed/mbed-targets
 """
+
 import logging
 
 from typing import Optional
 
-from mbed_tools.targets import (
-    Board,
-    get_board_by_product_code,
-    get_board_by_online_id,
-    get_board_by_jlink_slug,
-)
+from mbed_tools.targets import Board, get_board_by_product_code, get_board_by_online_id, get_board_by_jlink_slug
 from mbed_tools.targets.exceptions import UnknownBoard, MbedTargetsError
 
 from mbed_tools.devices._internal.exceptions import NoBoardForCandidate, ResolveBoardError

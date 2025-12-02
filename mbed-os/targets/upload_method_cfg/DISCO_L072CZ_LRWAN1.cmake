@@ -1,6 +1,6 @@
 # Mbed OS upload method configuration file for target DISCO_L072CZ_LRWAN1.
 # To change any of these parameters from their default values, set them in your build script between where you
-# include app.cmake and where you add mbed os as a subdirectory.
+# include mbed_toolchain_setup and where you add mbed os as a subdirectory.
 
 # Notes:
 # 1. To use this target with PyOCD, you need to install a pack: `python -m pyocd pack install STM32L072CZTx`.
@@ -37,7 +37,7 @@ set(PYOCD_CLOCK_SPEED 4000k)
 
 set(OPENOCD_UPLOAD_ENABLED TRUE)
 set(OPENOCD_CHIP_CONFIG_COMMANDS
--f ${OpenOCD_SCRIPT_DIR}/board/st_nucleo_l073rz.cfg)
+-f board/st_nucleo_l073rz.cfg)
 
 # Config options for STM32Cube
 # -------------------------------------------------------------

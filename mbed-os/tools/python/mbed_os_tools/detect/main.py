@@ -1,4 +1,3 @@
-
 # Copyright (c) 2018, Arm Limited and affiliates.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -76,13 +75,7 @@ def mbed_lstools_os_info():
 
     @return Returns tuple with information about OS and host platform
     """
-    result = (
-        os.name,
-        platform.system(),
-        platform.release(),
-        platform.version(),
-        sys.platform,
-    )
+    result = (os.name, platform.system(), platform.release(), platform.version(), sys.platform)
     return result
 
 

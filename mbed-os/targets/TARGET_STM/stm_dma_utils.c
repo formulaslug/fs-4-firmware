@@ -23,9 +23,119 @@
 #include <malloc.h>
 #include <string.h>
 
+#ifdef MBED_CONF_RTOS_PRESENT
+#include "cmsis_os.h"
+#include "cmsis_os2.h"
+static osMutexId dmaMutex;
+static osRtxMutex_t dmaMutexMem;
+#endif
+
 // Array to store pointer to DMA handle for each DMA channel.
 // Note: arrays are 0-indexed, so DMA1 Channel2 is at stmDMAHandles[0][1].
 static DMAHandlePointer stmDMAHandles[NUM_DMA_CONTROLLERS][MAX_DMA_CHANNELS_PER_CONTROLLER];
+
+void stm_init_dma_mutex()
+{
+#ifdef MBED_CONF_RTOS_PRESENT
+    osMutexAttr_t attr = {
+        .name = "dma_mutex",
+        .attr_bits = osMutexRecursive|osMutexPrioInherit,
+        .cb_mem = &dmaMutexMem,
+        .cb_size = sizeof(osRtxMutex_t)
+    };
+    dmaMutex = osMutexNew(&attr);
+#endif
+}
+
+void stm_lock_dma_mutex()
+{
+#ifdef MBED_CONF_RTOS_PRESENT
+    osMutexWait(dmaMutex, osWaitForever);
+#endif
+}
+
+void stm_unlock_dma_mutex()
+{
+#ifdef MBED_CONF_RTOS_PRESENT
+    osMutexRelease(dmaMutex);
+#endif
+}
+
+bool stm_find_free_dma_channel(DMALinkInfo const * dmaLink, DMALinkInfo * freeDmaLink)
+{
+    bool found = false;
+#if STM_DEVICE_HAS_DMA_SOURCE_SELECTION
+    freeDmaLink->sourceNumber = dmaLink->sourceNumber;
+#endif
+    if(dmaLink->dmaIdx != MBED_ANY_GPDMA_MODULE)
+    {
+        freeDmaLink->dmaIdx = dmaLink->dmaIdx;
+        uint8_t maxChannels = MAX_DMA_CHANNELS_PER_CONTROLLER;
+#ifdef MDMA
+        if(freeDmaLink->dmaIdx == MDMA_IDX)
+        {
+            maxChannels = MAX_MDMA_CHANNELS;
+        }
+#endif
+        for(uint8_t channelIdx = 0; channelIdx < maxChannels; channelIdx++)
+        {
+#ifdef MDMA
+            if(dmaLink->dmaIdx == MDMA_IDX)
+            {
+                if(stmDMAHandles[dmaLink->dmaIdx][channelIdx].hmdma == NULL)
+                {
+                    freeDmaLink->channelIdx = channelIdx;
+                    found = true;
+                    break;
+                }
+            }
+            else
+#endif
+            if(stmDMAHandles[dmaLink->dmaIdx][channelIdx].hdma == NULL)
+            {
+#ifdef DMA_IP_VERSION_V2
+                // Channels start from 1 in IP v2 only
+                freeDmaLink->channelIdx = channelIdx + 1;
+#else
+                freeDmaLink->channelIdx = channelIdx;
+#endif
+                found = true;
+                break;
+            }
+        }
+    }
+    else
+    {
+        uint8_t maxDMAs = NUM_DMA_CONTROLLERS;
+        if(maxDMAs > 2)
+        {
+            maxDMAs = 2;
+        }
+        for(uint8_t dmaIdx = 1; dmaIdx <= maxDMAs; dmaIdx++)
+        {
+            for(uint8_t channelIdx = 0; channelIdx < MAX_DMA_CHANNELS_PER_CONTROLLER; channelIdx++)
+            {
+                if(stmDMAHandles[dmaIdx - 1][channelIdx].hdma == NULL)
+                {
+                    freeDmaLink->dmaIdx = dmaIdx;
+#ifdef DMA_IP_VERSION_V2
+                    // Channels start from 1 in IP v2 only
+                    freeDmaLink->channelIdx = channelIdx + 1;
+#else
+                    freeDmaLink->channelIdx = channelIdx;
+#endif
+                    found = true;
+                    break;
+                }
+            }
+            if(found)
+            {
+                break;
+            }
+        }
+    }
+    return found;
+}
 
 DMAInstancePointer stm_get_dma_instance(DMALinkInfo const * dmaLink)
 {
@@ -45,6 +155,11 @@ DMAInstancePointer stm_get_dma_instance(DMALinkInfo const * dmaLink)
 #ifdef GPDMA1
         case 1:
             dma_instance.dma = GPDMA1;
+            break;
+#endif
+#ifdef GPDMA2
+        case 2:
+            dma_instance.dma = GPDMA2;
             break;
 #endif
 #ifdef BDMA
@@ -318,6 +433,95 @@ DMAChannelPointer stm_get_dma_channel(const DMALinkInfo *dmaLink)
 #ifdef GPDMA1_Channel15
                 case 15:
                     channel_pointer.channel = GPDMA1_Channel15;
+                    break;
+#endif
+                default:
+                    mbed_error(MBED_ERROR_ITEM_NOT_FOUND, "Invalid DMA channel", dmaLink->channelIdx, MBED_FILENAME, __LINE__);
+            }
+            break;
+#endif
+#ifdef GPDMA2
+        case 2:
+            switch(dmaLink->channelIdx)
+            {
+#ifdef GPDMA2_Channel0
+                case 0:
+                    channel_pointer.channel = GPDMA2_Channel0;
+                    break;
+#endif
+#ifdef GPDMA2_Channel1
+                case 1:
+                    channel_pointer.channel = GPDMA2_Channel1;
+                    break;
+#endif
+#ifdef GPDMA2_Channel2
+                case 2:
+                    channel_pointer.channel = GPDMA2_Channel2;
+                    break;
+#endif
+#ifdef GPDMA2_Channel3
+                case 3:
+                    channel_pointer.channel = GPDMA2_Channel3;
+                    break;
+#endif
+#ifdef GPDMA2_Channel4
+                case 4:
+                    channel_pointer.channel = GPDMA2_Channel4;
+                    break;
+#endif
+#ifdef GPDMA2_Channel5
+                case 5:
+                    channel_pointer.channel = GPDMA2_Channel5;
+                    break;
+#endif
+#ifdef GPDMA2_Channel6
+                case 6:
+                    channel_pointer.channel = GPDMA2_Channel6;
+                    break;
+#endif
+#ifdef GPDMA2_Channel7
+                case 7:
+                    channel_pointer.channel = GPDMA2_Channel7;
+                    break;
+#endif
+#ifdef GPDMA2_Channel8
+                case 8:
+                    channel_pointer.channel = GPDMA2_Channel8;
+                    break;
+#endif
+#ifdef GPDMA2_Channel9
+                case 9:
+                    channel_pointer.channel = GPDMA2_Channel9;
+                    break;
+#endif
+#ifdef GPDMA2_Channel10
+                case 10:
+                    channel_pointer.channel = GPDMA2_Channel10;
+                    break;
+#endif
+#ifdef GPDMA2_Channel11
+                case 11:
+                    channel_pointer.channel = GPDMA2_Channel11;
+                    break;
+#endif
+#ifdef GPDMA2_Channel12
+                case 12:
+                    channel_pointer.channel = GPDMA2_Channel12;
+                    break;
+#endif
+#ifdef GPDMA2_Channel13
+                case 13:
+                    channel_pointer.channel = GPDMA2_Channel13;
+                    break;
+#endif
+#ifdef GPDMA2_Channel14
+                case 14:
+                    channel_pointer.channel = GPDMA2_Channel14;
+                    break;
+#endif
+#ifdef GPDMA2_Channel15
+                case 15:
+                    channel_pointer.channel = GPDMA2_Channel15;
                     break;
 #endif
                 default:
@@ -722,6 +926,79 @@ IRQn_Type stm_get_dma_irqn(const DMALinkInfo *dmaLink)
             }
 #endif
 
+#ifdef GPDMA2
+        case 2:
+            switch(dmaLink->channelIdx)
+            {
+#ifdef GPDMA2_Channel0
+                case 0:
+                    return GPDMA2_Channel0_IRQn;
+#endif
+#ifdef GPDMA2_Channel1
+                case 1:
+                    return GPDMA2_Channel1_IRQn;
+#endif
+#ifdef GPDMA2_Channel2
+                case 2:
+                    return GPDMA2_Channel2_IRQn;
+#endif
+#ifdef GPDMA2_Channel3
+                case 3:
+                    return GPDMA2_Channel3_IRQn;
+#endif
+#ifdef GPDMA2_Channel4
+                case 4:
+                    return GPDMA2_Channel4_IRQn;
+#endif
+#ifdef GPDMA2_Channel5
+                case 5:
+                    return GPDMA2_Channel5_IRQn;
+#endif
+#ifdef GPDMA2_Channel6
+                case 6:
+                    return GPDMA2_Channel6_IRQn;
+#endif
+#ifdef GPDMA2_Channel7
+                case 7:
+                    return GPDMA2_Channel7_IRQn;
+#endif
+#ifdef GPDMA2_Channel8
+                case 8:
+                    return GPDMA2_Channel8_IRQn;
+#endif
+#ifdef GPDMA2_Channel9
+                case 9:
+                    return GPDMA2_Channel9_IRQn;
+#endif
+#ifdef GPDMA2_Channel10
+                case 10:
+                    return GPDMA2_Channel10_IRQn;
+#endif
+#ifdef GPDMA2_Channel11
+                case 11:
+                    return GPDMA2_Channel11_IRQn;
+#endif
+#ifdef GPDMA2_Channel12
+                case 12:
+                    return GPDMA2_Channel12_IRQn;
+#endif
+#ifdef GPDMA2_Channel13
+                case 13:
+                    return GPDMA2_Channel13_IRQn;
+#endif
+#ifdef GPDMA2_Channel14
+                case 14:
+                    return GPDMA2_Channel14_IRQn;
+#endif
+#ifdef GPDMA2_Channel15
+                case 15:
+                    return GPDMA2_Channel15_IRQn;
+#endif
+                default:
+                    mbed_error(MBED_ERROR_ITEM_NOT_FOUND, "Invalid DMA channel", dmaLink->channelIdx, MBED_FILENAME, __LINE__);
+            }
+#endif
+
 #ifdef MDMA
         case 4:
             return MDMA_IRQn;
@@ -760,10 +1037,23 @@ DMAHandlePointer stm_get_dma_handle_for_link(DMALinkInfo const * dmaLink)
 }
 
 DMAHandlePointer stm_init_dma_link(const DMALinkInfo *dmaLink, uint32_t direction, bool periphInc, bool memInc,
-                                     uint8_t periphDataAlignment, uint8_t memDataAlignment, uint32_t mode){
+                                     uint8_t periphDataAlignment, uint8_t memDataAlignment, uint32_t mode) {
 
+    stm_lock_dma_mutex();
     DMAHandlePointer dmaHandlePointer;
     dmaHandlePointer.hdma = NULL;
+    DMALinkInfo actualDmaLink;
+    if(dmaLink->channelIdx == MBED_ANY_DMA_CHANNEL)
+    {
+        if(!stm_find_free_dma_channel(dmaLink, &actualDmaLink))
+        {
+            mbed_error(MBED_ERROR_ITEM_NOT_FOUND, "DMA channel not found", dmaLink->channelIdx, MBED_FILENAME, __LINE__);
+        }
+        dmaLink = &actualDmaLink;
+    }
+    dmaHandlePointer.dmaIdx = dmaLink->dmaIdx;
+    dmaHandlePointer.channelIdx = dmaLink->channelIdx;
+
 #ifdef DMA_IP_VERSION_V2
     // Channels start from 1 in IP v2 only
     uint8_t channelIdx = dmaLink->channelIdx - 1;
@@ -774,6 +1064,7 @@ DMAHandlePointer stm_init_dma_link(const DMALinkInfo *dmaLink, uint32_t directio
     if(stmDMAHandles[dmaLink->dmaIdx - 1][channelIdx].hdma != NULL)
     {
         // Channel already allocated (e.g. two SPI busses which use the same DMA request tried to be initialized)
+        stm_unlock_dma_mutex();
         return dmaHandlePointer;
     }
 
@@ -798,6 +1089,11 @@ DMAHandlePointer stm_init_dma_link(const DMALinkInfo *dmaLink, uint32_t directio
 #ifdef GPDMA1
         case 1:
             __HAL_RCC_GPDMA1_CLK_ENABLE();
+            break;
+#endif
+#ifdef GPDMA2
+        case 2:
+            __HAL_RCC_GPDMA2_CLK_ENABLE();
             break;
 #endif
 #ifdef BDMA
@@ -1071,7 +1367,7 @@ DMAHandlePointer stm_init_dma_link(const DMALinkInfo *dmaLink, uint32_t directio
 
         dmaHandle->Instance = stm_get_dma_channel(dmaLink).mchannel;
 
-      HAL_MDMA_Init(dmaHandle);
+        HAL_MDMA_Init(dmaHandle);
     }
 #endif
     // Set up interrupt
@@ -1079,44 +1375,50 @@ DMAHandlePointer stm_init_dma_link(const DMALinkInfo *dmaLink, uint32_t directio
     NVIC_EnableIRQ(irqNum);
     NVIC_SetPriority(irqNum, 7);
 
+    stm_unlock_dma_mutex();
     return dmaHandlePointer;
 }
 
-void stm_free_dma_link(const DMALinkInfo *dmaLink)
+void stm_free_dma_link(DMAHandlePointer *handle)
 {
     // Note: we can't disable the interrupt here, in case one ISR is shared by multiple DMA channels
     // and another channel is still using the interrupt.
+    stm_lock_dma_mutex();
+    DMALinkInfo dmaLink = { .dmaIdx = handle->dmaIdx, .channelIdx = handle->channelIdx };
 
 #ifdef DMA_IP_VERSION_V2
     // Channels start from 1 in IP v2 only
-    uint8_t channelIdx = dmaLink->channelIdx - 1;
+    uint8_t channelIdx = dmaLink.channelIdx - 1;
 #else
-    uint8_t channelIdx = dmaLink->channelIdx;
+    uint8_t channelIdx = dmaLink.channelIdx;
 #endif
 
-    if(stmDMAHandles[dmaLink->dmaIdx - 1][channelIdx].hdma == NULL)
+    if(stmDMAHandles[dmaLink.dmaIdx - 1][channelIdx].hdma == NULL)
     {
+        stm_unlock_dma_mutex();
         return;
     }
 
     // Deinit hardware channel
-    switch(dmaLink->dmaIdx)
+    switch(dmaLink.dmaIdx)
     {
         case 1:
         case 2:
         case 3:
-            HAL_DMA_DeInit(stmDMAHandles[dmaLink->dmaIdx - 1][channelIdx].hdma);
+            HAL_DMA_DeInit(stmDMAHandles[dmaLink.dmaIdx - 1][channelIdx].hdma);
             break;
 #ifdef MDMA
         case 4:
-            HAL_MDMA_DeInit(stmDMAHandles[dmaLink->dmaIdx - 1][channelIdx].hmdma);
+            HAL_MDMA_DeInit(stmDMAHandles[dmaLink.dmaIdx - 1][channelIdx].hmdma);
         break;
 #endif
     }
-    IRQn_Type irqNum = stm_get_dma_irqn(dmaLink);
+    IRQn_Type irqNum = stm_get_dma_irqn(&dmaLink);
     NVIC_DisableIRQ(irqNum);
-    free(stmDMAHandles[dmaLink->dmaIdx - 1][channelIdx].hdma);
-    stmDMAHandles[dmaLink->dmaIdx - 1][channelIdx].hdma = NULL;
+    free(stmDMAHandles[dmaLink.dmaIdx - 1][channelIdx].hdma);
+    stmDMAHandles[dmaLink.dmaIdx - 1][channelIdx].hdma = NULL;
+    memset(handle, 0, sizeof(DMAHandlePointer));
+    stm_unlock_dma_mutex();
 }
 
 #ifdef DMA_IP_VERSION_V2
@@ -1641,6 +1943,118 @@ void GPDMA1_Channel14_IRQHandler(void)
 void GPDMA1_Channel15_IRQHandler(void)
 {
     HAL_DMA_IRQHandler(stmDMAHandles[0][15].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel0
+void GPDMA2_Channel0_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][0].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel1
+void GPDMA2_Channel1_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][1].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel2
+void GPDMA2_Channel2_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][2].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel3
+void GPDMA2_Channel3_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][3].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel4
+void GPDMA2_Channel4_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][4].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel5
+void GPDMA2_Channel5_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][5].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel6
+void GPDMA2_Channel6_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][6].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel7
+void GPDMA2_Channel7_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][7].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel8
+void GPDMA2_Channel8_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][8].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel9
+void GPDMA2_Channel9_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][9].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel10
+void GPDMA2_Channel10_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][10].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel11
+void GPDMA2_Channel11_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][11].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel12
+void GPDMA2_Channel12_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][12].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel13
+void GPDMA2_Channel13_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][13].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel14
+void GPDMA2_Channel14_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][14].hdma);
+}
+#endif
+
+#ifdef GPDMA2_Channel15
+void GPDMA2_Channel15_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(stmDMAHandles[1][15].hdma);
 }
 #endif
 

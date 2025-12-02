@@ -89,7 +89,6 @@ static void kvstore_init()
 
     res = bd->init();
     TEST_ASSERT_EQUAL_ERROR_CODE(0, res);
-    int erase_val = bd->get_erase_value();
     // Clear out any stale data that might be left from a previous test.
     // Multiply by 2 because SecureStore requires two underlying block devices of this size
     size_t bytes_to_erase = align_up(2 * PAGES_ESTIMATE * bd->get_program_size(), bd->get_erase_size());
@@ -101,8 +100,8 @@ static void kvstore_init()
     if (kv_setup == TDBStoreSet) {
 #if DEVICE_FLASH && !COMPONENT_SPIF && !COMPONENT_QSPIF && !COMPONENT_DATAFLASH && !COMPONENT_SD
         // TDBStore requires two areas of equal size, do the check for FlashIAP
-        TEST_SKIP_UNLESS(MBED_CONF_TARGET_INTERNAL_FLASH_UNIFORM_SECTORS ||
-                         (MBED_CONF_FLASHIAP_BLOCK_DEVICE_SIZE != 0) && (MBED_CONF_FLASHIAP_BLOCK_DEVICE_BASE_ADDRESS != 0xFFFFFFFF))
+        TEST_SKIP_UNLESS(MBED_CONF_TARGET_INTERNAL_FLASH_UNIFORM_SECTORS);
+        TEST_SKIP_UNLESS(bd->get_erase_size() * 2 <= bd->size());
 #endif
         kvstore = new TDBStore(bd);
     }
@@ -148,7 +147,10 @@ static void kvstore_init()
     res = kvstore->init();
     TEST_ASSERT_EQUAL_ERROR_CODE(MBED_SUCCESS, res);
 #if DEVICEKEY_ENABLED
-    DeviceKey::get_instance().generate_root_of_trust();
+    auto rootOfTrustRet = DeviceKey::get_instance().generate_root_of_trust();
+    if (rootOfTrustRet != DEVICEKEY_SUCCESS) {
+        printf("Failed to generate device key root of trust. Error: %d\n. Some SecureStore tests will fail.", rootOfTrustRet);
+    }
 #endif
 }
 
@@ -158,8 +160,6 @@ static void kvstore_deinit()
     int res = 0;
 
     TEST_SKIP_UNLESS(kvstore != NULL);
-
-    int erase_val = bd->get_erase_value();
 
     res = kvstore->deinit();
     TEST_ASSERT_EQUAL_ERROR_CODE(MBED_SUCCESS, res);

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """Configuration source parser."""
+
 import logging
 import pathlib
 
@@ -111,9 +112,7 @@ def _extract_config_settings(namespace: str, config_data: dict) -> List[ConfigSe
             help_text = None
             value = item
 
-        setting = ConfigSetting(
-            namespace=namespace, name=name, macro_name=macro_name, help_text=help_text, value=value,
-        )
+        setting = ConfigSetting(namespace=namespace, name=name, macro_name=macro_name, help_text=help_text, value=value)
         # If the config item is about a certain component or feature
         # being present, avoid adding it to the mbed_config.cmake
         # configuration file. Instead, applications should depend on
