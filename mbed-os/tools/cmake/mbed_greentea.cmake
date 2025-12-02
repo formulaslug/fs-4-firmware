@@ -13,6 +13,10 @@ set(MBED_GREENTEA_SERIAL_PORT "" CACHE STRING "Serial port name to talk to the M
 # HOST_TESTS_DIR - Path to the "host_tests" directory.  If a relative path is provided, it will be
 #    interpreted relative to the source directory.
 # TEST_SKIPPED - Reason if suite is skipped
+# NEEDED_FLASH_KIB - Minimum flash size, in kiB, needed to run this test. Test will be skipped if flash
+#    size is known and is less than this.
+# NEEDED_RAM_KIB - Minimum RAM size, in kiB, needed to run this test. Test will be skipped if RAM bank 0
+#    size is known and is less than this.
 #
 # calling the macro:
 # if(some_condition)
@@ -31,6 +35,8 @@ set(MBED_GREENTEA_SERIAL_PORT "" CACHE STRING "Serial port name to talk to the M
 #         mbed-xyz
 #     HOST_TESTS_DIR
 #         ${CMAKE_CURRENT_LIST_DIR}/host_tests
+#     NEEDED_FLASH_KIB 130
+#     NEEDED_RAM_KIB 10
 #     TEST_SKIPPED
 #         ${skip_reason}
 # )
@@ -40,6 +46,8 @@ function(mbed_greentea_add_test)
     set(singleValueArgs
         TEST_NAME
         TEST_SKIPPED
+        NEEDED_FLASH_KIB
+        NEEDED_RAM_KIB
     )
     set(multipleValueArgs
         TEST_INCLUDE_DIRS
@@ -56,6 +64,24 @@ function(mbed_greentea_add_test)
 
     if("${MBED_GREENTEA_SERIAL_PORT}" STREQUAL "")
         message(FATAL_ERROR "Will not be able to run greentea tests without MBED_GREENTEA_SERIAL_PORT defined!")
+    endif()
+
+    if(NOT "${MBED_GREENTEA_NEEDED_FLASH_KIB}" STREQUAL "")
+        math(EXPR NEEDED_FLASH_BYTES "${MBED_GREENTEA_NEEDED_FLASH_KIB} * 1024")
+        if("${MBED_CONFIG_DEFINITIONS}" MATCHES "MBED_ROM_SIZE=((0x[0-9A-Fa-f]+)|([0-9]+))")
+            if(${CMAKE_MATCH_1} LESS NEEDED_FLASH_BYTES)
+                set(MBED_GREENTEA_TEST_SKIPPED "Not enough flash space! Need at least ${MBED_GREENTEA_NEEDED_FLASH_KIB} kiB for this test.")
+            endif()
+        endif()
+    endif()
+
+    if(NOT "${MBED_GREENTEA_NEEDED_RAM_KIB}" STREQUAL "")
+        math(EXPR NEEDED_RAM_BYTES "${MBED_GREENTEA_NEEDED_RAM_KIB} * 1024")
+        if("${MBED_CONFIG_DEFINITIONS}" MATCHES "MBED_RAM_SIZE=((0x[0-9A-Fa-f]+)|([0-9]+))")
+            if(${CMAKE_MATCH_1} LESS NEEDED_RAM_BYTES)
+                set(MBED_GREENTEA_TEST_SKIPPED "Not enough RAM space!  Need at least ${MBED_GREENTEA_NEEDED_RAM_KIB} kiB for this test.")
+            endif()
+        endif()
     endif()
 
     # Add a "test-" prefix to help distinguish test targets in the target list
@@ -78,6 +104,11 @@ function(mbed_greentea_add_test)
     endif()
 
     add_executable(${MBED_GREENTEA_TEST_NAME})
+
+    # Many source directories have EXCLUDE_FROM_ALL enabled so that we don't compile
+    # optional libraries by default. However, if the tests are enabled, we always
+    # want to build them
+    set_property(TARGET ${MBED_GREENTEA_TEST_NAME} PROPERTY EXCLUDE_FROM_ALL FALSE)
 
     target_include_directories(${MBED_GREENTEA_TEST_NAME}
         PRIVATE

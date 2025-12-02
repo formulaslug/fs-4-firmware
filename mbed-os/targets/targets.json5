@@ -507,7 +507,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
         ],
         "device_name": "LPC1769",
         "components_add": [
-            "COMPONENT_I2CEE"
+            "I2CEE"
         ],
         "overrides": {
             "default-adc-vref": 3.3, // Vref is 3.3V
@@ -3188,7 +3188,8 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
             "network-default-interface-type": "ETHERNET"
         },
         "device_has_add": [
-            "EMAC"
+            "EMAC",
+            "USBDEVICE"
         ]
     },
 	"NUCLEO_H563ZI": {
@@ -3211,6 +3212,60 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
         ],
         "device_name": "STM32H563ZITx",
         "image_url": "https://www.st.com/bin/ecommerce/api/image.PF274337.en.feature-description-include-personalized-no-cpn-medium.jpg"
+    },
+	"MCU_STM32H573xI": {
+        "inherits": [
+            "MCU_STM32H5"
+        ],
+        "public": false,
+        "core": "Cortex-M33",
+        "extra_labels_add": [
+            "STM32H573xI"
+        ],
+        "macros_add": [
+            "STM32H573xx"
+        ],
+        "overrides": {
+            "network-default-interface-type": "ETHERNET"
+        },
+        "device_has_add": [
+            "EMAC",
+            "USBDEVICE"
+        ]
+    },
+	"DISCO_H573I": {
+        "inherits": [
+            "MCU_STM32H573xI"
+        ],
+        "overrides": {
+            "hse_value": 25000000,
+            "lse_available":  1,
+            "clock_source": "USE_PLL_HSE_XTAL|USE_PLL_HSI",
+
+            // ADC reference voltage is same as MCU VDD.
+            // MCU VDD defaults to 3.3V though can be changed to 1.8V based on JP2 setting.
+            "default-adc-vref": 3.3
+        },
+        "supported_form_factors": [
+            "ARDUINO_UNO",
+            "STMOD",
+            "PMOD"
+        ],
+        "components_add": [
+            "OSPIF"
+        ],
+        "extra_labels_add": [
+            "MX25LM51245G"
+        ],
+        "detect_code": [
+            "0831"
+        ],
+        "device_has_add": [
+            "QSPI",
+            "OSPI"
+        ],
+        "device_name": "STM32H573IIKxQ",
+        "image_url": "https://www.st.com/bin/ecommerce/api/image.PF272542.en.feature-description-include-personalized-no-cpn-large.jpg"
     },
 
     // STM32H7 Targets -------------------------------------------------------------------------------------------------
@@ -6882,7 +6937,8 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
                 "small"
             ]
         },
-        "device_name": "MAX32670"
+        "device_name": "MAX32670",
+        "is_mcu_family_target": true
     },
     "MAX32670EVKIT": {
         "inherits": [
@@ -8238,6 +8294,11 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
             "usb-device-hsusbd": {
                 "help": "Select high-speed USB device or not",
                 "value": 0
+            },
+	    "wdt-reset-workaround": {
+                "help": "Workaround to H/W limit with WDT reset from power-down",
+                "options": [false, true],
+                "value": true
             }
         },
         "inherits": [
@@ -8272,7 +8333,6 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
             "EMAC",
             "MPU",
             "WATCHDOG",
-            "RESET_REASON",
             "USBDEVICE"
         ],
         "release_versions": [
@@ -9031,8 +9091,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
         "forced_reset_timeout": 5,
         "overrides": {
             "deep-sleep-latency": "CY_CFG_PWR_DEEPSLEEP_LATENCY"
-        },
-        "is_mcu_family_target": true
+        }
     },
     "MCU_PSOC6_M4": {
         "inherits": [
@@ -9057,6 +9116,18 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
             "full", "bare-metal"
         ]
     },
+    "MCU_PSOC62_CM4": {
+        "inherits": [
+            "MCU_PSOC6_M4"
+        ],
+        "is_mcu_family_target": true
+    },
+    "MCU_PSOC64_CM4": {
+        "inherits": [
+            "MCU_PSOC6_M4"
+        ],
+        "is_mcu_family_target": true
+    },
     "CY_EXTERNAL_WIFI_FW": {
         "public": false,
         "macros_add": [
@@ -9068,7 +9139,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
     },
     "CY8CPROTO_062_4343W": {
         "inherits": [
-            "MCU_PSOC6_M4"
+            "MCU_PSOC62_CM4"
         ],
         "features": [
             "BLE"
@@ -9117,7 +9188,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
     },
     "CY8CKIT_062S2_43012": {
         "inherits": [
-            "MCU_PSOC6_M4"
+            "MCU_PSOC62_CM4"
         ],
         "features": [
             "BLE"
@@ -9162,7 +9233,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
     },
     "CY8CPROTO_062S3_4343W": {
         "inherits": [
-            "MCU_PSOC6_M4",
+            "MCU_PSOC62_CM4",
             "CY_EXTERNAL_WIFI_FW"
         ],
         "features": [
@@ -9205,7 +9276,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
     },
     "CY8CKIT_062_WIFI_BT": { // AKA PSoC 6 WiFi-BT Pioneer Kit
         "inherits": [
-            "MCU_PSOC6_M4"
+            "MCU_PSOC62_CM4"
         ],
         "features": [
             "BLE"
@@ -9257,7 +9328,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
     },
     "CY8CKIT_062_BLE": { // AKA PSoC 6 BLE Pioneer Kit
         "inherits": [
-            "MCU_PSOC6_M4"
+            "MCU_PSOC62_CM4"
         ],
         "device_has_remove": [
             "USBDEVICE"
@@ -9296,7 +9367,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
     },
     "CYW9P62S1_43438EVB_01": { // AKA CYW9P62S1-43438EVB-01 PSoC 62S1 Wi-Fi BT Pioneer Kit
         "inherits": [
-            "MCU_PSOC6_M4"
+            "MCU_PSOC62_CM4"
         ],
         "features": [
             "BLE"
@@ -9350,7 +9421,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
     },
     "CYW9P62S1_43012EVB_01": { // AKA CYW9P62S1-43012EVB-01 PSoC 62S1 Wi-Fi BT Pioneer Kit
         "inherits": [
-            "MCU_PSOC6_M4"
+            "MCU_PSOC62_CM4"
         ],
         "features": [
             "BLE"
@@ -9397,7 +9468,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
     },
     "CY8CKIT064B0S2_4343W": { // AKA CY8CKIT-064B0S2-4343W PSoC 64 Secure Boot Wi-Fi BT Pioneer Kit
         "inherits": [
-            "MCU_PSOC6_M4"
+            "MCU_PSOC64_CM4"
         ],
         "supported_form_factors": [
             "ARDUINO_UNO"
@@ -9451,7 +9522,7 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
     },
     "CYTFM_064B0S2_4343W": { // Same as
         "inherits": [
-            "MCU_PSOC6_M4"
+            "MCU_PSOC64_CM4"
         ],
         "supported_form_factors": [
             "ARDUINO_UNO"
@@ -9517,184 +9588,6 @@ mode is recommended for target MCUs with small amounts of flash and RAM.",
         "TFM_OUTPUT_EXT": "hex",
         "device_name": "CYB0644ABZI-S2D44",
         "image_url": "https://os.mbed.com/media/cache/platforms/SSP_8683_Ywwh0ix.jpg.250x250_q85.jpg"
-    },
-
-    // GigaDevices Targets ---------------------------------------------------------------------------------------------
-    "GD32_Target": {
-        "inherits": [
-            "Target"
-        ],
-        "public": false,
-        "extra_labels_add": [
-            "GigaDevice"
-        ],
-        "supported_toolchains": [
-            "GCC_ARM"
-        ],
-        "device_has_add": [
-            "USTICKER",
-            "ANALOGIN",
-            "INTERRUPTIN",
-            "PORTIN",
-            "PORTINOUT",
-            "PORTOUT",
-            "PWMOUT",
-            "SERIAL"
-        ],
-        "supported_c_libs": {
-            "arm": [
-                "std",
-                "small"
-            ],
-            "gcc_arm": [
-                "std",
-                "small"
-            ]
-        },
-        "supported_application_profiles": [
-            "full", "bare-metal"
-        ]
-    },
-
-    // As of Jun 2024, I cannot find the GD32 boards for sale anywhere.  Even people on the forums are wondering:
-    // https://os.mbed.com/questions/87215/GigaDevice-Board-GD32-F307VG-any-idea-wh/
-    // https://os.mbed.com/questions/86201/Purchase-this-board/
-    // But apparently it may still be available in Chinese language only shops.
-    "GD32_F307VG": {
-        "inherits": [
-            "GD32_Target"
-        ],
-        "supported_form_factors": [
-            "ARDUINO_UNO"
-        ],
-        "core": "Cortex-M4F",
-        "extra_labels_add": [
-            "GD32F30X",
-            "GD32F307VG",
-            "GD_EMAC"
-        ],
-        "device_has_add": [
-            "RTC",
-            "I2C",
-            "CAN",
-            "I2CSLAVE",
-            "ANALOGOUT",
-            "SPI",
-            "SPISLAVE",
-            "SERIAL_ASYNCH",
-            "SERIAL_FC",
-            "EMAC",
-            "FLASH",
-            "SLEEP",
-            "MPU"
-        ],
-        "detect_code": [
-            "1701"
-        ],
-        "macros_add": [
-            "GD32F30X_CL"
-        ],
-        "release_versions": [
-            "5"
-        ],
-        "overrides": {
-            "network-default-interface-type": "ETHERNET"
-        },
-        "device_name": "GD32F307VG",
-        "image_url": "https://os.mbed.com/media/uploads/Ray_Chen/307-1.png"
-    },
-    "GD32_F450ZI": {
-        "inherits": [
-            "GD32_Target"
-        ],
-        "supported_form_factors": [
-            "ARDUINO_UNO"
-        ],
-        "core": "Cortex-M4F",
-        "extra_labels_add": [
-            "GD32F4XX",
-            "GD32F450ZI",
-            "GD_EMAC",
-            "MBED_PSA_SRV"
-        ],
-        "features_add": [
-            "PSA"
-        ],
-        "device_has_add": [
-            "RTC",
-            "I2C",
-            "CAN",
-            "I2CSLAVE",
-            "ANALOGOUT",
-            "SPI",
-            "SPISLAVE",
-            "SERIAL_ASYNCH",
-            "SERIAL_FC",
-            "EMAC",
-            "FLASH",
-            "SLEEP",
-            "MPU",
-            "TRNG"
-        ],
-        "device_name": "GD32F450ZI",
-        "detect_code": [
-            "1702"
-        ],
-        "macros_add": [
-            "GD32F450"
-        ],
-        "bootloader_supported": true,
-        "release_versions": [
-            "5"
-        ],
-        "overrides": {
-            "network-default-interface-type": "ETHERNET"
-        },
-        "image_url": "https://os.mbed.com/media/cache/platforms/2-1_W6zHQ3F.jpg.250x250_q85.jpg"
-    },
-
-    // Samsung Targets -------------------------------------------------------------------------------------------------
-
-    "S1SBP6A": { // AKA Samsung Bio-Processor S1SBP6A
-        "inherits": ["Target"],
-        "core": "Cortex-M4F",
-        "supported_toolchains": [
-            "GCC_ARM"
-        ],
-        "default_toolchain": "GCC_ARM",
-        "extra_labels": [
-            "Samsung",
-            "SIDK_S1SBP6A"
-        ],
-        "device_has": [
-            "USTICKER",
-            "INTERRUPTIN",
-            "SERIAL",
-            "MPU",
-            "SPI",
-            "I2C",
-            "RTC",
-            "FLASH",
-            "SLEEP",
-            "WATCHDOG"
-        ],
-        "release_versions": ["5"],
-        "detect_code": ["3703"],
-        "supported_c_libs": {
-            "arm": [
-                "std",
-                "small"
-            ],
-            "gcc_arm": [
-                "std",
-                "small"
-            ]
-        },
-        "supported_application_profiles": [
-            "full", "bare-metal"
-        ],
-        "device_name": "S1SBP6A",
-        "image_url": "https://os.mbed.com/media/uploads/heuisam/pinout2.jpg"
     },
 
     // Ambiq Micro Targets ---------------------------------------------------------------------------------------------

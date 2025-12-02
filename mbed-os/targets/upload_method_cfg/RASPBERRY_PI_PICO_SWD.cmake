@@ -4,7 +4,7 @@
 # another SWD debugger like a Pitaya-Link.
 
 # To change any of these parameters from their default values, set them in your build script between where you
-# include app.cmake and where you add mbed os as a subdirectory.
+# include mbed_toolchain_setup and where you add mbed os as a subdirectory.
 
 # General config parameters
 # -------------------------------------------------------------
@@ -22,8 +22,8 @@ set(PYOCD_CLOCK_SPEED 4000k)
 
 set(OPENOCD_UPLOAD_ENABLED TRUE)
 set(OPENOCD_CHIP_CONFIG_COMMANDS
-    -f ${OpenOCD_SCRIPT_DIR}/interface/cmsis-dap.cfg
-	-f ${OpenOCD_SCRIPT_DIR}/target/rp2040.cfg
+    -f interface/cmsis-dap.cfg
+	-f target/rp2040.cfg
 	-c "set USE_CORE 0" # Don't pause core 1 as that causes weird effects like keeping the TIMER stuck at 0: https://github.com/raspberrypi/picoprobe/issues/45
 	-c "adapter speed 4000"
 )

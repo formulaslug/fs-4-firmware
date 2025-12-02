@@ -1,6 +1,6 @@
 # Mbed OS upload method configuration file for target BLACKPILL_F411CE.
 # To change any of these parameters from their default values, set them in your build script between where you
-# include app.cmake and where you add mbed os as a subdirectory.
+# include mbed_toolchain_setup and where you add mbed os as a subdirectory.
 
 # Notes:
 # 1. Keep in mind the Blackpill does not contain any on-board debugger, so all upload methods counts with external debugger, usually ST-Link.
@@ -39,7 +39,7 @@ set(PYOCD_CLOCK_SPEED 4000k)
 
 set(OPENOCD_UPLOAD_ENABLED TRUE)
 set(OPENOCD_CHIP_CONFIG_COMMANDS
-    -f ${OpenOCD_SCRIPT_DIR}/board/st_nucleo_f4.cfg)
+    -f board/st_nucleo_f4.cfg)
 
 # Config options for STM32Cube
 # -------------------------------------------------------------

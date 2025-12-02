@@ -71,12 +71,22 @@ unit-tests = [
     "beautifulsoup4",
     "lxml"
 ]
+linters = [
+    "ruff"
+]
 greentea = [
     ## Additional requirements to install into the Mbed environment when running Greentea tests
     # For USB Device host tests
     "hidapi>=0.7.99",
     "pyusb>=1.2.0",
     "wmi>=1.5; platform_system == 'Windows'",
+]
+
+# Install this optional dependency group to get IDE completion for packages used by the mbed_platformio package.
+# Note that this package is actually run in platformio's venv, not the Mbed venv, so there is no other need to install these.
+platformio = [
+    "SCons",
+    "platformio"
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -96,3 +106,7 @@ mbedls = "mbed_lstools.main:mbedls_main"
 mbed-tools = "mbed_tools.cli.main:cli"
 memap = "memap.memap:main"
 ambiq_svl = "ambiq_svl.svl:cli"
+
+[tool.ruff]
+line-length = 120
+src = ['python']

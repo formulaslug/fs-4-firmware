@@ -34,6 +34,7 @@
 #endif /* OCTOSPI1 */
 
 #include "stm_dma_info.h"
+#include "xspi_compat.h"
 
 // activate / de-activate extra debug
 #define qspi_api_c_debug 0
@@ -44,7 +45,7 @@
 
 /* Minimum number of bytes to be transferred using DMA, when DCACHE is not available */
 /* When less than 32 bytes of data is transferred at a time, using DMA may actually be slower than polling */
-/* When DACHE is available, DMA will be used when the buffer contains at least one cache-aligned block */
+/* When DCACHE is available, DMA will be used when the buffer contains at least one cache-aligned block */
 #define QSPI_DMA_THRESHOLD_BYTES 32
 
 #if defined(QUADSPI)
@@ -98,7 +99,11 @@ void HAL_QSPI_TimeOutCallback(QSPI_HandleTypeDef * handle)
 #endif
 
 #if defined(OCTOSPI1)
-static OSPI_HandleTypeDef * ospiHandle1;
+
+// Stored pointer inside OSPI handle is qspi_s*
+#define QSPI_POINTER_FLAG 1
+
+OSPI_HandleTypeDef * ospiHandle1;
 
 // Store the qspi_s * inside an OSPI handle, for later retrieval in callbacks
 static inline void store_qspi_pointer(OSPI_HandleTypeDef * ospiHandle, struct qspi_s * qspis) {
@@ -106,11 +111,17 @@ static inline void store_qspi_pointer(OSPI_HandleTypeDef * ospiHandle, struct qs
     // in callbacks.  However, there are some variables in the Init struct that are never accessed after HAL_OSPI_Init().
     // So, we can reuse those to store our pointer.
     ospiHandle->Init.ChipSelectHighTime = (uint32_t)qspis;
+    ospiHandle->Init.FreeRunningClock = QSPI_POINTER_FLAG;
 }
 
 // Get qspi_s * from OSPI_HandleTypeDef
 static inline struct qspi_s * get_qspi_pointer(OSPI_HandleTypeDef * ospiHandle) {
     return (struct qspi_s *) ospiHandle->Init.ChipSelectHighTime;
+}
+
+// Get ospi_s * from OSPI_HandleTypeDef
+static inline struct ospi_s * get_ospi_pointer(OSPI_HandleTypeDef * ospiHandle) {
+    return (struct ospi_s *) ospiHandle->Init.ChipSelectHighTime;
 }
 
 void OCTOSPI1_IRQHandler()
@@ -119,14 +130,20 @@ void OCTOSPI1_IRQHandler()
 }
 
 #if MBED_CONF_RTOS_PRESENT
+static inline osSemaphoreId_t get_semaphore_id(OSPI_HandleTypeDef * handle) {
+    osSemaphoreId_t semaphoreId = handle->Init.FreeRunningClock == QSPI_POINTER_FLAG ?
+        get_qspi_pointer(handle)->semaphoreId: get_ospi_pointer(handle)->semaphoreId;
+        return semaphoreId;
+}
+
 void HAL_OSPI_TxCpltCallback(OSPI_HandleTypeDef * handle)
 {
-    osSemaphoreRelease(get_qspi_pointer(handle)->semaphoreId);
+    osSemaphoreRelease(get_semaphore_id(handle));
 }
 
 void HAL_OSPI_RxCpltCallback(OSPI_HandleTypeDef * handle)
 {
-    osSemaphoreRelease(get_qspi_pointer(handle)->semaphoreId);
+    osSemaphoreRelease(get_semaphore_id(handle));
 }
 #endif
 
@@ -134,7 +151,7 @@ void HAL_OSPI_ErrorCallback(OSPI_HandleTypeDef * handle)
 {
     handle->State = HAL_OSPI_STATE_ERROR;
 #if MBED_CONF_RTOS_PRESENT
-    osSemaphoreRelease(get_qspi_pointer(handle)->semaphoreId);
+    osSemaphoreRelease(get_semaphore_id(handle));
 #endif
 }
 
@@ -142,13 +159,13 @@ void HAL_OSPI_TimeOutCallback(OSPI_HandleTypeDef * handle)
 {
     handle->State = HAL_OSPI_STATE_ERROR;
 #if MBED_CONF_RTOS_PRESENT
-    osSemaphoreRelease(get_qspi_pointer(handle)->semaphoreId);
+    osSemaphoreRelease(get_semaphore_id(handle));
 #endif
 }
 #endif
 
 #if defined(OCTOSPI2)
-static OSPI_HandleTypeDef * ospiHandle2;
+OSPI_HandleTypeDef * ospiHandle2;
 
 void OCTOSPI2_IRQHandler()
 {
@@ -195,9 +212,16 @@ qspi_status_t qspi_prepare_command(const qspi_command_t *command, OSPI_RegularCm
 {
     debug_if(qspi_api_c_debug, "qspi_prepare_command In: instruction.value %x dummy_count %x address.bus_width %x address.disabled %x address.value %x address.size %x\n",
              command->instruction.value, command->dummy_count, command->address.bus_width, command->address.disabled, command->address.value, command->address.size);
-
+#if defined(HAL_OSPI_DUALQUAD_DISABLE)
     st_command->FlashId = HAL_OSPI_FLASH_ID_1;
-
+#endif
+#if defined(HAL_XSPI_MODULE_ENABLED) && !defined(TARGET_STM32U5)
+#if defined(QSPI_OSPIM_IOPORT_HIGH)
+    st_command->IOSelect = HAL_XSPI_SELECT_IO_7_4;
+#else
+    st_command->IOSelect = HAL_XSPI_SELECT_IO_3_0;
+#endif
+#endif
     if (command->instruction.disabled == true) {
         st_command->InstructionMode = HAL_OSPI_INSTRUCTION_NONE;
         st_command->Instruction = 0;
@@ -504,7 +528,7 @@ qspi_status_t qspi_prepare_command(const qspi_command_t *command, QSPI_CommandTy
  */
 static void qspi_init_dma(struct qspi_s * obj)
 {
-    if(!obj->dmaInitialized)
+    if(obj->dmaHandle.dmaIdx == 0)
     {
         // Get DMA handle
         DMALinkInfo const *dmaLink;
@@ -521,17 +545,29 @@ static void qspi_init_dma(struct qspi_s * obj)
         dmaLink = &OSPIDMALinks[0];
 #endif
         // Initialize DMA channel
-        DMAHandlePointer dmaHandle = stm_init_dma_link(dmaLink, DMA_PERIPH_TO_MEMORY, false, true, 1, 1, DMA_NORMAL);
-        if(dmaHandle.hdma == NULL)
+        obj->dmaHandle = stm_init_dma_link(dmaLink, DMA_PERIPH_TO_MEMORY, false, true, 1, 1, DMA_NORMAL);
+        if(obj->dmaHandle.hdma == NULL)
         {
             mbed_error(MBED_ERROR_ALREADY_IN_USE, "DMA channel already used by something else!", 0, MBED_FILENAME, __LINE__);
         }
 #if defined(MDMA)
-        __HAL_LINKDMA(&obj->handle, hmdma, *dmaHandle.hmdma);
+        __HAL_LINKDMA(&obj->handle, hmdma, *obj->dmaHandle.hmdma);
+#elif defined(TARGET_STM32H5)
+        __HAL_LINKDMA(&obj->handle, hdmarx, *obj->dmaHandle.hdma);
 #else
-        __HAL_LINKDMA(&obj->handle, hdma, *dmaHandle.hdma);
+        __HAL_LINKDMA(&obj->handle, hdma, *obj->dmaHandle.hdma);
 #endif
-        obj->dmaInitialized = true;
+#if defined(TARGET_STM32H5)
+        // STM32H5 has only one OCTOSPI instance, but it requires separate DMA channels for RX and TX
+        DMALinkInfo const *dmaLinkTX = &OSPIDMALinks[1];
+        // Initialize DMA channel
+        obj->dmaHandleTX = stm_init_dma_link(dmaLinkTX, DMA_MEMORY_TO_PERIPH, false, true, 1, 1, DMA_NORMAL);
+        if(obj->dmaHandleTX.hdma == NULL)
+        {
+            mbed_error(MBED_ERROR_ALREADY_IN_USE, "DMA channel already used by something else!", 0, MBED_FILENAME, __LINE__);
+        }
+        __HAL_LINKDMA(&obj->handle, hdmatx, *obj->dmaHandleTX.hdma);
+#endif
 #if MBED_CONF_RTOS_PRESENT
         osSemaphoreAttr_t attr = { 0 };
         attr.cb_mem = &obj->semaphoreMem;
@@ -555,7 +591,12 @@ static qspi_status_t _qspi_init_direct(qspi_t *obj, const qspi_pinmap_t *pinmap,
     obj->handle.State = HAL_OSPI_STATE_RESET;
 
     // Set default OCTOSPI handle values
+#if defined(HAL_OSPI_DUALQUAD_DISABLE)
     obj->handle.Init.DualQuad = HAL_OSPI_DUALQUAD_DISABLE;
+#endif
+#if defined(HAL_XSPI_MODULE_ENABLED) && !defined(TARGET_STM32U5)
+    obj->handle.Init.MemoryMode = HAL_XSPI_SINGLE_MEM;
+#endif
 #if defined(TARGET_MX25LM51245G)
     obj->handle.Init.MemoryType = HAL_OSPI_MEMTYPE_MACRONIX; // Read sequence in DTR mode: D1-D0-D3-D2
 #else
@@ -579,7 +620,7 @@ static qspi_status_t _qspi_init_direct(qspi_t *obj, const qspi_pinmap_t *pinmap,
 
     // tested all combinations, take first
     obj->qspi = pinmap->peripheral;
-    obj->dmaInitialized = false;
+    obj->dmaHandle.dmaIdx = 0;
 
 #if defined(OCTOSPI1)
     if (obj->qspi == QSPI_1) {
@@ -713,23 +754,22 @@ qspi_status_t qspi_init(qspi_t *obj, PinName io0, PinName io1, PinName io2, PinN
  */
 static void qspi_init_dma(struct qspi_s * obj)
 {
-    if(!obj->dmaInitialized)
+    if(obj->dmaHandle.dmaIdx == 0)
     {
         // Get DMA handle
         DMALinkInfo const *dmaLink = &QSPIDMALinks[0];
 
         // Initialize DMA channel
-        DMAHandlePointer dmaHandle = stm_init_dma_link(dmaLink, DMA_PERIPH_TO_MEMORY, false, true, 1, 1, DMA_NORMAL);
-        if(dmaHandle.hdma == NULL)
+        obj->dmaHandle = stm_init_dma_link(dmaLink, DMA_PERIPH_TO_MEMORY, false, true, 1, 1, DMA_NORMAL);
+        if(obj->dmaHandle.hdma == NULL)
         {
             mbed_error(MBED_ERROR_ALREADY_IN_USE, "DMA channel already used by something else!", 0, MBED_FILENAME, __LINE__);
         }
 #if defined(MDMA)
-        __HAL_LINKDMA(&obj->handle, hmdma, *dmaHandle.hmdma);
+        __HAL_LINKDMA(&obj->handle, hmdma, *obj->dmaHandle.hmdma);
 #else
-        __HAL_LINKDMA(&obj->handle, hdma, *dmaHandle.hdma);
+        __HAL_LINKDMA(&obj->handle, hdma, *obj->dmaHandle.hdma);
 #endif
-        obj->dmaInitialized = true;
 #if MBED_CONF_RTOS_PRESENT
         osSemaphoreAttr_t attr = { 0 };
         attr.cb_mem = &obj->semaphoreMem;
@@ -786,6 +826,7 @@ static qspi_status_t _qspi_init_direct(qspi_t *obj, const qspi_pinmap_t *pinmap,
 
     // tested all combinations, take first
     obj->handle.Instance = (QUADSPI_TypeDef *)pinmap->peripheral;
+    obj->dmaHandle.dmaIdx = 0;
 
     // pinmap for pins (enable clock)
     obj->io0 = pinmap->data0_pin;
@@ -852,24 +893,19 @@ qspi_status_t qspi_free(qspi_t *obj)
 {
     tr_debug("qspi_free");
 
-    if(obj->dmaInitialized)
+    if(obj->dmaHandle.dmaIdx != 0)
     {
-        // Get DMA handle
-        DMALinkInfo const *dmaLink;
-#if defined(OCTOSPI2)
-        if(obj->qspi == (QSPIName) OSPI_1)
-        {
-            dmaLink = &OSPIDMALinks[0];
-        }
-        else
-        {
-            dmaLink = &OSPIDMALinks[1];
-        }
-#else
-        dmaLink = &OSPIDMALinks[0];
+        stm_free_dma_link(&obj->dmaHandle);
+#if defined(STM32H5)
+        // Free TX DMA handle for STM32H5
+        stm_free_dma_link(&obj->dmaHandleTX);
 #endif
-        stm_free_dma_link(dmaLink);
     }
+
+#if MBED_CONF_RTOS_PRESENT
+        // Free semaphore
+        osSemaphoreRelease(obj->semaphoreId);
+#endif
 
     if (HAL_OSPI_DeInit(&obj->handle) != HAL_OK) {
         return QSPI_STATUS_ERROR;
@@ -904,11 +940,9 @@ qspi_status_t qspi_free(qspi_t *obj)
 {
     tr_debug("qspi_free");
 
-    if(obj->dmaInitialized)
+    if(obj->dmaHandle.dmaIdx != 0)
     {
-        // Get DMA handle
-        DMALinkInfo const *dmaLink = &QSPIDMALinks[0];
-        stm_free_dma_link(dmaLink);
+        stm_free_dma_link(&obj->dmaHandle);
 
 #if MBED_CONF_RTOS_PRESENT
         // Free semaphore
@@ -956,6 +990,7 @@ qspi_status_t qspi_frequency(qspi_t *obj, int hz)
 
     // Reset flag used by store_qspi_pointer()
     obj->handle.Init.ChipSelectHighTime = 3;
+    obj->handle.Init.FreeRunningClock = HAL_OSPI_FREERUNCLK_DISABLE;
 
     /* HCLK drives QSPI. QSPI clock depends on prescaler value:
     *  0: Freq = HCLK
@@ -1042,7 +1077,7 @@ qspi_status_t qspi_write(qspi_t *obj, const qspi_command_t *command, const void 
             NVIC_SetPriority(obj->qspiIRQ, 1);
             NVIC_EnableIRQ(obj->qspiIRQ);
 #if defined(__DCACHE_PRESENT)
-            // For chips with a cache (e.g. Cortex-M7), we need to evict the Tx fill data from cache to main memory.
+            // For chips with a cache (e.g. Cortex-M7), we need to evict the Tx data from cache to main memory.
             // This ensures that the DMA controller can see the most up-to-date copy of the data.
             SCB_CleanDCache_by_Addr((volatile void *)data, *length);
 #endif
@@ -1096,7 +1131,7 @@ qspi_status_t qspi_write(qspi_t *obj, const qspi_command_t *command, const void 
             NVIC_SetPriority(QUADSPI_IRQn, 1);
             NVIC_EnableIRQ(QUADSPI_IRQn);
 #if defined(__DCACHE_PRESENT)
-            // For chips with a cache (e.g. Cortex-M7), we need to evict the Tx fill data from cache to main memory.
+            // For chips with a cache (e.g. Cortex-M7), we need to evict the Tx data from cache to main memory.
             // This ensures that the DMA controller can see the most up-to-date copy of the data.
             SCB_CleanDCache_by_Addr((volatile void *)data, *length);
 #endif
@@ -1129,7 +1164,7 @@ qspi_status_t qspi_write(qspi_t *obj, const qspi_command_t *command, const void 
 #endif /* OCTOSPI */
 
 #if defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U)
-static void split_buffer_by_cacheline(void *buffer, const size_t *length, size_t *pre_aligned_size, size_t *aligned_size, size_t *post_aligned_size)
+void split_buffer_by_cacheline(void *buffer, const size_t *length, size_t *pre_aligned_size, size_t *aligned_size, size_t *post_aligned_size)
 {
     *pre_aligned_size = 0;
     *aligned_size = 0;

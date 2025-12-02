@@ -9,6 +9,8 @@
 # This method creates the following options:
 # OPENOCD_VERSION_RANGE - Acceptable version range of OpenOCD.  This may be a single version, in which case it is treated as
 #   a minimum, or a versionMin...<versionMax constraint, e.g. 0.12...<0.13, to accept any 0.12.x version but not 0.13 or higher.
+# OPENOCD_GDB_RESET_SEQUENCE - Sequence of GDB commands that should be sent to cause a chip reset and halt.
+#   This is normally just 'monitor reset halt' but can vary depending on MCU.
 
 set(UPLOAD_SUPPORTS_DEBUG TRUE)
 
@@ -41,34 +43,54 @@ endif()
 
 function(gen_upload_target TARGET_NAME BINARY_FILE)
 
+	# If given a hex file, the hex file already contains the correct offset to program at, so don't pass
+	# that to OpenOCD
+	if(BINARY_FILE MATCHES ".hex$")
+		set(UPLOAD_ADDRESS_ARG "")
+	else()
+		set(UPLOAD_ADDRESS_ARG ${MBED_UPLOAD_BASE_ADDR})
+	endif()
+
 	add_custom_target(flash-${TARGET_NAME}
 		COMMENT "Flashing ${TARGET_NAME} with OpenOCD..."
 		COMMAND ${OpenOCD}
 		${OPENOCD_CHIP_CONFIG_COMMANDS}
 		${OPENOCD_ADAPTER_SERIAL_COMMAND}
 		-c "gdb_port disabled" # Don't start a GDB server when just programming
-		-c "program ${BINARY_FILE} ${MBED_UPLOAD_BASE_ADDR} reset exit"
+		-c "program ${BINARY_FILE} ${UPLOAD_ADDRESS_ARG} reset exit"
 		VERBATIM
 		USES_TERMINAL)
 
 endfunction(gen_upload_target)
 
 ### Commands to run the debug server.
+
+# Like PyOCD, OpenOCD will start a GDB server for each core, so we need to offset the port number
+# down by the core index we want to connect to
+math(EXPR OPENOCD_GDB_PORT "${MBED_GDB_PORT} - ${MBED_DEBUG_CORE_INDEX}")
+
 set(UPLOAD_GDBSERVER_DEBUG_COMMAND
 	${OpenOCD}
 	${OPENOCD_CHIP_CONFIG_COMMANDS}
 	${OPENOCD_ADAPTER_SERIAL_COMMAND}
-	# Shut down OpenOCD when GDB disconnects.
+	# Shut down OpenOCD when GDB disconnects from the core being debugged.
 	# see https://github.com/Marus/cortex-debug/issues/371#issuecomment-999727626
-	-c "[target current] configure -event gdb-detach {shutdown}"
-	-c "gdb_port ${MBED_GDB_PORT}")
+	# However, we had to modify this a bit for multicore support.
+	# [target names] returns a list of all targets configured, and
+	# [lindex <list> <index>] gets an item from the list by index.
+	-c "[lindex [target names] ${MBED_DEBUG_CORE_INDEX}] configure -event gdb-detach {shutdown}"
+	-c "gdb_port ${OPENOCD_GDB_PORT}")
 
 # request extended-remote GDB sessions
 set(UPLOAD_WANTS_EXTENDED_REMOTE TRUE)
 
+if(NOT DEFINED OPENOCD_GDB_RESET_SEQUENCE)
+	set(OPENOCD_GDB_RESET_SEQUENCE "monitor reset halt")
+endif()
+
 # Reference: https://github.com/Marus/cortex-debug/blob/056c03f01e008828e6527c571ef5c9adaf64083f/src/openocd.ts#L100
 set(UPLOAD_LAUNCH_COMMANDS
-	"monitor reset halt"
+	${OPENOCD_GDB_RESET_SEQUENCE}
 
 	# For targets which support semihosting, prevent GDB from stopping when a semihosting event happens.
 	# AFAIK, semihosting is only used to communicate between the interface chip and the CPU; we never
@@ -83,12 +105,15 @@ set(UPLOAD_LAUNCH_COMMANDS
 	# the user can't inspect peripheral registers.
 	"set mem inaccessible-by-default off"
 
-	"load"
+	# OpenOCD provides the 'monitor program' command as an alternative to 'load'. Seems like it does basically the same thing, except
+	# that on certain devices (e.g. PSoC 62) it works while 'load' does not.
+	"monitor program"
+
 	"tbreak main"
-	"monitor reset halt"
+	${OPENOCD_GDB_RESET_SEQUENCE}
 )
 set(UPLOAD_RESTART_COMMANDS
-	"monitor reset halt"
+	${OPENOCD_GDB_RESET_SEQUENCE}
 
 	# The following will force an sync between gdb and openocd
 	"monitor gdb_sync"

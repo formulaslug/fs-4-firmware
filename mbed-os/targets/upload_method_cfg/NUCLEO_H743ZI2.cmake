@@ -1,6 +1,6 @@
 # Mbed OS upload method configuration file for target NUCLEO_H743ZI.
 # To change any of these parameters from their default values, set them in your build script between where you
-# include app.cmake and where you add mbed os as a subdirectory.
+# include mbed_toolchain_setup and where you add mbed os as a subdirectory.
 
 # Notes:
 # 1. Using the JLINK upload method with your dev board requires converting its ST-LINK into a J-Link, but it is not possible to do that with ST-link V3! I will try regular J-link in the future.
@@ -37,7 +37,7 @@ set(PYOCD_CLOCK_SPEED 4000k)
 
 set(OPENOCD_UPLOAD_ENABLED TRUE)
 set(OPENOCD_CHIP_CONFIG_COMMANDS
-    -f ${OpenOCD_SCRIPT_DIR}/board/st_nucleo_h743zi.cfg)
+    -f board/st_nucleo_h743zi.cfg)
 
 # Config options for STM32Cube
 # -------------------------------------------------------------
