@@ -14,7 +14,7 @@ public:
     /** Create a smoothed AnalogIn using EWMA (exponential weighted moving average)
      *
      * @param analog_pin Reference to an AnalogIn to use for reading
-     * @param cutoff_frequency Cutoff frequency at the -3db level (see **URL**, 𝜏 = 1 / (2π * f_c))
+     * @param cutoff_frequency Cutoff frequency at the -3db level (see ../README.md, 𝜏 = 1 / (2π * f_c))
     */
     explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float cutoff_frequency) :
         _analog_pin(analog_pin) {
@@ -62,7 +62,7 @@ public:
 
     /** Changes the time constant to reflect the cutoff frequency at the -3db level
      *
-     * @param cutoff_frequency Cutoff frequency at the -3db level (see **URL**, 𝜏 = 1 / (2π * f_c))
+     * @param cutoff_frequency Cutoff frequency at the -3db level (see ../README.md, 𝜏 = 1 / (2π * f_c))
     */
     void set_time_constant(float cutoff_frequency);
 
