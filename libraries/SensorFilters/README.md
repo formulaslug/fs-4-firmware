@@ -7,12 +7,17 @@ This library provides classes that filter inputs to increase reliability and rob
 ___
 
 ### DebounceToDigitalIn
-Debounces a digital input
+
+Debounces a digital input.
 
 #### Implementation
-Digital inputs are debounced by using a timer to sample the input at a high frequency (1ms), and only updates the debounced state of the pin when the signal changes for a set number of samples (_valid_read_count).
+Digital inputs are debounced by using a class-wide timer to sample all the input at a high frequency (1ms), and only updates the debounced state of each pin when the signal has changed for a set number of samples (_valid_read_count).
 
-The signal must change for a time equal to the sampling interval multiplied by the required sample count, for example, with default values 1ms, and 5 required samples, a signal must change for 5ms straight to be registered.
+The signal must change for a time equal to the sampling interval multiplied by the required sample count, for example, with default values, 5 samples are required, so a signal must change for 5ms straight to be registered. If the signal is read to be the same as the current default state, then the counted number of changed reads is reset back to 0.
+
+If you pass in values <= 1 as the valid_read_count, then the DebounceToDigitalIn will act largely the same as a normal DigitalIn, just updating every ms rather than on every read. If, for example, you set valid_read_count to 3, then the DebounceToDigitalIn object will need to read a changed value 3 times in a row for the returned default state to then change.
+
+The default state for a DebounceToDigitalIn object is false (0).
 
 #### Code Sample
 ```cpp
@@ -55,8 +60,11 @@ ___
 
 ### SmoothToAnalogIn
 
+Smooths an analog signal like a first-pass RC filter.
+
 #### Implementation
 The SmoothToAnalogIn class implements an Exponential Weighted Moving Average filter to smooth out erratic analog inputs by applying a kind of digital low pass filter. 
+
 The EWMA filter works according to the following formula:
 <br />
 <br />
@@ -67,16 +75,16 @@ Where:
 - Vsmoothed​(t) is the new smoothed value (_smoothed_value).
 - Vraw​(t) is the current raw reading (raw_value from _analog_pin.read()).
 - Vsmoothed​(t−Δt) is the previous smoothed value.
-- α is the smoothing factor (or weight).
+- $\alpha$ is the smoothing factor (or weight).
 
-α, the smoothing factor is based a time constant (_time_constant) and time difference between readings. α is derived as follows:
+$\alpha$, the smoothing factor is based on the time constant (_time_constant) and time difference between readings. $\alpha$ is derived as follows:
 <br />
 <br />
 <img width="264" height="98" alt="alpha-formula" src="https://github.com/user-attachments/assets/6711ed83-d87f-42c9-95c2-972c077f9b4d" />
 <br />
 <br />
 
-This way, the cutoff frequency, which is used in determining the time constant as per the equation below, stays constant even if the time between reads is not consistent.
+This way, the cutoff frequency, which is used in determining the time constant as per the equation below, stays constant even if the time between reads is not consistent. Using the cutoff frequency in this way allows the digital filtering to behave the same as a first-pass RC filter would.
 <br />
 <br />
 <img width="250" height="148" alt="time-constant-formula" src="https://github.com/user-attachments/assets/1460fb1d-6d14-4551-b960-6459aa9365ac" />
@@ -98,18 +106,21 @@ Two other options for smoothing are Rolling Average and Exponential Moving Avera
 - Rolling Average: Yellow
     - Treats all data points within a fixed window equally.
     - Causes a lag where smoothed output is slow to react to a sudden change in sensor reading (step change).
+    - Requires allocated memory to properly make windows.
   
 
 - Exponential Moving Average: Blue
     - Uses an exponentially decreasing weighting factor ($\alpha$) for older observations. Recent data points contribute more significantly to the average than data points further in the past.
     - Reduces lag compared to the Rolling Average because it reacts faster to recent changes.
+    - Sampling time variance can cause issues since all reads are treated the same.
 
 
 - Exponential Weighted Moving Average: Purple
   - The approach that the SmoothToAnalogIn objects use.
   - An exponential decaying weight is implemented to past data points. Same fundamental weighting scheme as the EMA.
-  - Uses the same filtering as a First-Order Low-Pass Filter, where the $\alpha$ factor determines the filter's time constant or cutoff frequency.
+  - Uses the same filtering as a First-Order Low-Pass Filter, where the -3db level is at the cutoff frequency.
       -  Low-Pass Filter: Allows low-frequency signals (the underlying trend) to pass through, while attenuating high-frequency signals (noise or rapid fluctuations).
+      -  Keep in mind that the -3db level is where ~70.7% of the signals at that frequency pass through, following a decreasing pattern past that point.
 ##### Code Sample
 ```cpp
 #include "mbed.h"

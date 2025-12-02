@@ -22,11 +22,10 @@ void DebounceToDigitalIn::add_sample() {
         return;
     }
 
+    _changed_state_time++;
+
     if (_changed_state_time >= _valid_read_count) {
         _current_state = !_current_state;
         _changed_state_time = 0;
-        return;
     }
-
-    _changed_state_time++;
 }
