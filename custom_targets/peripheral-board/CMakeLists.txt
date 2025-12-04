@@ -1,14 +1,14 @@
 # Copyright (c) 2025 ARM Limited. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-add_library(mbed-xxx INTERFACE)
+add_library(mbed-peripheral-board INTERFACE)
 
-target_sources(mbed-xxx
+target_sources(mbed-peripheral-board
     INTERFACE
         PeripheralPins.c
 )
 
-target_include_directories(mbed-xxx
+target_include_directories(mbed-peripheral-board
     INTERFACE
         .
 )
@@ -17,4 +17,4 @@ target_include_directories(mbed-xxx
 # since for some reasdon only the 431 target includes the mbed system_clock.c
 # clock configuration code. Thankfully, the 441 and 431 are virtually identical
 # chips (only with AES encryption disabled on the 431), so this works fine.
-target_link_libraries(mbed-stm32-test-board-v1 INTERFACE mbed-stm32g431xb)
+target_link_libraries(mbed-peripheral-board INTERFACE mbed-stm32g431xb)

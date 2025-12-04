@@ -6,7 +6,8 @@
     "inherits": ["MCU_STM32G441xB"],
 
     // Maps from a target in Mbed OS to a device in a CMSIS Pack - helps some IDEs
-    "device_name": "STM32G441KBTx",
+    // Targets STM32G431 because STM32G441 is not in mbed-os/targets/cmsis_mcu_descrpitions.json5
+    "device_name": "STM32G431KBTx", 
   
     "overrides": {
       "stdio_uart_tx": "PA_2",
@@ -19,11 +20,12 @@
   },
 
   // Config for peripheral board
-  "peripheral-board": {
+  "PERIPHERAL-BOARD": {
     "inherits": [
         "MCU_STM32G441xB"
     ],
-    "device_name": "STM32G441KBTx",
+
+    "device_name": "STM32G431KBTx",
 
     "overrides": {
       "stdio_uart_tx": "PA_2",
@@ -35,11 +37,11 @@
   },
 
   // Config for tractive battery
-  "tractive-battery-board": {
+  "TRACTIVE-BATTERY-BOARD": {
     "inherits": [
         "MCU_STM32G441xB"
     ],
-    "device_name": "STM32G441KBTx",
+    "device_name": "STM32G431KBTx",
 
     "overrides": {
       "stdio_uart_tx": "PA_2",
@@ -50,19 +52,37 @@
     },
   },
 
-  // Config for steering dash, based off STM32G473RTC
-  "tractive-battery-board": {
+  // Config for steering dash, based off STM32G473
+  "STEERING-DASH-BOARD": {
     "inherits": [
         "MCU_STM32G473xE"
-    ],
-    "device_name": "STM32G441KBTx",
+    ],  
+    // Targets STM32G474 because STM32G473 is not in mbed-os/targets/cmsis_mcu_descrpitions.json5
+    "device_name": "STM32G474RETx",
 
     "overrides": {
-      "stdio_uart_tx": "PA_2",
-      "stdio_uart_rx": "PA_3",
+      "stdio_uart_tx": "PA_6",
+      "stdio_uart_rx": "PA_7",
       "clock_source": "USE_PLL_HSE_XTAL",
       "lse_available": 0,
       "hse_value": 24000000,
+    },
+  },
+  
+  // Config for steering dash, based off STM32F446
+  "STEERING-DASH-BOARD-F4": {
+    "inherits": [
+        "MCU_STM32F446xE"
+    ],  
+
+    "device_name": "STM32F446RETx",
+
+    "overrides": {
+      "stdio_uart_tx": "PA_9",
+      "stdio_uart_rx": "PA_10",
+      "clock_source": "USE_PLL_HSE_XTAL",
+      "lse_available": 0,
+      // "hse_value": 24000000, // no hse parameter?
     },
   },
 
