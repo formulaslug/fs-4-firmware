@@ -20,7 +20,7 @@
   },
 
   // Config for peripheral board
-  "PERIPHERAL-BOARD": {
+  "PERIPHERAL_BOARD": {
     "inherits": [
         "MCU_STM32G441xB"
     ],
@@ -37,7 +37,7 @@
   },
 
   // Config for tractive battery
-  "TRACTIVE-BATTERY-BOARD": {
+  "TRACTIVE_BATTERY_BOARD": {
     "inherits": [
         "MCU_STM32G441xB"
     ],
@@ -53,7 +53,7 @@
   },
 
   // Config for steering dash, based off STM32G473
-  "STEERING-DASH-BOARD": {
+  "STEERING_DASH_BOARD": {
     "inherits": [
         "MCU_STM32G473xE"
     ],  
@@ -70,7 +70,7 @@
   },
   
   // Config for steering dash, based off STM32F446
-  "STEERING-DASH-BOARD-F4": {
+  "STEERING_DASH_BOARD_F4": {
     "inherits": [
         "MCU_STM32F446xE"
     ],  
