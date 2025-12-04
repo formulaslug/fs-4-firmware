@@ -2,10 +2,10 @@
 // Created by Jackson Pinsonneault on 10/28/25.
 //
 
-#include "smooth_to_analog_in.h"
+#include "filtered_analog_in.h"
 #include <numbers>
 
-float SmoothToAnalogIn::read() {
+float FilteredAnalogIn::read() {
     const unsigned long time_dif = chrono::duration_cast<std::chrono::microseconds>(_timer.elapsed_time()).count();
     const float raw_value = _analog_pin.read();
     _timer.reset();
@@ -22,22 +22,22 @@ float SmoothToAnalogIn::read() {
     return _smoothed_value;
 }
 
-unsigned short SmoothToAnalogIn::read_u16() {
+unsigned short FilteredAnalogIn::read_u16() {
     return static_cast<unsigned short>(0xFFFF * read());
 }
 
-float SmoothToAnalogIn::read_voltage() {
+float FilteredAnalogIn::read_voltage() {
     return read() * _analog_pin.get_reference_voltage();
 }
 
-void SmoothToAnalogIn::set_reference_voltage(float vref) const {
+void FilteredAnalogIn::set_reference_voltage(float vref) const {
     _analog_pin.set_reference_voltage(vref);
 }
 
-float SmoothToAnalogIn::get_reference_voltage() const {
+float FilteredAnalogIn::get_reference_voltage() const {
     return _analog_pin.get_reference_voltage();
 }
 
-void SmoothToAnalogIn::set_time_constant(const float cutoff_frequency) {
+void FilteredAnalogIn::set_time_constant(const float cutoff_frequency) {
     _time_constant = 1.0 / (2.0 * M_PI * cutoff_frequency);
 }

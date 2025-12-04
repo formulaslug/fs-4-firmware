@@ -8,7 +8,7 @@
 #include <cstdint>
 #include "mbed.h"
 
-class SmoothToAnalogIn {
+class FilteredAnalogIn {
 
 public:
     /** Create a smoothed AnalogIn using EWMA (exponential weighted moving average)
@@ -16,7 +16,7 @@ public:
      * @param analog_pin Reference to an AnalogIn to use for reading
      * @param cutoff_frequency Cutoff frequency at the -3db level (see ../README.md, 𝜏 = 1 / (2π * f_c))
     */
-    explicit SmoothToAnalogIn(AnalogIn &analog_pin, const float cutoff_frequency) :
+    explicit FilteredAnalogIn(AnalogIn &analog_pin, const float cutoff_frequency) :
         _analog_pin(analog_pin) {
         _timer.start();
         set_time_constant(cutoff_frequency);

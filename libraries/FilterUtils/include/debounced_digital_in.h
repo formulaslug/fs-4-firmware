@@ -8,14 +8,14 @@
 #include <cstdint>
 #include "mbed.h"
 
-class DebounceToDigitalIn;
+class DebouncedDigitalIn;
 inline void sample_all_digital_pins();
 
 inline Ticker debounce_ticker;
 inline bool ticker_started = false;
-inline std::vector<DebounceToDigitalIn*> digital_pins;
+inline std::vector<DebouncedDigitalIn*> digital_pins;
 
-class DebounceToDigitalIn {
+class DebouncedDigitalIn {
 
 public:
     /** Create an auto-debouncing DigitalIn
@@ -23,7 +23,7 @@ public:
      * @param digital_pin Reference to a DigitalIn to use for reading
      * @param valid_read_count (optional) Amount of consecutive reads of the same value needed to change what read() returns (defaults to 5)
     */
-    explicit DebounceToDigitalIn(DigitalIn &digital_pin, const uint16_t valid_read_count=5) :
+    explicit DebouncedDigitalIn(DigitalIn &digital_pin, const uint16_t valid_read_count=5) :
         _digital_pin(digital_pin),
         _valid_read_count(valid_read_count) {
         digital_pins.push_back(this);
@@ -64,7 +64,7 @@ private:
 };
 
 inline void sample_all_digital_pins() {
-    for (DebounceToDigitalIn *debounced_digital : digital_pins) {
+    for (DebouncedDigitalIn *debounced_digital : digital_pins) {
         debounced_digital->add_sample();
     }
 }
