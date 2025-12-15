@@ -6,7 +6,7 @@ This library provides classes that filter inputs to increase reliability and rob
 
 ___
 
-### DebounceToDigitalIn
+### DebouncedDigitalIn
 
 Debounces a digital input.
 
@@ -15,14 +15,14 @@ Digital inputs are debounced by using a class-wide timer to sample all the input
 
 The signal must change for a time equal to the sampling interval multiplied by the required sample count, for example, with default values, 5 samples are required, so a signal must change for 5ms straight to be registered. If the signal is read to be the same as the current default state, then the counted number of changed reads is reset back to 0.
 
-If you pass in values <= 1 as the valid_read_count, then the DebounceToDigitalIn will act largely the same as a normal DigitalIn, just updating every ms rather than on every read. If, for example, you set valid_read_count to 3, then the DebounceToDigitalIn object will need to read a changed value 3 times in a row for the returned default state to then change.
+If you pass in values <= 1 as the valid_read_count, then the DebouncedDigitalIn will act largely the same as a normal DigitalIn, just updating every ms rather than on every read. If, for example, you set valid_read_count to 3, then the DebouncedDigitalIn object will need to read a changed value 3 times in a row for the returned default state to then change.
 
-The default state for a DebounceToDigitalIn object is false (0).
+The default state for a DebouncedDigitalIn object is false (0).
 
 #### Code Sample
 ```cpp
 #include "mbed.h"
-#include "debounce_to_digital_in.h"
+#include "DebouncedDigitalIn.h"
 
 //  Initializes a normal DigitalIn to pin PA_6.
 DigitalIn button(PA_6);
@@ -30,15 +30,15 @@ DigitalIn button(PA_6);
 //  Passes in a reference to the DigitalIn and sets the valid read count to 5.
 //  The valid read count is simply the amount of different reads required in
 //  a row for the debounced_in to return the different value. With our approach,
-//  each DebounceToDigitalIn is rechecked every ms at the same time. This means
+//  each DebouncedDigitalIn is rechecked every ms at the same time. This means
 //  that the valid read count is the amount of ms that the signal needs to
 //  change for a different value to be returned (HIGH -> LOW or LOW -> HIGH).
 //  (See: https://my.eng.utah.edu/~cs5780/debouncing.pdf, Sections: Software
 //  Debouncers-A Counting Algorithm)
-DebounceToDigitalIn debounced_button(button, 5);
+DebouncedDigitalIn debounced_button(button, 5);
 
 int main() {
-    //  Sets the DebounceToDigitalIn object's valid read count to 7 (there must
+    //  Sets the DebouncedDigitalIn object's valid read count to 7 (there must
     //  be a changed state for 7ms for the returned value of read() to change)
     debounced_button.set_valid_read_count(7);
 
@@ -58,12 +58,12 @@ int main() {
 
 ___
 
-### SmoothToAnalogIn
+### FilteredAnalogIn
 
 Smooths an analog signal like a first-pass RC filter.
 
 #### Implementation
-The SmoothToAnalogIn class implements an Exponential Weighted Moving Average filter to smooth out erratic analog inputs by applying a kind of digital low pass filter. 
+The FilteredAnalogIn class implements an Exponential Weighted Moving Average (EWMA) filter to smooth out erratic analog inputs by applying a kind of digital low pass filter. 
 
 The EWMA filter works according to the following formula:
 <br />
@@ -83,19 +83,18 @@ $\alpha$, the smoothing factor is based on the time constant (_time_constant) an
 <img width="264" height="98" alt="alpha-formula" src="https://github.com/user-attachments/assets/6711ed83-d87f-42c9-95c2-972c077f9b4d" />
 <br />
 <br />
-
 This way, the cutoff frequency, which is used in determining the time constant as per the equation below, stays constant even if the time between reads is not consistent. Using the cutoff frequency in this way allows the digital filtering to behave the same as a first-pass RC filter would.
 <br />
 <br />
 <img width="250" height="148" alt="time-constant-formula" src="https://github.com/user-attachments/assets/1460fb1d-6d14-4551-b960-6459aa9365ac" />
 <br />
 <br />
+The time constant 𝜏 is the time required for the filter's output to reach ≈ 63.2% of the final value after a sudden step change. A larger time constant results in more smoothing but a slower response, while a smaller time constant results in less smoothing but a faster response.
 
 Here's a graph of a test run which shows how effective this method is at filtering noisy analog sensor input:
 <br />
 <br />
 ![ewma-graph-resize](https://github.com/user-attachments/assets/ff50976d-4ede-44f0-9e32-5e186e9443f4)
-
 <br />
 
 #### Other Methods
@@ -116,15 +115,15 @@ Two other options for smoothing are Rolling Average and Exponential Moving Avera
 
 
 - Exponential Weighted Moving Average: Purple
-  - The approach that the SmoothToAnalogIn objects use.
+  - The approach that the FilteredAnalogIn objects use.
   - An exponential decaying weight is implemented to past data points. Same fundamental weighting scheme as the EMA.
   - Uses the same filtering as a First-Order Low-Pass Filter, where the -3db level is at the cutoff frequency.
       -  Low-Pass Filter: Allows low-frequency signals (the underlying trend) to pass through, while attenuating high-frequency signals (noise or rapid fluctuations).
       -  Keep in mind that the -3db level is where ~70.7% of the signals at that frequency pass through, following a decreasing pattern past that point.
-##### Code Sample
+##### Code Sample 1
 ```cpp
 #include "mbed.h"
-#include "smooth_to_analog_in.h"
+#include "FilteredAnalogIn.h"
 
 //  Initializes a normal AnalogIn to pin PA_6.
 AnalogIn in(PA_6);
@@ -134,10 +133,10 @@ AnalogIn in(PA_6);
 //  given is put at the -3db level.
 //  (See: https://www.electronics-tutorials.ws/filter/filter_2.html, Sections: RC
 //  Time Constant & Frequency Response of a 1st-order Low Pass Filter)
-SmoothToAnalogIn smoothed_in(in, 10);
+FilteredAnalogIn smoothed_in(in, 10);
 
 int main() {
-    //  Sets the SmoothToAnalogIn object's cutoff frequency to 100Hz.
+    //  Sets the FilteredAnalogIn object's cutoff frequency to 100Hz.
     smoothed_in.set_time_constant(100);
     //  Sets the referenced AnalogIn ("in" for this case) to have a
     //  reference_voltage of 3.3V.
@@ -155,11 +154,30 @@ int main() {
     return 0;
 }
 ```
-  
 
+##### Code Sample 2
+```cpp
+#include "mbed.h"
+#include "FilteredAnalogIn.h"
+
+//  Initializes a normal AnalogIn to pin PA_7.
+AnalogIn temp_sensor(PA_7);
+
+FilteredAnalogIn smoothed_temp(temp_sensor, 2);
+
+int main(){
+    // Set time constant to 0.1 secounds (𝜏 = 0.1s)
+    // Also equivalent to a cutoff frequency of fc = 1/(2*π*0.1) = 1.59 Hz.
+    smoothed_temp.set_time_constant(0.1);
+
+    while(true){
+        // Read current smoothed value from 0.0-1.0 range.
+        const float smoothed_value = smoothed_temp.read();
+        // Smoothed value used for calculations and logging.
+        // To calculate temp from 0-1 range:
+        // const float current_temp = smoothed_value * 100.0f;
+    }
+    return 0;
+}
+```
 ___
-
-
-
-
-
