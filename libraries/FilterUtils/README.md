@@ -89,7 +89,7 @@ This way, the cutoff frequency, which is used in determining the time constant a
 <img width="250" height="148" alt="time-constant-formula" src="https://github.com/user-attachments/assets/1460fb1d-6d14-4551-b960-6459aa9365ac" />
 <br />
 <br />
-The time constant 𝜏 is the time required for the filter's output to reach ≈ 63.2% of the final value after a sudden step change. A larger time constant results in more smoothing but a slower response, while a smaller time constant results in less smoothing but a faster response.
+The time constant 𝜏 is the time required for the filter's output to reach ≈ 70.7% of the final value after a sudden step change. A larger time constant results in more smoothing but a slower response, while a smaller time constant results in less smoothing but a faster response.
 
 Here's a graph of a test run which shows how effective this method is at filtering noisy analog sensor input:
 <br />
@@ -181,3 +181,4 @@ int main(){
 }
 ```
 ___
+
