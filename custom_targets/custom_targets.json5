@@ -69,7 +69,7 @@
   },
 
   // Config for steering dash, based off STM32G473
-  "STEERING_DASH_BOARD": {
+  "STEERING_WHEEL_BOARD_G47": {
     "inherits": [
         "MCU_STM32G473xE"
     ],  
@@ -86,7 +86,7 @@
   },
   
   // Config for steering dash, based off STM32F446
-  "STEERING_DASH_BOARD_F4": {
+  "STEERING_WHEEL_BOARD_F4": {
     "inherits": [
         "MCU_STM32F446xE"
     ],  
