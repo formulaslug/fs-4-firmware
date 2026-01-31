@@ -68,6 +68,23 @@
     },
   },
 
+  // Config for peripheral board
+  "STEERING_WHEEL_BOARD": {
+    "inherits": [
+        "MCU_STM32G441xB"
+    ],
+
+    "device_name": "STM32G431KBTx",
+
+    "overrides": {
+      "stdio_uart_tx": "PB_6",
+      "stdio_uart_rx": "PB_7",
+      "clock_source": "USE_PLL_HSE_XTAL",
+      "lse_available": 0,
+      "hse_value": 24000000,
+    },
+  },
+
   // Config for steering dash, based off STM32G473
   "STEERING_WHEEL_BOARD_G47": {
     "inherits": [
