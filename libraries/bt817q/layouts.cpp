@@ -429,3 +429,116 @@ void Layouts::drawLayout4(Faults faults, float acc_volt, uint8_t acc_temp,
 
   endFrame();
 }
+
+#define ACC_WARNING_TEMP   54
+static const Color yellow = Color{255, 200, 0};
+static const Color orange = Color{255, 140, 0};
+
+void Layouts::drawThermalScreen(
+    uint8_t acc_temp, uint8_t mtr_temp, uint8_t ctrl_temp,
+    float fl_surface, float fl_side, 
+    float fr_surface, float fr_side, 
+    float rl_surface, float rl_side, 
+    float rr_surface, float rr_side,
+    float brake_fl, float brake_fr, float brake_rl, float brake_rr,
+    float brake_f, float brake_r)
+{
+    if (failure == startFrame()) return;
+
+    clear(255, 255, 255);
+    loadFonts();
+
+    // top row
+    const int topY = 15;
+    const int topH = 70;
+    const int topW = 230;
+    const int topSpacing = 20;
+    int currX = 35; 
+
+  auto drawTopBox = [&](const char* label, uint8_t val, int x, int warnTemp, int redTemp) {
+      if (val >= redTemp) setMainColor(red);
+      else if (val >= warnTemp) setMainColor(yellow);
+      else setMainColor(green);
+
+      drawRect({(uint16_t)x, (uint16_t)topY},
+              {(uint16_t)(x + topW), (uint16_t)(topY + topH)});
+      setMainColor(black);
+      drawFormattedText(x + topW / 2, topY + topH / 2, label, 28, OPT_CENTER, val);
+  };
+
+    setMainColor((acc_temp > 54) ? red : green);
+    drawRect({(uint16_t)currX, (uint16_t)topY},
+            {(uint16_t)(currX + topW), (uint16_t)(topY + topH)});
+    setMainColor(black);
+    drawFormattedText(currX + topW / 2, topY + topH / 2, "ACC: %dC", 28, OPT_CENTER, acc_temp);
+    currX += topW + topSpacing;
+    drawTopBox("MTR: %dC",  mtr_temp,  currX, 80, 100);
+    currX += topW + topSpacing;
+    drawTopBox("CTRL: %dC", ctrl_temp, currX, 70, 85);
+
+
+    // main area
+    setMainColor(black);
+    drawRect({30, 100}, {770, 470}, 3); 
+
+    const int boxW = 120; 
+    const int boxH = 135;
+    const int horizontalGap = 140; 
+    const int verticalGap = 40;   
+    const int textLineHeight = 35; 
+
+    int leftBoxX = 400 - (horizontalGap / 2) - boxW; 
+    int rightBoxX = 400 + (horizontalGap / 2);      
+
+    auto drawWheelPod = [&](int x, int y, float surface, float side, float brk, const char* label, bool isLeft) {
+        //calculate avg; convert to int
+        int avgVal = (int)((surface + side) / 2.0f);
+        int iSurface = (int)surface;
+        int iSide = (int)side;
+        int iBrk = (int)brk;
+        
+        setMainColor(tempColorHelper(avgVal));
+        drawRect({(uint16_t)x, (uint16_t)y}, {(uint16_t)(x + boxW), (uint16_t)(y + boxH)});
+        
+        //inner boxes
+        setMainColor(black);
+        drawFormattedText(x + boxW / 2, y + boxH / 2 - 25, label, 30, OPT_CENTER);
+        drawFormattedText(x + boxW / 2, y + boxH / 2 + 25, "%dC", 30, OPT_CENTER, avgVal);
+
+        //side text
+        int textX = isLeft ? (x - 25) : (x + boxW + 25);
+        uint16_t align = isLeft ? OPT_RIGHTX : 0;
+        int textStartY = y + 15;
+
+        setMainColor(tempColorHelper(iSurface));
+        drawFormattedText(textX, textStartY, "Surface: %dC", 24, align, iSurface);
+        
+        setMainColor(tempColorHelper(iSide));
+        drawFormattedText(textX, textStartY + textLineHeight, "Side: %dC", 24, align, iSide);
+        
+        setMainColor(tempColorHelper(iBrk));
+        drawFormattedText(textX, textStartY + (textLineHeight * 2), "Brk Disc: %dC", 24, align, iBrk);
+    };
+
+    int frontY = 130;
+    int rearY = frontY + boxH + verticalGap;
+
+    drawWheelPod(leftBoxX,  frontY, fl_surface, fl_side, brake_fl, "FL:", true);
+    drawWheelPod(rightBoxX, frontY, fr_surface, fr_side, brake_fr, "FR:", false);
+    drawWheelPod(leftBoxX,  rearY,  rl_surface, rl_side, brake_rl, "RL:", true);
+    drawWheelPod(rightBoxX, rearY,  rr_surface, rr_side, brake_rr, "RR:", false);
+
+    //brake balance
+    int bb_f = 50;
+    int bb_r = 50;
+
+    if ((brake_f + brake_r) > 0.1f) {
+      bb_f = (int)(100 * (brake_f / (brake_f + brake_r)));
+      bb_r = 100 - bb_f;
+    }
+    setMainColor(black);
+    drawFormattedText(400, 270, "BB:", 30, OPT_CENTER);
+    drawFormattedText(400, 300, "%02d/%02d", 30, OPT_CENTER, bb_f, bb_r);
+
+    endFrame();
+}
