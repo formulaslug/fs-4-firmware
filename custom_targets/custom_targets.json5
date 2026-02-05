@@ -44,6 +44,15 @@
 
     "device_name": "STM32F446RETx",
 
+    // hse_value defined as a config bc STM32F446xE in targets.json has no HSE config
+    "config": {
+      "hse_value": {
+          "help": "HSE default value is 8MHz in stm32f4xx_hal_conf.h",
+          "value": "24000000",
+          "macro_name": "HSE_VALUE"
+      }
+    },
+
     "overrides": {
       "stdio_uart_tx": "PB_6",
       "stdio_uart_rx": "PB_7",
@@ -68,7 +77,7 @@
       "hse_value": 24000000,
     },
   },
-  
+
   // Config for vehicle control f4, based off STM32F446
   "VEHICLE_CONTROL_BOARD_F4": {
     "inherits": [
@@ -76,6 +85,15 @@
     ],  
 
     "device_name": "STM32F446RETx",
+
+    // hse_value defined as a config bc STM32F446xE in targets.json has no HSE config
+    "config": {
+      "hse_value": {
+          "help": "HSE default value is 8MHz in stm32f4xx_hal_conf.h",
+          "value": "24000000",
+          "macro_name": "HSE_VALUE"
+      }
+    },
 
     "overrides": {
       "stdio_uart_tx": "PB_6",
