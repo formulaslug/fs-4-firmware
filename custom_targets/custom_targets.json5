@@ -35,22 +35,6 @@
       "hse_value": 24000000,
     },
   },
-
-  // Config for tractive battery
-  "TRACTIVE_BATTERY_BOARD": {
-    "inherits": [
-        "MCU_STM32G441xB"
-    ],
-    "device_name": "STM32G431KBTx",
-
-    "overrides": {
-      "stdio_uart_tx": "PA_2",  
-      "stdio_uart_rx": "PA_3",
-      "clock_source": "USE_PLL_HSE_XTAL",
-      "lse_available": 0,
-      "hse_value": 24000000,
-    },
-  },
   
   // Config for tractive battery f4, based off STM32F446
   "TRACTIVE_BATTERY_BOARD_F4": {
@@ -82,40 +66,6 @@
       "clock_source": "USE_PLL_HSE_XTAL",
       "lse_available": 0,
       "hse_value": 24000000,
-    },
-  },
-
-  // Config for steering dash, based off STM32G473
-  "STEERING_WHEEL_BOARD_G47": {
-    "inherits": [
-        "MCU_STM32G473xE"
-    ],  
-    // Targets STM32G474 because STM32G473 is not in mbed-os/targets/cmsis_mcu_descrpitions.json5
-    "device_name": "STM32G474RETx",
-
-    "overrides": {
-      "stdio_uart_tx": "PA_6",
-      "stdio_uart_rx": "PA_7",
-      "clock_source": "USE_PLL_HSE_XTAL",
-      "lse_available": 0,
-      "hse_value": 24000000,
-    },
-  },
-  
-  // Config for steering dash, based off STM32F446
-  "STEERING_WHEEL_BOARD_F4": {
-    "inherits": [
-        "MCU_STM32F446xE"
-    ],  
-
-    "device_name": "STM32F446RETx",
-
-    "overrides": {
-      "stdio_uart_tx": "PA_9",
-      "stdio_uart_rx": "PA_10",
-      "clock_source": "USE_PLL_HSE_XTAL",
-      "lse_available": 0,
-      // "hse_value": 24000000, // no hse parameter
     },
   },
   
