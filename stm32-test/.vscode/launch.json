@@ -4,7 +4,7 @@
 	// Debug launch for target stm32-test.
 	{
 	    "type": "cortex-debug",
-	    "name": "Debug stm32-test TRACTIVE_BATTERY_BOARD_F4 Develop",
+	    "name": "Debug stm32-test VEHICLE_CONTROL_UNIT Develop",
 	    "executable": "C:/Users/Daniel Du/Desktop/fs-4-firmware/stm32-test/build/STM32_TEST_BOARD_V1-Develop/stm32-test.elf",
 	    "cwd": "${workspaceRoot}",
 	    "gdbPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.3 rel1/bin/arm-none-eabi-gdb.exe",

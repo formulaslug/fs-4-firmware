@@ -37,7 +37,7 @@
   },
   
   // Config for tractive battery f4, based off STM32F446
-  "TRACTIVE_BATTERY_BOARD_F4": {
+  "TRACTIVE_BATTERY_BOARD": {
     "inherits": [
         "MCU_STM32F446xE"
     ],  
@@ -79,7 +79,7 @@
   },
 
   // Config for vehicle control f4, based off STM32F446
-  "VEHICLE_CONTROL_BOARD_F4": {
+  "VEHICLE_CONTROL_UNIT": {
     "inherits": [
         "MCU_STM32F446xE"
     ],  
