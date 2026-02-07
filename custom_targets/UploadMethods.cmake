@@ -1,14 +1,45 @@
 # set(MBED_UPLOAD_ENABLED true)
-# set(MBED_RESET_BAUDRATE 115200) #?
+# set(MBED_RESET_BAUDRATE 115200)
 
+
+# OPENOCD Upload Method
 set(UPLOAD_METHOD_DEFAULT OPENOCD)
-
-# OpenOCD configs
-
 set(OPENOCD_UPLOAD_ENABLED true)
-set(OPENOCD_CHIP_CONFIG_COMMANDS
-    -f interface/stlink-dap.cfg
-    -c "transport select dapdirect_swd"
-    -f target/stm32g4x.cfg
-)
 
+
+# STLINK Upload Method, here in case OPENOCD doesn't work
+#set(UPLOAD_METHOD_DEFAULT = STLINK)
+#set(STLINK_UPLOAD_ENABLED true)
+#set(STLINK_ARGS --version) # send commands to stlink, no need to uncomment
+
+
+# STM32CUBE Upload Method, here in case STLINK doesn't work
+#set(UPLOAD_METHOD_DEFAULT = STM32CUBE)
+#set(STM32CUBE_UPLOAD_ENABLED true)
+#set(STM32CUBE_CONNECT_COMMAND port=SWD)
+#set(STM32CubeProg_PATH "C:\\Program Files\\STMicroelectronics\\STM32Cube\\STM32CubeProgrammer\\bin\\STM32_Programmer_CLI.exe")
+
+#stm32g4x boards
+if (MBED_TARGET STREQUAL "PERIPHERAL_BOARD" OR
+    MBED_TARGET STREQUAL "STEERING_WHEEL_BOARD" OR
+    MBED_TARGET STREQUAL "STM32_TEST_BOARD_V1")
+
+    set(OPENOCD_CHIP_CONFIG_COMMANDS
+        -f interface/stlink.cfg
+        -c "transport select hla_swd"
+        -f target/stm32g4x.cfg
+        )   # comment this out if not using OPENOCD
+
+endif()
+
+#stm32f4x boards
+if (MBED_TARGET STREQUAL "TRACTIVE_BATTERY_BOARD" OR
+    MBED_TARGET STREQUAL "VEHICLE_CONTROL_UNIT")
+
+    set(OPENOCD_CHIP_CONFIG_COMMANDS
+        -f interface/stlink.cfg
+        -c "transport select hla_swd"
+        -f target/stm32f4x.cfg
+        )   # comment this out if not using OPENOCD
+
+endif()
