@@ -3,9 +3,9 @@
 
 
 # OPENOCD Upload Method
-set(UPLOAD_METHOD_DEFAULT OPENOCD)
+set(UPLOAD_METHOD_DEFAULT PYOCD) 
 set(OPENOCD_UPLOAD_ENABLED true)
-
+set(PYOCD_UPLOAD_ENABLED true)
 
 # STLINK Upload Method, here in case OPENOCD doesn't work
 #set(UPLOAD_METHOD_DEFAULT = STLINK)
@@ -29,6 +29,7 @@ if (MBED_TARGET STREQUAL "PERIPHERAL_BOARD" OR
         -c "transport select hla_swd"
         -f target/stm32g4x.cfg
         )   # comment this out if not using OPENOCD
+    set(PYOCD_TARGET_NAME STM32G441KBT6)
 
 endif()
 
@@ -41,5 +42,6 @@ if (MBED_TARGET STREQUAL "TRACTIVE_BATTERY_BOARD" OR
         -c "transport select hla_swd"
         -f target/stm32f4x.cfg
         )   # comment this out if not using OPENOCD
+    set(PYOCD_TARGET_NAME STM32F446RET6)
 
 endif()
