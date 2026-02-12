@@ -1,8 +1,9 @@
 #include "wheel_speed.h"
+#include "mbed.h"
 
 WheelSpeed::WheelSpeed(PinName input_pin,
                        uint8_t teeth_per_rev,
-                       std::chrono::microseconds timeout)
+                       uint32_t timeout)
     : sensor(input_pin),
       teeth_per_rev(teeth_per_rev),
       timeout(timeout),
@@ -11,18 +12,19 @@ WheelSpeed::WheelSpeed(PinName input_pin,
       valid(false),
       rpm(0.0f)
 {
-    timer.start();
+    timer.start(); //Might want to use a hardware timer for greater precision
     sensor.rise(callback(this, &WheelSpeed::onRiseISR));
 }
 
 void WheelSpeed::onRiseISR()
 {
-    uint64_t now_us = timer.elapsed_time().count();
+    //Seems to be a bit inefficient to be calculating time between each teeth for every tooth
+    //rpm doesn't get updated that fast but it should be fine
+    uint32_t now_us = timer.elapsed_time().count();
 
     if (valid) {
         period_us = now_us - last_us;
     }
-
     last_us = now_us;
     valid = true;
 }
@@ -30,19 +32,19 @@ void WheelSpeed::onRiseISR()
 void WheelSpeed::update()
 {
     //A bit worried about what happens while this code runs if last and now are constantly 
-    //being updated from interrupts, maybe I declare a critical section and local variables?
-    //How do I use the data collected from the interrupts safely
+    //being updated from interrupts, the period should be accurate but I'm worried about the timeout check
+    //I don't think this is an issue though
+
     //(If wheel has been stopped)
     if (!valid || period_us == 0) {
         rpm = 0.0f;
         return;
     }
 
-    uint64_t now_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                     timer.elapsed_time()).count();;
+    uint32_t now_us = timer.elapsed_time().count();
 
     // timeout check (wheel stopped)
-    if ((now_us - last_us) > timeout.count()) {
+    if ((now_us - last_us) > timeout) {
         rpm = 0.0f;
         return;
     }

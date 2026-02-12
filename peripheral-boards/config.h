@@ -1,11 +1,11 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-//Should probably move these structs and function initializations somewhere else but idk where
+//Might want to move these structs and function initializations somewhere else but idk where
 
 /*
 Corner that the current board is in, determined by dip switches
-Just for organization in determining the can message id
+Just for organization in determining the board location
 */
 enum Corner {
     FR,
@@ -54,6 +54,10 @@ cornerConfig getCornerConfig(Corner pos);
 
 #ifndef TIRE_CIRCUMFERENCE
 #define TIRE_CIRCUMFERENCE 50 //Dunno
+#endif
+
+#ifndef TIMEOUT
+#define TIMEOUT 5000000 //in microseconds, 5 seconds
 #endif
 
 #ifndef PIN_DIP_1

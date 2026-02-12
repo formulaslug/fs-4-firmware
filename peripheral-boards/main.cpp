@@ -7,7 +7,7 @@
 #include "wheel_speed.h"
 
 CAN *can(PIN_CAN1_RX,PIN_CAN1_TX,CAN_FREQUENCY);
-WheelSpeed wheelsensor(PIN_WHEEL_SENSOR, TEETH, 5ms);
+WheelSpeed wheelsensor(PIN_WHEEL_SENSOR, TEETH, TIMEOUT);
 DigitalIn dip1(PIN_DIP_1,PullDown);
 DigitalIn dip2(PIN_DIP_2,PullDown);
 AnalogIn sus(PIN_SUSPENSION);
@@ -35,12 +35,10 @@ int main()
     
     // Main loop
     while (true) {
-
         //Temp sensor readings
         if (ok8 && d6t8.read()) 
         {
-            //8 Thermal pixel temperature
-            const double* px8 = d6t8.pixels_c(); 
+            const double* px8 = d6t8.pixels_c();  //8 pixel thermal temp sensor
             for (int i=0; i<d6t8.N_PIXEL; i++) {
                 pixels8lh[i] = (uint8_t)(px8[i]);
             }
@@ -48,17 +46,24 @@ int main()
 
         if (ok1 && d6t1.read()) 
         {
+            //I DONT KNOW WHAT TO DO HERE
+
             //NOT SURE WHAT TO DO HERE
+
             //1 pixel temp sensor
+
             double ptat1 = d6t1.ptat_c(); //reference temp (don't think its needed)
             double px0  = d6t1.pixel_c(); //pixel temp
+
             //NOT SURE HOW TO SEND THIS MESSAGE
         }
 
         //Wheel Speed Readings
         wheelsensor.update();
         float rpm = wheelsensor.getRPM();
-        wheel_speed = rpm * TIRE_CIRCUMFERENCE; //This is wrong. I have no idea what units speed is measured in mph?
+         //This is most likely wrong. I have no idea what units speed is measured in miles per hour? meters per second?
+         //rpm is just rotations per minute
+        wheel_speed = (rpm * TIRE_CIRCUMFERENCE)/60; //(Some unit) per second
 
         //Suspension Travel Readings
         sus_travel = (1.0-sus.read()) * 5000; 
@@ -74,7 +79,7 @@ void sendCAN(){
     //Tire temperature message
     CANMessage tpdo_tiretemp_msg(cfg.tpdo_tiretemp_id,pixels8lh,8);
     can->write(tpdo_tiretemp_msg);
-    ThisThread::sleep_for(1ms);
+    ThisThread::sleep_for(1ms); //Not sure why I need to sleep here but it seems useful
     //Wheel and Suspension travel message
     uint8_t tpdo_data[] = {
         wheel_speed & 0xFF,
@@ -99,7 +104,7 @@ Corner readCorner()
         case 1: return FL;
         case 2: return BR;
         case 3: return BL;
-        default: return FR;
+        default: return FR; //Might want to add something for an invald position
     }
 }
 cornerConfig getCornerConfig(Corner pos)

@@ -18,7 +18,7 @@ public:
      */
     WheelSpeed(PinName input_pin,
                uint8_t teeth_per_rev,
-               std::chrono::microseconds timeout);
+               uint32_t timeout);
     /**
      * @brief Returns the rpm
      */          
@@ -38,10 +38,10 @@ private:
     Timer timer;
 
     const uint8_t teeth_per_rev;
-    const std::chrono::microseconds timeout;
+    const uint32_t timeout;
 
-    volatile uint64_t last_us;
-    volatile uint64_t period_us;
+    volatile uint32_t last_us;
+    volatile uint32_t period_us;
     volatile bool valid;
 
     float rpm;
