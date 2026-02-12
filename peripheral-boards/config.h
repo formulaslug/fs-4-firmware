@@ -1,11 +1,11 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-//Should probably move the structs and function initializations somewhere else but I'm not sure where
+//Should probably move these structs and function initializations somewhere else but idk where
 
 /*
 Corner that the current board is in, determined by dip switches
-This isn't really needed, just for organization in determining the can message id
+Just for organization in determining the can message id
 */
 enum Corner {
     FR,
@@ -14,7 +14,7 @@ enum Corner {
     BL
 };
 /*
-Can message id's
+Can message id's, currently using the FS-3 message id's
 */
 struct cornerConfig {
     uint16_t tpdo_data_id;
@@ -41,27 +41,27 @@ cornerConfig getCornerConfig(Corner pos);
 #endif
 
 #ifndef CAN_FREQUENCY
-#define CAN_FREQUENCY 500000 //Have no Idea
+#define CAN_FREQUENCY 500000 //Don't know/not sure the values with comments
 #endif
 
 #ifndef PIN_WHEEL_SENSOR
-#define PIN_WHEEL_SENSOR PA_5
+#define PIN_WHEEL_SENSOR PA_5 
 #endif
 
 #ifndef TEETH
-#define TEETH 50 //Don't know, random number
+#define TEETH 50 //Dunno
 #endif
 
 #ifndef TIRE_CIRCUMFERENCE
-#define TIRE_CIRCUMFERENCE 50 //Don't know, random number
+#define TIRE_CIRCUMFERENCE 50 //Dunno
 #endif
 
 #ifndef PIN_DIP_1
-#define PIN_DIP_1 PA_0 //Check these, not exactly sure if they are the correct switch pins
+#define PIN_DIP_1 PA_0 //Dunno
 #endif
 
 #ifndef PIN_DIP_2
-#define PIN_DIP_2 PA_1 //Check these, not exactly sure if they are the correct switch pins
+#define PIN_DIP_2 PA_1 //Dunno
 #endif
 
 #ifndef PIN_SUSPENSION
@@ -69,12 +69,11 @@ cornerConfig getCornerConfig(Corner pos);
 #endif
 
 #ifndef I2C_SDA
-#define I2C_SDA PA_6 //Have no idea
+#define I2C_SDA PA_6 //Dunno
 #endif
 
 #ifndef I2C_SCL
-#define I2C_SCL PA_7 //Have no idea
+#define I2C_SCL PA_7 //Dunno
 #endif
-
 
 #endif //CONFIG_H

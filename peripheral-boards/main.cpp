@@ -6,29 +6,30 @@
 #include "config.h"
 #include "wheel_speed.h"
 
-uint16_t wheel_speed = 0;
-uint16_t sus_travel = 0;
-
 CAN *can(PIN_CAN1_RX,PIN_CAN1_TX,CAN_FREQUENCY);
 WheelSpeed wheelsensor(PIN_WHEEL_SENSOR, TEETH, 5ms);
 DigitalIn dip1(PIN_DIP_1,PullDown);
 DigitalIn dip2(PIN_DIP_2,PullDown);
 AnalogIn sus(PIN_SUSPENSION);
-D6T8LH d6t8(i2c);
-D6T1A  d6t1(i2c);
-uint8_t pixels8lh[d6t8.N_PIXEL] = {0};
 I2C i2c(I2C_SDA, I2C_SCL);
-bool ok8 = d6t8.setup();
-bool ok1 = d6t1.setup();
+D6T8LH d6t8(i2c);
+D6T1A d6t1(i2c);
 
 cornerConfig cfg;
-Thread eventThread;
 EventQueue queue = EventQueue(EVENTS_EVENT_SIZE*32);
+
+//Sensor readings
+uint16_t wheel_speed = 0;
+uint16_t sus_travel = 0;
+uint8_t pixels8lh[d6t8.N_PIXEL] = {0};
+
 
 int main()
 {
     printf("main()\n");
     cfg = getCornerConfig(readCorner());
+    bool ok8 = d6t8.setup();
+    bool ok1 = d6t1.setup();
     queue.call_every(100ms, &sendCAN);
     printf("Starting main loop\n");
     
@@ -57,10 +58,10 @@ int main()
         //Wheel Speed Readings
         wheelsensor.update();
         float rpm = wheelsensor.getRPM();
-        wheel_speed = rpm * TIRE_CIRCUMFERENCE; //I have no idea what units speed is measured in mph?
+        wheel_speed = rpm * TIRE_CIRCUMFERENCE; //This is wrong. I have no idea what units speed is measured in mph?
 
         //Suspension Travel Readings
-        sus_travel = sus.read() * 5000; 
+        sus_travel = (1.0-sus.read()) * 5000; 
         //FS-3 got a 10 bit adc reading, converted it to 16, inverted and normalized, then multipled by 5000
         // const uint16_t sus_travel_voltage = ADC1_GetConversion(ADC_MUXPOS_AIN2_gc) * pow(2, 16 - 10);
         // const uint16_t sus_travel = (pow(2, 16) - sus_travel_voltage) / pow(2, 16) * 5000;

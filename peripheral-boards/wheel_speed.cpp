@@ -29,13 +29,16 @@ void WheelSpeed::onRiseISR()
 
 void WheelSpeed::update()
 {
+    //A bit worried about what happens while this code runs if last and now are constantly 
+    //being updated from interrupts, maybe I declare a critical section and local variables?
+    //How do I use the data collected from the interrupts safely
     //(If wheel has been stopped)
     if (!valid || period_us == 0) {
         rpm = 0.0f;
         return;
     }
 
-    uint32_t now_us = std::chrono::duration_cast<std::chrono::microseconds>(
+    uint64_t now_us = std::chrono::duration_cast<std::chrono::microseconds>(
                      timer.elapsed_time()).count();;
 
     // timeout check (wheel stopped)
