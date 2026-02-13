@@ -1,5 +1,4 @@
 #include "wheel_speed.h"
-#include "mbed.h"
 
 WheelSpeed::WheelSpeed(PinName input_pin,
                        uint8_t teeth_per_rev,
