@@ -11,14 +11,12 @@ WheelSpeed::WheelSpeed(PinName input_pin,
       valid(false),
       rpm(0.0f)
 {
-    timer.start(); //Might want to use a hardware timer for greater precision
+    timer.start();
     sensor.rise(callback(this, &WheelSpeed::onRiseISR));
 }
 
 void WheelSpeed::onRiseISR()
 {
-    //Seems to be a bit inefficient to be calculating time between each teeth for every tooth
-    //rpm doesn't get updated that fast but it should be fine
     uint32_t now_us = timer.elapsed_time().count();
 
     if (valid) {
@@ -30,27 +28,36 @@ void WheelSpeed::onRiseISR()
 
 void WheelSpeed::update()
 {
-    //A bit worried about what happens while this code runs if last and now are constantly 
-    //being updated from interrupts, the period should be accurate but I'm worried about the timeout check
-    //I don't think this is an issue though
+    uint32_t local_period;
+    uint32_t local_last;
+    bool local_valid;
+    //Declares a critical section to stop interrupts, nicer to have the update call reflect the current state rather than after 
+    core_util_critical_section_enter(); 
+    local_period = period_us;
+    local_last = last_us;
+    local_valid = valid;
+    core_util_critical_section_exit();
+    // This critical section doesn't seem to be needed but it guarantees behavior and happens fast enough to not harm anything.
 
-    //(If wheel has been stopped)
-    if (!valid || period_us == 0) {
+    // (wheel has been stopped)
+    if (!local_valid || local_period == 0) {
         rpm = 0.0f;
         return;
     }
 
     uint32_t now_us = timer.elapsed_time().count();
 
-    // timeout check (wheel stopped)
-    if ((now_us - last_us) > timeout) {
+    // (wheel has just stopped)
+    if ((now_us - local_last) > timeout) {
+        core_util_critical_section_enter();
         rpm = 0.0f;
+        valid = false;
         return;
+        core_util_critical_section_exit();
     }
 
-    //Calculate the frequency in hz from microseconds
-    float freq_hz = 1e6f / static_cast<float>(period_us);
-    //Frequency from hz to rotations per minute
+    //Calculates the frequency in hz from microseconds, then calculate rpm
+    float freq_hz = 1e6f / static_cast<float>(local_period);
     rpm = (freq_hz / static_cast<float>(teeth_per_rev)) * 60.0f;
 }
 
