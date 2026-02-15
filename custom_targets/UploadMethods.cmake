@@ -2,16 +2,22 @@
 # set(MBED_RESET_BAUDRATE 115200)
 
 
-# OPENOCD Upload Method
-set(UPLOAD_METHOD_DEFAULT OPENOCD)
-set(OPENOCD_UPLOAD_ENABLED true)
+# Upload Method
+if(CMAKE_HOST_WIN32)
+    # OpenOCD is too painful to install on windows so we just use pyocd instead,
+    # which is slower but still works fine.
+    set(UPLOAD_METHOD_DEFAULT PYOCD) 
+else()
+    set(UPLOAD_METHOD_DEFAULT OPENOCD) 
+endif()
 
+set(OPENOCD_UPLOAD_ENABLED true)
+set(PYOCD_UPLOAD_ENABLED true)
 
 # STLINK Upload Method, here in case OPENOCD doesn't work
 #set(UPLOAD_METHOD_DEFAULT = STLINK)
 #set(STLINK_UPLOAD_ENABLED true)
 #set(STLINK_ARGS --version) # send commands to stlink, no need to uncomment
-
 
 # STM32CUBE Upload Method, here in case STLINK doesn't work
 #set(UPLOAD_METHOD_DEFAULT = STM32CUBE)
@@ -29,6 +35,7 @@ if (MBED_TARGET STREQUAL "PERIPHERAL_BOARD" OR
         -c "transport select hla_swd"
         -f target/stm32g4x.cfg
         )   # comment this out if not using OPENOCD
+    set(PYOCD_TARGET_NAME STM32G441KBT6)
 
 endif()
 
@@ -41,5 +48,6 @@ if (MBED_TARGET STREQUAL "TRACTIVE_BATTERY_BOARD" OR
         -c "transport select hla_swd"
         -f target/stm32f4x.cfg
         )   # comment this out if not using OPENOCD
+    set(PYOCD_TARGET_NAME STM32F446RET6)
 
 endif()
