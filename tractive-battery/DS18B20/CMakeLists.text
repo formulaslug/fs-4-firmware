@@ -3,9 +3,8 @@ cmake_policy(VERSION 3.19)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-#include oneWire library
-include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
-
 add_library(can STATIC can.cpp)
 
 project(TractiveBatteryBoard LANGUAGES C CXX ASM)
+target_link_libraries(onewire-mbed-os mbed-core-flags)
+
