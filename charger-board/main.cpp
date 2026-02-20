@@ -2,6 +2,7 @@
 
 #include "mbed.h"
 #include "config.h"
+#include "charger_default_layout.h"
 
 void initIO();
 void initChargerCAN();
