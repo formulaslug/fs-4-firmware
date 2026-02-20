@@ -19,7 +19,7 @@ project(Charger # here you can change your project name
     LANGUAGES C CXX ASM) 
 include(mbed_project_setup)
 
-add_subdirectory(../mbed-os ../mbed-os-build)
+add_subdirectory(../mbed-os mbed-os)
 add_subdirectory(../libraries/bt817q bt817q)
 
 add_executable(${PROJECT_NAME} 
