@@ -1,4 +1,7 @@
+
+
 #include "charger_default_layout.h"
+
 
 void ChargerDefaultLayout::drawChargerDefaultLayout(bool is_charging) {
   if(failure == startFrame()) {
