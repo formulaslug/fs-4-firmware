@@ -1,11 +1,6 @@
 #pragma once
 
-#include "layouts.h"
+#include "BT817Q.hpp"
 
-class ChargerDefaultLayout : public Layouts {
-public:
-  using Layouts::Layouts;
-  //just try to output charging status 1 or 0.
-  void drawChargerDdefaultLayout(bool is_charging);
-};
+void drawChargerDefaultLayout(BT817Q& display, bool is_charging);
 

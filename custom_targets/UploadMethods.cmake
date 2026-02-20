@@ -13,6 +13,7 @@ endif()
 
 set(OPENOCD_UPLOAD_ENABLED true)
 set(PYOCD_UPLOAD_ENABLED true)
+set(PYOCD_CLOCK_SPEED 10M)
 
 # STLINK Upload Method, here in case OPENOCD doesn't work
 #set(UPLOAD_METHOD_DEFAULT = STLINK)

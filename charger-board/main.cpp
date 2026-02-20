@@ -7,6 +7,7 @@
 void initIO();
 void initChargerCAN();
 void sendCAN();
+BT817Q eve(PC_7, PC_6, PC_5, PB_0, PA_8, PA_9, EvePresets::CFA800480E3);
 
 CAN* can;
 
@@ -33,6 +34,8 @@ EventQueue queue = EventQueue(EVENTS_EVENT_SIZE * 32);
 
 int main()
 {
+   eve.init(EvePresets::CFA800480E3);
+   drawChargerDefaultLayout(eve, false);
    // See comment above
    fan_hack_pwm.period_us(40);
    fan_hack_pwm.write(0.5);

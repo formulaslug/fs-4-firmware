@@ -11,7 +11,8 @@ set(CUSTOM_UPLOAD_CFG_PATH ../custom_targets/UploadMethods.cmake)
 
 add_subdirectory(../custom_targets custom_targets)
 
-set(MBED_TARGET STM32_TEST_BOARD_V1)
+set(MBED_TARGET NUCLEO_F446RE)
+set(PYOCD_TARGET_NAME STM32F446RETx)
 
 include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
 project(Charger # here you can change your project name
@@ -19,9 +20,14 @@ project(Charger # here you can change your project name
 include(mbed_project_setup)
 
 add_subdirectory(../mbed-os ../mbed-os-build)
-add_subdirectory(../libraries/bt187q bt817q)
+add_subdirectory(../libraries/bt817q bt817q)
 
-add_executable(${PROJECT_NAME} main.cpp
-        config.h)
+add_executable(${PROJECT_NAME} 
+    main.cpp
+    dash-layouts/charger_default_layout.cpp
+    )
+target_include_directories(${PROJECT_NAME} PRIVATE
+    .
+    dash-layouts)
 target_link_libraries(${PROJECT_NAME} mbed-os bt817q) # Can also link to mbed-baremetal here
 mbed_set_post_build(${PROJECT_NAME})
