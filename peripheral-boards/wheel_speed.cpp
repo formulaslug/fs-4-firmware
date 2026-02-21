@@ -6,9 +6,8 @@ WheelSpeed::WheelSpeed(PinName input_pin,
     : sensor(input_pin),
       teeth_per_rev(teeth_per_rev),
       timeout(timeout),
-      last_us(0),
-      period_us(0),
-      valid(false),
+      start_us(0),
+      teeth_passed(0),
       rpm(0.0f)
 {
     timer.start();
@@ -17,51 +16,34 @@ WheelSpeed::WheelSpeed(PinName input_pin,
 
 void WheelSpeed::onRiseISR()
 {
-    uint32_t now_us = timer.elapsed_time().count();
-
-    if (valid) {
-        period_us = now_us - last_us;
-    }
-    last_us = now_us;
-    valid = true;
+    teeth_passed++;
 }
 
-void WheelSpeed::update()
+float WheelSpeed::update()
 {
-    uint32_t local_period;
-    uint32_t local_last;
-    bool local_valid;
-    //Declares a critical section to stop interrupts, nicer to have the update call reflect the current state rather than after 
-    core_util_critical_section_enter(); 
-    local_period = period_us;
-    local_last = last_us;
-    local_valid = valid;
-    core_util_critical_section_exit();
-    // This critical section doesn't seem to be needed but it guarantees behavior and happens fast enough to not harm anything.
-
-    // (wheel has been stopped)
-    if (!local_valid || local_period == 0) {
-        rpm = 0.0f;
-        return;
-    }
-
     uint32_t now_us = timer.elapsed_time().count();
+    uint32_t period;
+    uint8_t local_teeth_passed = teeth_passed;
 
-    // (wheel has just stopped)
-    if ((now_us - local_last) > timeout) {
-        core_util_critical_section_enter();
-        rpm = 0.0f;
-        valid = false;
-        return;
-        core_util_critical_section_exit();
+    if(start_us != 0)
+    {
+        core_util_critical_section_enter;
+        period = local_teeth_passed/(now_us - start_us);
+        start_us = now_us;
+        teeth_passed = 0; 
+        core_util_critical_section_exit;
+        //In the time this happens, a tooth could of passed
+        //Not sure how to fix this issue of tooth counting
+    }
+    else
+    {
+        //Update has not been called yet
+        start_us = now_us;
+        teeth_passed = 0;
+        return 0.0;
     }
 
     //Calculates the frequency in hz from microseconds, then calculate rpm
-    float freq_hz = 1e6f / static_cast<float>(local_period);
+    float freq_hz = 1e6f / static_cast<float>(period);
     rpm = (freq_hz / static_cast<float>(teeth_per_rev)) * 60.0f;
-}
-
-float WheelSpeed::getRPM() const
-{
-    return rpm;
 }

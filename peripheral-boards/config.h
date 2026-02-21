@@ -43,16 +43,21 @@ Generates and writes the CAN message for speed, suspension, strain, and temp
 */
 void sendCANtpdo();
 
+constexpr PinName PIN_STRAIN = PB_0;
+constexpr PinName PIN_DIP_1 = PA_0; // Still not entirely sure where the dip switches are
+constexpr PinName PIN_DIP_2 = PA_1; // These are the pins to the only switch I see
+constexpr PinName PIN_WHEEL_SENSOR = PA_5;
+constexpr PinName PIN_SUSPENSION = PA_7;
+constexpr PinName PIN_I2C2_SDA = PA_8;
+constexpr PinName PIN_I2C2_SCL = PA_9;
 constexpr PinName PIN_CAN1_RX = PA_11;
 constexpr PinName PIN_CAN1_TX = PA_12;
-constexpr PinName PIN_WHEEL_SENSOR = PA_5;
-constexpr PinName PIN_DIP_1 = PA_0; //Random pin, don't know
-constexpr PinName PIN_DIP_2 = PA_1; //REPLACE THESE VALUES WITH ACTUAL
-constexpr PinName PIN_SUSPENSION = PA_4;
-constexpr PinName PIN_I2C_SDA = PA_6; //Dunno
-constexpr PinName PIN_I2C_SCL = PA_7; //Dunno
+constexpr PinName PIN_I2C1_SDA = PA_8;
+constexpr PinName PIN_I2C1_SCL = PB_7;
+constexpr bool ok8 = true; //To manually disable temp sensor if they fail
+constexpr bool ok1 = true;
 
-constexpr uint32_t CAN_FREQUENCY = 500000; //Dunnp
+constexpr uint32_t CAN_FREQUENCY = 500000;
 constexpr uint32_t TIMEOUT_US = 5000000;
-constexpr uint8_t TEETH_PER_REV = 50; //Dunno
+constexpr uint8_t TEETH_PER_REV = 60; //Double check this
 #endif //CONFIG_H

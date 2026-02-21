@@ -6,32 +6,24 @@
 #include "config.h"
 #include "wheel_speed.h"
 
-CAN *can;
-WheelSpeed wheelsensor(PIN_WHEEL_SENSOR, TEETH_PER_REV, TIMEOUT_US);
-AnalogIn sus(PIN_SUSPENSION);
-I2C i2c(PIN_I2C_SDA, PIN_I2C_SCL);
-D6T8LH d6t8(i2c);
-D6T1A d6t1(i2c);
-
-CornerConfig cfg;
-EventQueue queue = EventQueue(EVENTS_EVENT_SIZE*32);
-
-//Sensor readings
-
-bool ok8 = false;
-bool ok1 = false;
-
+static CAN can{PIN_CAN1_RX,PIN_CAN1_TX,CAN_FREQUENCY};
+static WheelSpeed wheelsensor{PIN_WHEEL_SENSOR, TEETH_PER_REV, TIMEOUT_US};
+static AnalogIn sus{PIN_SUSPENSION};
+static I2C i2c{PIN_I2C_SDA, PIN_I2C_SCL};
+static D6T8LH d6t8{i2c};
+static D6T1A d6t1{i2c};
+static CornerConfig cfg;
+EventQueue queue = EventQueue{EVENTS_EVENT_SIZE*32};
 
 int main()
 {
     printf("main()\n");
     cfg = getCornerConfig(readCorner());
-    can = new CAN(PIN_CAN1_RX,PIN_CAN1_TX,CAN_FREQUENCY);
-    ok8 = d6t8.setup();
-    ok1 = d6t1.setup();
+    d6t8.setup();
+    d6t1.setup();
 
-    queue.call_every(100ms, &sendCANtpdo);
-    queue.call_every(100ms, &sendCANtemp);
+    queue.call_every(10ms, &sendCANtpdo);
+    queue.call_every(10ms, &sendCANtemp);
     queue.dispatch_forever();
 
     return 0;
@@ -50,7 +42,7 @@ void sendCANtemp(){
 
     //Tire temperature message
     CANMessage tpdo_tiretemp_msg(cfg.tpdo_tiretemp_id,pixels8lh,8);
-    can->write(tpdo_tiretemp_msg);
+    can.write(tpdo_tiretemp_msg);
 
 }
 
@@ -69,7 +61,7 @@ void sendCANtpdo()
 
     //Wheel Speed Readings
     wheelsensor.update();
-    wheel_speed_raw = (int16_t)(wheelsensor.getRPM()*10); //scaled according to CAN.dbc values
+    wheel_speed_raw = (int16_t)(wheelsensor.update()*10); //scaled according to CAN.dbc values
 
     //Suspension Travel Readings
     sus_travel_raw = ((1.0-sus.read()) * 5000);
@@ -87,5 +79,5 @@ void sendCANtpdo()
 
     //tpdo message, tbh I don't really know what tpdo means
     CANMessage tpdo_msg(cfg.tpdo_data_id, tpdo_data,7);
-    can->write(tpdo_msg);
+    can.write(tpdo_msg);
 }

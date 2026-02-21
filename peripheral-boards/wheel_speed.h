@@ -7,7 +7,7 @@ class WheelSpeed {
 public:
     /**
      * @brief constructor for wheel speed sensor
-     * Part#: ATS668LSM
+     * Part#: ATS668LSM (This has been changed but the output is still a square wave)
      * Datasheet: https://www.allegromicro.com/-/media/files/datasheets/ats668-datasheet.pdf
      * The sensor outputs a square wave which is then read by a GPIO pin
      * Uses a timer and interrupt that triggers on rising edge to computes period -> frequency -> rpm
@@ -19,18 +19,15 @@ public:
     WheelSpeed(PinName input_pin,
                uint8_t teeth_per_rev,
                uint32_t timeout);
+
     /**
-     * @brief Returns the rpm
-     */          
-    float getRPM() const;
-    /**
-     * @brief Calculates rpm from period between teeth. Called in main loop to update the rpm
+     * @brief Calculates rpm by taking  (# of teeth passed) / period 
      */
-    void update();
+    float update();
 
 private:
     /**
-     * @brief Calculates the time difference between current and last tooth. Called by a rising edge interrupt 
+     * @brief Increments teeth_passed on each tooth/rising edge of the square wave
      */
     void onRiseISR();
     
@@ -40,9 +37,8 @@ private:
     const uint8_t teeth_per_rev;
     const uint32_t timeout;
 
-    volatile uint32_t last_us;
-    volatile uint32_t period_us;
-    volatile bool valid;
+    uint32_t start_us;
+    volatile uint8_t teeth_passed; //Sampled at 100hz, doubt that there would be more than 256 teeth passed in 0.1 seconds
 
     float rpm;
 };
