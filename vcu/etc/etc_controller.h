@@ -1,7 +1,7 @@
 #ifndef ETC_CONTROLLER_H
 #define ETC_CONTROLLER_H
 
-#include "mbed.h"   
+#include "mbed.h"
 #include <cstdint>
 
 struct AppsReadings{
@@ -24,20 +24,40 @@ public:
 
     void clearImp();
 
+    void TSActive(bool active);
+
+    bool rtdState() const;
+
+    void updateRTD();
+
+    bool brakePressed();
+
 private:
     AnalogIn apps1_input;
     AnalogIn apps2_input;
+    AnalogIn bpps_input;
 
-    static constexpr float apps1MinV  = 0.3125f;
+    InterruptIn rtd_button;
+
+    DigitalOut rtd_output;
+
+    Timeout rtds_timeout;
+
+    bool ts_active = false;
+    bool rtd_enabled = false;
+    volatile bool rtd_request = false;
+
+    static constexpr float rtd_duration = 2.0f;
+    static constexpr float bPressedThresh = 0.4f;
+
+    static constexpr float apps1MinV = 0.3125f;
     static constexpr float apps1MaxV = 2.8125f;
-        
-    static constexpr float apps2MinV  = 0.1875f;
+
+    static constexpr float apps2MinV = 0.1875f;
     static constexpr float apps2MaxV = 1.6875f;
 
     static constexpr float boundMargin = 0.05f;
-
     static constexpr float mismatchTol = 0.10f;
-
     static constexpr float impTime = 0.100f;
 
     Timer implausTimer;
@@ -45,11 +65,12 @@ private:
     bool implausLatched = false;
 
     static float clamp(float x);
-
     static bool inRange(float v, float lo, float hi, float margin);
+
+    void onRTDButtonPressed();
+    void startRTD();
+    void stopRTD();
+    void disableRTD();
 };
 
-
-
-
-#endif //ETC_CONTROLLER_H
+#endif
