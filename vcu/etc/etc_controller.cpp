@@ -1,5 +1,6 @@
 #include "etc_controller.h"
 #include <cmath>
+#include <chrono>
 
 ETCController::ETCController()
 : apps1_input(PC_1),
@@ -74,7 +75,7 @@ AppsReadings ETCController::readApps(){
             implausLatched = true;
             implausTimer.stop();
             implausTimerRunning = false;
-            disableRTD();
+            stopRTD();
         }
     }
     else{
@@ -90,10 +91,8 @@ AppsReadings ETCController::readApps(){
 
 void ETCController::TSActive(bool active){
     ts_active = active;
-
     if (!ts_active){
-        disableRTD();
-        rtd_request = false;
+        stopRTD();
     }
 }
 
@@ -111,14 +110,16 @@ void ETCController::onRTDButtonPressed(){
 
 void ETCController::updateRTD(){
     if (!ts_active || implausLatched){
-        disableRTD();
-        rtd_request = false;
+        stopRTD();
         return;
     }
 
+    if (rtd_request && !brakePressed()){
+        rtd_request = false;
+    }
+
     if (!rtd_enabled){
-        if (ts_active && brakePressed() && rtd_request){
-            rtd_enabled = true;
+        if (brakePressed() && rtd_request){
             rtd_request = false;
             startRTD();
         }
@@ -126,6 +127,8 @@ void ETCController::updateRTD(){
 }
 
 void ETCController::startRTD(){
+    rtd_enabled = true;
+
     float dur = rtd_duration;
     if (dur < 1.0f) dur = 1.0f;
     if (dur > 3.0f) dur = 3.0f;
@@ -133,15 +136,20 @@ void ETCController::startRTD(){
     rtd_output = 1;
 
     rtds_timeout.detach();
-    rtds_timeout.attach(callback(this, &ETCController::stopRTD), dur);
+    rtds_timeout.attach(callback(this, &ETCController::stopRTDSound), dur);
+}
+
+void ETCController::stopRTDSound(){
+    rtd_output = 0;
 }
 
 void ETCController::stopRTD(){
-    rtd_output = 0;
-}
-
-void ETCController::disableRTD(){
     rtd_enabled = false;
+    rtd_request = false;
     rtd_output = 0;
     rtds_timeout.detach();
+}
+
+bool ETCController::torqueAllowed() const{
+    return (ts_active && rtd_enabled && !implausLatched);
 }

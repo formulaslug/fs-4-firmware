@@ -32,6 +32,10 @@ public:
 
     bool brakePressed();
 
+    void startRTD();
+    void stopRTD();
+    bool torqueAllowed() const;
+
 private:
     AnalogIn apps1_input;
     AnalogIn apps2_input;
@@ -68,9 +72,7 @@ private:
     static bool inRange(float v, float lo, float hi, float margin);
 
     void onRTDButtonPressed();
-    void startRTD();
-    void stopRTD();
-    void disableRTD();
+    void stopRTDSound();
 };
 
 #endif
