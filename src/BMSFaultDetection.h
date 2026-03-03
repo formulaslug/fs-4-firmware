@@ -3,6 +3,7 @@
 
 #include "mbed.h"
 #include "BmsConfig.h"
+#include "EnergusTempSensor.h"
 
 
 
@@ -10,18 +11,74 @@
 current WIP -for BMS fault detection
 need to detect charging 
 need to implement method to interface with sensors --- seems to be 12 per bank - learn addresses : based on how theyre wired
-charging status - given thru can
-look for tmp1075 addys in battery 
+charging status - given thru can also not updated yet so idfk  
+
+
+todo:
+find specifications on the cell voltage limits when charging/discharging 
+find the specifications on the cell temperature limits again when charging/discharging 
+finish the bms status message
 */
 
+
+void detectCharging();
 void decideBalancing(LTC681xParallelBus&);
 void turnOffCellBalancing();
 void readCellVoltages(LTC681xParallelBus&);
 void readCellTemps();
 void decideBalancing();
 void throwFault();
+void generateStatusMessage();
 void controller();
+void setup();
 
+
+
+/*
+Okay so the dbc has not been updated for the charging board as of 3-2-2026 so the following is placeholder
+we can write this based on dbc for fs3 but I don't know if thats valueable at this point
+mainly here to remind us that it needs to be written 
+*/
+
+
+
+
+CANMessage msg;
+
+void setup(){
+	//assume all is well at startup, the bms should update this as 
+	bms_stat_message.bmsFault = false;
+	bms_stat_message.imdFault = false;
+	bms_stat_message.shutdownState = false;
+	bms_stat_message.prechargeDone = false;
+	bms_stat_message.charging = false;
+	bms_stat_message.isBalancing = false;
+	bms_stat_message.cell_too_low = false;
+	bms_stat_message.cell_too_high = false;
+	bms_stat_message.temp_too_low = false;
+	bms_stat_message.temp_too_high = false;
+	bms_stat_message.temp_too_high_charging = false;
+	bms_stat_message.cell_fault_index = -1; // rememeber these are unsigned so 
+	bms_stat_message.bank_fault_index = -1;
+
+
+}
+
+void detectCharging(){
+	// This is essentially fs3 code - need to make sure this works 
+	// i dont like how this is setup will make a new version later 
+	canInterface->read(msg);
+	uint32_t messageId = msg.id;
+	uint8_t* data = msg.data;
+	if(currentState==charging&&currentState!=fault&&currentState!=anomoly){
+		if (messageId == 0x77){
+			currentState = idle;
+		}
+		if(messageId == 0x78){ 
+			currentState = charging;	
+		}
+	}
+}	
 
 
 void turnOffCellBalancing(){
@@ -119,63 +176,74 @@ void decideBalancing(){
 			if(volts >= BALANCETHRESHOLD && volts >= minVoltage + BALANCETHRESHOLD){ // need to find the min voltage
 				dischargeValue |= (0x1<<j);
 			}
-
 		}
 		config.dischargeState.value = dischargeValue;
 		chips[i].updateConfig();
 	}
+
 }
 
 
 
 void throwFault(){
-
 	uint8_t voltageBankFault = 0;
 	uint8_t tempBankFault = 0;
 	uint8_t cellFault = 0; 
 	for(uint8_t i = 0; i < BATTERYBANKS*NUMCELLSPERBANK; i++){
 		uint16_t voltVal = voltages[i];
-
 		if(voltVal >= BMSMAXVOLT || voltVal <= BMSMINVOLT ){
-			if(state == idle || state == charging){
-				state = anomoly;
-
-			}else if(state == anomoly){
-				state = fault;
+			if(currentState == idle || currentState == charging){
+				currentState = anomoly;
+			}else if(currentState == anomoly){
+				currentState = fault;
 				voltageBankFault = i/5;
 				cellFault = i%(voltageBankFault*5);
-				//call some sort of emergency shutdown procedue thing here 
+				//open the shutdown circuit, assuming that its a low to open it.
+				shutdownPin = 0;
+
+
+
+				if (voltVal <= BMSMINVOLT){
+					bms_stat_message.cell_too_low = true;
+				}else if(voltVal >= BMSMAXVOLT){
+					bms_stat_message.cell_too_high = true;
+				}
+				bms_stat_message.cell_fault_index = cellFault;
+				bms_stat_message.bank_fault_index = voltageBankFault;
+
+
 			}	
 		}
-		/*add temperature safety checks here + fix the cell and bank fault */
 	}
+	// need to update fault throwing when charging vs when not charging 
+	// im going to leave this as is until we have a better idea of how the tmp1075s are setup 
 	for(uint8_t i = 0; i < BATTERYBANKS; i++){
 		float temperature = cellTemps[i];
 		if(temperature >= MAXCELLTEMP || temperature <= MINCELLTEMP){
-			if(state == idle || state == charging){
-				state = anomoly;
-			}else if(state == anomoly){
-				state = fault;
+			if(currentState == idle || currentState == charging){
+				currentState = anomoly;
+			}else if(currentState == anomoly){
+				currentState = fault;
 				tempBankFault = i;
 			}
 		}
-
 	}
 
 }
 
 
 void controller(LTC681xParallelBus &ltcBusInterface){
-	if(state != fault){
+	if(currentState != fault){
 		turnOffCellBalancing();
 		ThisThread::sleep_for(3ms);
 		readCellVoltages(ltcBusInterface);
 		readCellTemps();
 		throwFault();
 	}
-	
-	decideBalancing();
-
+	if(currentState == charging){
+		decideBalancing();
+	}
 }
+
 
 #endif

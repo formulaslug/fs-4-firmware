@@ -153,6 +153,7 @@ struct status_msg {
   bool temp_too_high_charging;
   uint16_t glv_voltage;
   uint32_t cell_fault_index;
+  uint32_t bank_fault_index;
 };
 
 struct tray_temps_msg {
@@ -175,9 +176,13 @@ enum bms_state{
   anomoly,
   fault  
 };
-bms_state state;
-status_msg CurrentBMSStatus;
+bms_state currentState;
+status_msg bms_stat_message;
+
+DigitalOut shutdownPin(SHUTDOWNMEASURE);
+DigitalOut BMS_fault_Measure(BMSFAULTIND);
 
 
+CAN* canInterface;
 
 

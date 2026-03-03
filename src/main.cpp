@@ -5,6 +5,7 @@
 // #include "LTC6811.h"
 #include "LTC6810.h"
 #include "mbed.h"
+// #include "BmsConfig.h"
 #include "BMSFaultDetection.h"
 
 SPI* spiInterface;
@@ -12,11 +13,12 @@ SPI* spiInterface;
 
 
 int main(){
-
 	spiInterface = new SPI(SPI_MOSI, SPI_MISO, CLK, BMSCS, use_gpio_ssel);
 	spiInterface->format(8,0);
+	canInterface = new CAN(CANTD, CANRD);
 	// std::vector<LTC6810> chips;
 	LTC681xParallelBus ltcBusInterface(spiInterface);
+
 
 	for(uint8_t i = 0; i < BATTERYBANKS; i++){
 		chips.push_back(LTC6810(ltcBusInterface, i));
