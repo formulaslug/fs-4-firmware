@@ -18,6 +18,8 @@ todo:
 find specifications on the cell voltage limits when charging/discharging 
 find the specifications on the cell temperature limits again when charging/discharging 
 finish the bms status message
+integrate the tray temp sensors
+not totally sure how they work 
 */
 
 
