@@ -50,3 +50,16 @@ void debug_search_for_ds18b20_address(OneWire& bus) {
             return;
     }
 }
+
+/**
+ * @brief Send command for temperature conversion.
+ * @param parasite_power_mode Set to true if using 2-wire (parasite) mode.
+ */
+void DS18B20::start_conversion(bool parasite_power_mode) {
+    bus.reset();
+    bus.select((uint8_t*)&address);
+    
+    // CMD_CONVERT_T (0x44) begins to measure temp
+    // In the case that parasite power is used, the bus will be kept high during conversion
+    bus.write(CMD_CONVERT_T, parasite_power_mode ? 1 : 0);
+}
