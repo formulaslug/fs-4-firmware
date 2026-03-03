@@ -1,9 +1,5 @@
-cmake_minimum_required(VERSION 3.19)
-cmake_policy(VERSION 3.19)
+add_library(can STATIC can.cpp)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+target_include_directories(can PUBLIC .)
 
-add_library(DS18B20 STATIC DS18B20.cpp)
-
-project(TractiveBatteryBoard LANGUAGES C CXX ASM)
-target_link_libraries(onewire-mbed-os mbed-core-flags)
+target_link_libraries(can mbed-os mbed-core-flags)
