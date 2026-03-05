@@ -2,7 +2,6 @@
 #include "BT817Q.hpp"
 
 
-
 CAN can{PA_11, PA_12, 500000};
 
 int main() {

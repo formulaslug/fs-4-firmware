@@ -1,15 +1,26 @@
 cmake_minimum_required(VERSION 3.19)
 cmake_policy(VERSION 3.19...3.22)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(MBED_APP_JSON_PATH mbed_app.json5)
 
-include(mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
-project(MyNewProject # here you can change your project name
-    LANGUAGES C CXX ASM) 
-include(mbed_project_setup)
+set(CUSTOM_TARGETS_JSON_PATH ../custom_targets/custom_targets.json5)
+set(CUSTOM_UPLOAD_CFG_PATH ../custom_targets/UploadMethods.cmake)
 
-add_subdirectory(mbed-os)
+add_subdirectory(../custom_targets custom_targets)
 
-add_executable(${PROJECT_NAME} main.cpp test.cpp)
-target_link_libraries(${PROJECT_NAME} mbed-os) # Can also link to mbed-baremetal here
+set(MBED_TARGET STEERING_WHEEL_BOARD)
+        
+include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
+project(steering-wheel
+        LANGUAGES C CXX ASM)
+include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
+
+add_subdirectory(../mbed-os mbed-os)
+add_subdirectory(../libraries/bt817q bt817q)
+
+set(CMAKE_CXX_STANDARD 20)
+
+add_executable(${PROJECT_NAME} main.cpp layouts.cpp)
+target_link_libraries(${PROJECT_NAME} mbed-os bt817q)
 mbed_set_post_build(${PROJECT_NAME})
