@@ -21,6 +21,10 @@ add_subdirectory(../libraries/bt817q bt817q)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(${PROJECT_NAME} main.cpp layouts.cpp)
+add_executable(${PROJECT_NAME}
+        main.cpp
+        dash_screen.cpp
+)
+target_include_directories(${PROJECT_NAME} PUBLIC .)
 target_link_libraries(${PROJECT_NAME} mbed-os bt817q)
 mbed_set_post_build(${PROJECT_NAME})

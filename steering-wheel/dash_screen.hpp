@@ -13,9 +13,9 @@ struct Faults {
     bool shutdown : 1;
 };
 
-class Layouts : public BT817Q {
+class DashScreen : public BT817Q {
 public:
-    Layouts(
+    DashScreen(
         PinName mosi,
         PinName miso,
         PinName sck,
@@ -78,9 +78,9 @@ public:
         uint16_t dc_bus
     );
 
-    void debugCellTemps(const ACC_SEG_TEMPS_t seg_temps[5]);
+    void debugCellTemps(const uint8_t seg_temps[5][6]);
 
-    void debugCellVolts(const ACC_SEG_VOLTS_t seg_volts[5]);
+    void debugCellVolts(const uint8_t seg_volts[5][6]);
 
     void drawTempCell(uint16_t x, uint16_t y, uint8_t temp);
 
