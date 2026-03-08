@@ -1,17 +1,26 @@
 #include "mbed.h"
+#include "tmp1075.hpp"
 
-CAN can{PA_11, PA_12, 500000};
+I2C i2c{D4, D5};
+TMP1075 temp{i2c, 0b1001000};
 
 int main() {
     printf("Hello World!!\n");
 
-    const uint8_t buf[] = {0xDE, 0xAD, 0xBE, 0xEF};
-    CANMessage msg{0x04, buf, 4};
+    i2c.frequency(100000);
+
+    temp.begin();
+    // temp.setConversionMode(false);
+
+    printf("temp id: 0x%0X\n", temp.getDeviceId());
 
     while (true) {
-        can.write(msg);
-        printf("Sent message!\n");
-        ThisThread::sleep_for(50ms);
+        temp.startConversion();
+        temp.setConversionTime(TMP1075::ConversionTime::ConversionTime220ms);
+        ThisThread::sleep_for(200ms);
+        float c = temp.getTemperatureCelsius();
+        printf("%f C, 0x raw\n", c);
+        ThisThread::sleep_for(10ms);
     }
 
     return 0;
