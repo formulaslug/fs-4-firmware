@@ -9,7 +9,8 @@ void initScreen();
 void initChargerCAN();
 void sendCAN();
 
-BT817Q eve{PC_12, PC_11, PC_10, PD_2, PB_7, PC_13, EvePresets::CFA800480E3};
+// TODO: Get correct pins from charger-board schematic
+BT817Q eve{PA_1, PA_1, PA_1, PA_1, PA_1, PA_1, EvePresets::CFA800480E3};
 
 CAN can{PIN_CAN1_RD, PIN_CAN1_TD, CAN_FREQUENCY};
 
