@@ -1,5 +1,3 @@
-#include <thread>
-
 #include "mbed.h"
 #include "d6t-8lh.h"
 #include "d6t-1a.h"
@@ -9,7 +7,7 @@
 static CAN can{PIN_CAN1_RX,PIN_CAN1_TX,CAN_FREQUENCY};
 static WheelSpeed wheelsensor{PIN_WHEEL_SENSOR, TEETH_PER_REV, TIMEOUT_US};
 static AnalogIn sus{PIN_SUSPENSION};
-static I2C i2c{PIN_I2C_SDA, PIN_I2C_SCL};
+static I2C i2c{PIN_I2C2_SDA, PIN_I2C2_SCL};
 static D6T8LH d6t8{i2c};
 static D6T1A d6t1{i2c};
 static CornerConfig cfg;
@@ -68,10 +66,10 @@ void sendCANtpdo()
 
     //MISSING STRAIN GAUGE READINGS
     uint8_t tpdo_data[] = {
-        wheel_speed_raw & 0xFF,
-        (wheel_speed_raw & 0xFF00) >> 8,
-        sus_travel_raw & 0xFF, 
-        (sus_travel_raw & 0xFF00) >> 8,
+        static_cast<uint8_t>(wheel_speed_raw & 0xFF),
+        static_cast<uint8_t>((wheel_speed_raw & 0xFF00) >> 8),
+        static_cast<uint8_t>(sus_travel_raw & 0xFF), 
+        static_cast<uint8_t>((sus_travel_raw & 0xFF00) >> 8),
         0x00,
         0x00,
         px0,

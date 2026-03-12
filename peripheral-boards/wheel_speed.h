@@ -1,5 +1,4 @@
-#ifndef WHEEL_SPEED_H
-#define WHEEL_SPEED_H
+#pragma once
 
 #include "mbed.h"
 
@@ -42,5 +41,3 @@ private:
 
     float rpm;
 };
-
-#endif //WHEEL_SPEED_H
