@@ -1,11 +1,9 @@
 #include "wheel_speed.h"
 
 WheelSpeed::WheelSpeed(PinName input_pin,
-                       uint8_t teeth_per_rev,
-                       uint32_t timeout)
+                       uint8_t teeth_per_rev)
     : sensor(input_pin),
       teeth_per_rev(teeth_per_rev),
-      timeout(timeout),
       start_us(0),
       teeth_passed(0),
       rpm(0.0f)
@@ -21,29 +19,30 @@ void WheelSpeed::onRiseISR()
 
 float WheelSpeed::update()
 {
+    //The current method is good at high speeds but less accurate at low speeds
+    //The previous method was counting the time frame between every tooth, this would be accurate at low speeds but potentially noisy at higher speeds
+    //We could also try a weighted sliding window if our data is too noisy
     uint32_t now_us = timer.elapsed_time().count();
-    uint32_t period;
-    uint8_t local_teeth_passed = teeth_passed;
-
-    if(start_us != 0)
+    if(start_us == 0)
     {
-        core_util_critical_section_enter;
-        period = local_teeth_passed/(now_us - start_us);
-        start_us = now_us;
-        teeth_passed = 0; 
-        core_util_critical_section_exit;
-        //In the time this happens, a tooth could of passed
-        //Not sure how to fix this issue of tooth counting
-    }
-    else
-    {
-        //Update has not been called yet
         start_us = now_us;
         teeth_passed = 0;
         return 0.0;
     }
-
-    //Calculates the frequency in hz from microseconds, then calculate rpm
-    float freq_hz = 1e6f / static_cast<float>(period);
-    rpm = (freq_hz / static_cast<float>(teeth_per_rev)) * 60.0f;
+    uint32_t delta_us = now_us - start_us;
+    start_us = now_us;
+    //Is running and should be called every 100hz
+    //Protecting only teeth_passed since it's changed in the interrupt
+    core_util_critical_section_enter();
+    uint8_t local_teeth_passed = teeth_passed;
+    teeth_passed = 0; 
+    core_util_critical_section_exit();
+    if(local_teeth_passed == 0)
+    {
+        return 0.0;
+    }
+    //Calculates the frequency in seconds, then calculate rpm
+    float freq_s = (static_cast<float>(local_teeth_passed)/(delta_us)) * 1e6f;
+    rpm = (freq_s / static_cast<float>(teeth_per_rev)) * 60.0f;
+    return rpm;
 }
