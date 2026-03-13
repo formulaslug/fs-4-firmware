@@ -1,18 +1,18 @@
 #include "mbed.h"
 #include "d6t-8lh.h"
 #include "d6t-1a.h"
-#include "config.h"
-#include "wheel_speed.h"
-#include "strain_gauge_235sl.h"
+#include "config.hpp"
+#include "wheel_speed.hpp"
+// #include "strain_gauge_235sl.h" // TODO: Uncomment when StrainGuage PR is merged
 
-static CAN can{PIN_CAN1_RX,PIN_CAN1_TX,CAN_FREQUENCY};
-static WheelSpeed wheelsensor{PIN_WHEEL_SENSOR, TEETH_PER_REV};
-static AnalogIn sus{PIN_SUSPENSION};
-static I2C i2c{PIN_I2C2_SDA, PIN_I2C2_SCL};
-static D6T8LH d6t8{i2c};
-static D6T1A d6t1{i2c};
-static StrainGauge235SL sg{PIN_STRAIN, ADC_VREF};
-static CornerConfig cfg;
+CAN can{PIN_CAN1_RX,PIN_CAN1_TX,CAN_FREQUENCY};
+WheelSpeed wheelsensor{PIN_WHEEL_SENSOR, TEETH_PER_REV};
+AnalogIn sus{PIN_SUSPENSION};
+I2C i2c{PIN_I2C2_SDA, PIN_I2C2_SCL};
+D6T8LH d6t8{i2c};
+D6T1A d6t1{i2c};
+// StrainGauge235SL sg{PIN_STRAIN}; // TODO: Uncomment when StrainGuage PR is merged
+CornerConfig cfg;
 EventQueue queue = EventQueue{EVENTS_EVENT_SIZE*32};
 
 int main()
@@ -23,14 +23,15 @@ int main()
     d6t8.setup();
     d6t1.setup();
 
-    //Strain Guage Setup 
-    sg.set_filter_window(32);
-    ThisThread::sleep_for(500ms);   
-    sg.tare(500, 200);
-    //apply calibration slope
-    //again this is a fake number, we'd have to calculate this 
-    sg.set_calibration(2500.0f, 0.0f);
-    //End of Strain Guage Setup
+    // TODO: Uncomment when StrainGuage PR is merged
+    // //Strain Guage Setup 
+    // sg.set_filter_window(32);
+    // ThisThread::sleep_for(500ms);   
+    // sg.tare(500, 200);
+    // //apply calibration slope
+    // //again this is a fake number, we'd have to calculate this 
+    // sg.set_calibration(2500.0f, 0.0f);
+    // //End of Strain Guage Setup
 
     queue.call_every(10ms, &sendCANtpdo);
     queue.call_every(10ms, &sendCANtemp);
@@ -75,9 +76,10 @@ void sendCANtpdo()
     //Suspension Travel Readings
     sus_travel_raw = ((1.0-sus.read()) * 5000);
 
-    //Strain Guage Readings
-    float force = sg.read_units();
-    int16_t strain_raw = (int16_t)(force / 1e-7); //Scaled according to Can.dbc values
+    // TODO: Uncomment when StrainGuage PR is merged
+    // //Strain Guage Readings
+    // float force = sg.read_units();
+    // int16_t strain_raw = (int16_t)(force / 1e-7); //Scaled according to Can.dbc values
 
     //Message Array
     uint8_t tpdo_data[] = {
@@ -85,8 +87,12 @@ void sendCANtpdo()
         static_cast<uint8_t>((wheel_speed_raw & 0xFF00) >> 8),
         static_cast<uint8_t>(sus_travel_raw & 0xFF), 
         static_cast<uint8_t>((sus_travel_raw & 0xFF00) >> 8),
-        strain_raw & 0xFF,
-        (strain_raw & 0xFF00) >>8,
+
+        // TODO: Uncomment when StrainGuage PR is merged
+        0x00, 0x00,
+        // strain_raw & 0xFF, 
+        // (strain_raw & 0xFF00) >>8,
+
         px0,
     };
 

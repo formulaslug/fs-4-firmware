@@ -2,9 +2,6 @@
 
 #include "mbed.h"
 
-#ifndef CONFIG_H
-#define CONFIG_H
-
 //Might want to move these structs and function initializations somewhere else but idk where
 
 /*
@@ -59,10 +56,8 @@ constexpr PinName PIN_CAN1_TX = PA_12;
 constexpr PinName PIN_I2C1_SDA = PB_7;
 constexpr PinName PIN_I2C1_SCL = PA_13;
 
-constexpr float ADC_VREF = 3.3f;
 constexpr bool ok8 = true; //To manually disable temp sensor if they fail
 constexpr bool ok1 = true;
 
 constexpr uint32_t CAN_FREQUENCY = 500000;
 constexpr uint8_t TEETH_PER_REV = 60; //Double check this
-#endif //CONFIG_H

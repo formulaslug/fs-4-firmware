@@ -1,12 +1,10 @@
 #include "mbed.h"
-#include "config.h"
+#include "config.hpp"
 
 //Read DIP switch which encodes which corner the board is on
-
-
 Corner readCorner()
 {
-    DigitalIn dip1(PIN_DIP_1, PullDown); //Don't know what configuration the switches are in, just guessing PullDown
+    DigitalIn dip1(PIN_DIP_1, PullDown);
     DigitalIn dip2(PIN_DIP_2, PullDown);
     //dip1 is first bit, dip2 is next bit
     int val = (!dip2.read() << 1) | !dip1.read();
