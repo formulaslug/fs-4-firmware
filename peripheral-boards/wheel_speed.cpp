@@ -11,7 +11,10 @@ WheelSpeed::WheelSpeed(PinName input_pin, uint8_t teeth_per_rev)
 }
 
 void WheelSpeed::onRiseISR() {
-    teeth_passed++;
+    // Required to read/write to volatile variable in explicit steps here
+    uint8_t teeth_passed_read = teeth_passed;
+    teeth_passed_read++;
+    teeth_passed = teeth_passed_read;
 }
 
 float WheelSpeed::update() {
