@@ -6,8 +6,9 @@
 
 void initIO();
 void initScreen();
-void initChargerCAN();
 void sendCAN();
+
+
 
 // TODO: Get correct pins from charger-board schematic
 BT817Q eve{PA_1, PA_1, PA_1, PA_1, PA_1, PA_1, EvePresets::CFA800480E3};
@@ -21,7 +22,17 @@ uint8_t max_ac_current_A = 0;
 uint16_t pack_voltage = 0;
 uint16_t soc = 0;
 
+float display_currrent = 0.0f;
+float min_temp_C = 0.0f;
+float avg_temp_C = 0.0f;
+float max_temp_C = 0.0f;
+float energy_used = 0.0f;
+uint32_t charge_time_min = 0;
+Timer charge_timer = 0;
+bool charging = false;
+
 bool enable = false;
+
 
 AnalogIn control_pilot{PIN_CONTROL_PILOT};
 AnalogIn proximity_pilot{PIN_PROXIMITY_PILOT};
@@ -58,6 +69,9 @@ int main() {
             case 0x288: // ACC_TPDO_POWER
                 pack_voltage = msg.data[0] + (msg.data[1] << 8);
                 soc = msg.data[2];
+                int16_t live_current = msg.data[3] | msg.data[4] << 8;
+                float pack_current = live_current * 0.1f;
+                display_currrent = pack_current;
                 break;
             default:
                 break;
@@ -86,8 +100,25 @@ int main() {
 
         max_voltage_mV = VOLTAGE_TARGET_MV;
 
-        printf("pp_ready: %x, precharge done: %x, fault: %x, sh closed: %x, cell temps fine: %x\n", proximity_pilot_ready, prechargeDone, fault, shutdown_closed, cell_temps_fine);
+        printf("pp_ready: %x, precharge done: %x, fault: %x, sh closed: %x, cell temps fine: %x\n",
+            proximity_pilot_ready,
+            prechargeDone, 
+            fault,
+            shutdown_closed,
+            cell_temps_fine);
+
         enable = proximity_pilot_ready && prechargeDone && !fault && shutdown_closed && cell_temps_fine;
+        if (enable && !charging) {
+            charge_timer.start();
+        } else if (!enable && charging) {
+            charge_timer.stop();
+        }
+
+        charging = enable;
+        charge_time_min = std::chrono::duration_cast<std::chrono::minutes>(
+                                charge_timer.elapsed_time())
+                                .count();
+
         printf("Enable: %x\nVoltage: %f\nSOC: %d\n\n", enable, pack_voltage / 100.0, soc);
 
         if (enable) {
@@ -108,7 +139,16 @@ void initScreen() {
     eve.init(EvePresets::CFA800480E3);
 
     queue.call_every(100ms, [&]() {
-        drawChargerDefaultLayout(eve, true);
+        drawChargerDefaultLayout(eve, 
+                                enable,
+                                pack_voltage / 100.0f,
+                                soc,
+                                display_currrent,
+                                min_temp_C,
+                                max_temp_C,
+                                avg_temp_C,
+                                energy_used,
+                                charge_time_min);
     });
 }
 
