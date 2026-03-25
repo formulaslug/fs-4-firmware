@@ -2,15 +2,8 @@
 # set(MBED_RESET_BAUDRATE 115200)
 
 
-# Upload Method
-if(CMAKE_HOST_WIN32)
-    # OpenOCD is too painful to install on windows so we just use pyocd instead,
-    # which is slower but still works fine.
-    set(UPLOAD_METHOD_DEFAULT PYOCD) 
-else()
-    set(UPLOAD_METHOD_DEFAULT OPENOCD) 
-endif()
-
+# OPENOCD Upload Method
+set(UPLOAD_METHOD_DEFAULT PYOCD) 
 set(OPENOCD_UPLOAD_ENABLED true)
 set(PYOCD_UPLOAD_ENABLED true)
 
@@ -18,6 +11,7 @@ set(PYOCD_UPLOAD_ENABLED true)
 #set(UPLOAD_METHOD_DEFAULT = STLINK)
 #set(STLINK_UPLOAD_ENABLED true)
 #set(STLINK_ARGS --version) # send commands to stlink, no need to uncomment
+
 
 # STM32CUBE Upload Method, here in case STLINK doesn't work
 #set(UPLOAD_METHOD_DEFAULT = STM32CUBE)
