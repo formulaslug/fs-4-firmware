@@ -6,6 +6,7 @@
 
 void initIO();
 void initScreen();
+void initChargerCAN();
 void sendCAN();
 
 
