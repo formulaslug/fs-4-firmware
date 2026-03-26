@@ -15,6 +15,8 @@ void decideBalancing(BMS&);
 void throwFault(BMS&);
 void generateStatusMessage(BMS&);
 void controller(BMS&);
-void setup(BMS&);
+void checkIMDStatus(BMS&);
+
+
 
 #endif

@@ -1,24 +1,6 @@
 #include "BMSFaultDetection.h"
 
-
-void setup(){ // i feel like this should probably be in the constructor for the BMS object.....
-	// //assume all is well at startup, the bms should update this as 
-	// bms_stat_message.bmsFault = false;
-	// bms_stat_message.imdFault = false;
-	// bms_stat_message.shutdownState = false;
-	// bms_stat_message.prechargeDone = false;
-	// bms_stat_message.charging = false;
-	// bms_stat_message.isBalancing = false;
-	// bms_stat_message.cell_too_low = false;
-	// bms_stat_message.cell_too_high = false;
-	// bms_stat_message.temp_too_low = false;
-	// bms_stat_message.temp_too_high = false;
-	// bms_stat_message.temp_too_high_charging = false;
-	// bms_stat_message.cell_fault_index = -1; // rememeber these are unsigned so 
-	// bms_stat_message.bank_fault_index = -1;
-
-
-}
+Timer t;
 
 void chargingActions(BMS &BMSInstance){
 		//current work in progress - needs to detect soc over can......
@@ -37,7 +19,12 @@ void turnOffCellBalancing(BMS &BMSInstance){
 void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 
 	//ltcBusInterface.WakeupBus();
+	if(t.elapsed_time()>=100ms){
+		BMSInstance.currentState=BMSInstance.FAULT;
+		return;
+	}
 
+	bool tempsConverted = true;
 	LTC681xParallelBus::LTC681xBusStatus stat = ltcBusInterface.WakeupBus();
 	LTC681xParallelBus::BusCommand command = LTC681xParallelBus::BuildBroadcastBusCommand(StartCellVoltageADC(AdcMode::k7k, false, CellSelection::kAll));
 	stat = ltcBusInterface.SendCommand(command);
@@ -48,17 +35,54 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		command = LTC681xParallelBus::BuildAddressedBusCommand(PollADCStatus(),i);
 		stat = ltcBusInterface.PollAdcCompletion(command, 0);
 		if(stat == LTC681xBus::LTC681xBusStatus::PollTimeout){
-			printf("ADC poll timeout, on Bank %d\n", i);
+			// printf("ADC poll timeout, on Bank %d\n", i);
+			tempsConverted = false;
+			t.start();
+			 // the rules require that we need to ensure we are getting data and that all sensors are working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
 		}
 	}
 
 	ThisThread::sleep_for(3ms);
 
-	//ADD POLL ADC STATUS CHECKS
+
+	if(tempsConverted){
+		t.stop();
+		t.reset();
+		//reset timer after successful adc conversions...
+		for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
+			uint8_t voltageReading[12] = {0};
+			ltcBusInterface.WakeupBus();
+			command = LTC681xParallelBus::BuildAddressedBusCommand(ReadCellVoltageGroupA(), i);
+			stat = ltcBusInterface.SendReadCommand(command, (uint8_t*)voltageReading);
 
 
+			command = LTC681xParallelBus::BuildAddressedBusCommand(ReadCellVoltageGroupB(), i);
+			stat = ltcBusInterface.SendReadCommand(command, (uint8_t*)voltageReading+6);
 
-	//status checks should be added here .... 
+			uint16_t* castVoltages = (uint16_t*)voltageReading;
+			for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
+			//volt = castVoltages[j];
+
+				BMSInstance.voltages[i][j] = castVoltages[j];
+			}
+		//6 bytes per cell group reading (2 bytes per cell) ... transmitted in little endian 
+		//casted so that its easier to read
+		}
+		BMSInstance.minVoltage = BMSInstance.voltages[0][0];
+		BMSInstance.maxVoltage = BMSInstance.voltages[0][0];
+
+		for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
+			for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
+				if(BMSInstance.voltages[i][j] < BMSInstance.minVoltage){
+					BMSInstance.minVoltage = BMSInstance.voltages[i][j];
+				}
+				if(BMSInstance.voltages[i][j] > BMSInstance.maxVoltage){
+					BMSInstance.maxVoltage = BMSInstance.voltages[i][j];
+				}
+			}
+		}
+	}
+
 
 	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
 		uint8_t voltageReading[12] = {0};
@@ -174,7 +198,7 @@ void throwFault(BMS &BMSInstance){
 				}
 				BMSInstance.bms_stat_message.fault_index = j;
 				BMSInstance.bms_stat_message.module_fault_index = i;
-				
+
 
 			} 
 		}
@@ -202,9 +226,6 @@ void throwFault(BMS &BMSInstance){
 	// do bus bar temperature based fault throwing here ..... 
 
 
-
-
-
 }
 
 
@@ -217,6 +238,10 @@ void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		readCellTemps(BMSInstance);
 		throwFault(BMSInstance);
 		decideBalancing(BMSInstance);
+		checkIMDStatus(BMSInstance);
+	}else{
+		turnOffCellBalancing(BMSInstance);
+		//need to turn on indicator lights as well ..... 
 	}
 
 }

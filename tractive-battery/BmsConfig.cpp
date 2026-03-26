@@ -22,7 +22,9 @@ BMS::BMS(){
     DigitalOut nPrechargeControl = DigitalOut(PB_0);
     SPI spiInterface = SPI(PB_4, PB_5, PB_10, PB_9, use_gpio_ssel);
     DigitalOut TS1W_PU_Control = DigitalOut(PB_15);
-    DigitalInOut TS1W = DigitalInOut(PB_14); // look up more on 1 wire interface 
+    OneWire TS1W = OneWire(PB_14); // look up more on 1 wire interface 
+
+
 
 
     currentState = ACTIVE;
@@ -48,6 +50,10 @@ BMS::BMS(){
     	0,
     	0
     };
+
+    // create the ds18b20 interface
+
+     
 
 
 }

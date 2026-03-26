@@ -1,13 +1,38 @@
 #include "BMSFaultDetection.h"
 #include "mbed.h"
 
+
+/*
+
+current need to dos:
+1 wire for tray temp sensors not implemented - important - part of BMSFaultDetection
+fans not implemented - part of BMSFaultDetection
+shutdown circuit monitoring - not implemented - part of BMSFaultDetection (go through shutdown sequence for battery but do not throw a fault, also open precharge relay )
+
+current sensing - not implemented - part of telemetry
+imd monitoring  - not implemented - part of telemetry
+
+
+precharge - in progress........
+
+
+
+Status of 1 wire:
+cannot find info on the ids of the sensors, we can search for them however can be searched for so.....
+
+*/
+
+
+bool eMeterPresent = false;
+
+
+
 int main(){
 	BMS BMSInstance;
 
 	LTC681xParallelBus ltcBusInterface(&BMSInstance.spiInterface);
 
-
-
+//initialize an event queue here 
 	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
 		for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
 			LTC6810::TMP1075_Handle_t sens;
@@ -17,6 +42,31 @@ int main(){
 		}
 			
 	}
+
+	// One wire section....
+	/*
+	we are using the ds18b20 sensors on the 1 wire bus, according to https://www.analog.com/en/resources/technical-articles/how-to-power-the-extended-features-of-1wire-devices.html 
+	these sensors need a little extra power for temperature conversions.... when the emeter is connected to the car it is able to provide this power
+	when the e meter is not connected to the car, a pmos pull up transistor is used to provide this extra power.
+
+	*/
+
+	if(!eMeterPresent){
+		BMSInstance.TS1W_PU_Control = 1;
+	}else{
+		BMSInstance.TS1W_PU_Control = 0;
+	}
+
+
+
+	//TEMPORARY: searching for 1 wire sensors......
+
+	//should print out to serial the address of any one wire bu
+	debug_search_for_ds18b20_address(BMSInstance.TS1W);
+
+
+
+
 
 	// find out wether or not we are charging
 	if(BMSInstance.Charge_State_Filtered.read()){
