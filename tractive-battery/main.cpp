@@ -28,8 +28,24 @@ EventQueue queue(5*EVENTS_EVENT_SIZE);
 // BMS BMSInstance;
 
 
-int main(){
+int main(){ 
+
+
+
+
 	BMS BMSInstance;
+
+
+
+	//intializing the uart stuff
+	// this implementation is temporary
+
+
+	BMSInstance.VCP_UART.set_baud(115200);
+
+
+
+
 
 	LTC681xParallelBus ltcBusInterface(&BMSInstance.spiInterface);
 
@@ -82,6 +98,9 @@ int main(){
 	//again assuming everything is good at startup dont keep the shutdown circuit closed 
 
 	BMSInstance.nBMS_Fault_3V3 = 1;
+
+	char msg1[] = "Intialization complete\n";
+	BMSInstance.VCP_UART.write(msg1, sizeof(msg1));
 
 
 

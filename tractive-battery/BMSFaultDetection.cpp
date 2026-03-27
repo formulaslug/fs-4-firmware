@@ -35,6 +35,10 @@ void chargingActions(BMS &BMSInstance){
 
 void turnOffCellBalancing(BMS &BMSInstance){
 	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
+		
+		char msg2[] = "cell balancing deactivated\n";
+		BMSInstance.VCP_UART.write(msg2, sizeof(msg2));
+
 		LTC6810::Configuration &config = BMSInstance.chips[i].getConfig();
 		config.dischargeState = {.value = 0};
 		BMSInstance.chips[i].updateConfig();
@@ -43,14 +47,15 @@ void turnOffCellBalancing(BMS &BMSInstance){
 
 
 void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
-
+	char msg3[] = "Reading Cell Voltages\n";
+	BMSInstance.VCP_UART.write(msg3, sizeof(msg3));
 	//ltcBusInterface.WakeupBus();
 	if(BMSInstance.ltcTimeoutTimer.elapsed_time()>=100ms){
 		BMSInstance.currentState=BMSInstance.FAULT;
 		return;
 	}
 
-	bool tempsConverted = true;
+	bool voltsConverted = true;
 	LTC681xParallelBus::LTC681xBusStatus stat = ltcBusInterface.WakeupBus();
 	LTC681xParallelBus::BusCommand command = LTC681xParallelBus::BuildBroadcastBusCommand(StartCellVoltageADC(AdcMode::k7k, false, CellSelection::kAll));
 	stat = ltcBusInterface.SendCommand(command);
@@ -62,8 +67,10 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		stat = ltcBusInterface.PollAdcCompletion(command, 0);
 		if(stat == LTC681xBus::LTC681xBusStatus::PollTimeout){
 			// printf("ADC poll timeout, on Bank %d\n", i);
-			tempsConverted = false;
+			voltsConverted = false;
 			BMSInstance.ltcTimeoutTimer.start();
+			char msg4[] = "poll timeout occured\n";
+			BMSInstance.VCP_UART.write(msg4, sizeof(msg4));
 			// the rules require that we need to ensure we are getting data and that all sensors are working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
 			// that time period is a little arbitrary and probably should be adjusted 
 		}
@@ -72,7 +79,7 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 	ThisThread::sleep_for(3ms);
 
 
-	if(tempsConverted){
+	if(voltsConverted){
 		BMSInstance.ltcTimeoutTimer.stop();
 		BMSInstance.ltcTimeoutTimer.reset();
 		//reset timer after successful adc conversions...
@@ -95,6 +102,8 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		//6 bytes per cell group reading (2 bytes per cell) ... transmitted in little endian 
 		//casted so that its easier to read
 		}
+		char msg5[] = "successfully read voltages\n";
+		BMSInstance.VCP_UART.write(msg5, sizeof(msg5));
 		BMSInstance.minVoltage = BMSInstance.voltages[0][0];
 		BMSInstance.maxVoltage = BMSInstance.voltages[0][0];
 
@@ -110,29 +119,6 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		}
 	}
 
-
-	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
-		uint8_t voltageReading[12] = {0};
-		ltcBusInterface.WakeupBus();
-		command = LTC681xParallelBus::BuildAddressedBusCommand(ReadCellVoltageGroupA(), i);
-		stat = ltcBusInterface.SendReadCommand(command, (uint8_t*)voltageReading);
-
-
-		command = LTC681xParallelBus::BuildAddressedBusCommand(ReadCellVoltageGroupB(), i);
-		stat = ltcBusInterface.SendReadCommand(command, (uint8_t*)voltageReading+6);
-
-		uint16_t* castVoltages = (uint16_t*)voltageReading;
-		for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
-			//volt = castVoltages[j];
-
-			BMSInstance.voltages[i][j] = castVoltages[j];
-		}
-		//6 bytes per cell group reading (2 bytes per cell) ... transmitted in little endian 
-		//casted so that its easier to read
-
-		
-
-	}
 	BMSInstance.minVoltage = BMSInstance.voltages[0][0];
 	BMSInstance.maxVoltage = BMSInstance.voltages[0][0];
 
@@ -152,6 +138,10 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 
 
 void readCellTemps(BMS &BMSInstance){
+	char msg6[] = "reading cell temps\n";
+	BMSInstance.VCP_UART.write(msg6, sizeof(msg6));
+
+
 	for(uint8_t i  = 0; i < NUM_BATTERY_MODULES; i++){
 		for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
 			BMSInstance.cellTemps[i][j]= BMSInstance.chips[i].readTemperatureTMP1075(&BMSInstance.sensors[i][j]);
@@ -166,6 +156,8 @@ void readCellTemps(BMS &BMSInstance){
 // our balancing threshold is at 85% of maximum charges
 void decideBalancing(BMS &BMSInstance){
 	//turns on balancing for chips 
+	char msg7[] = "deciding balancing\n";
+	BMSInstance.VCP_UART.write(msg7, sizeof(msg7));
 	if(BMSInstance.currentState!=BMSInstance.FAULT){
 		if(BMSInstance.maxVoltage >= BALANCING_THRESHOLD && BMSInstance.minVoltage > MIN_CELL_VOLTAGE){
 			for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
@@ -201,7 +193,8 @@ void checkForFaults(BMS &BMSInstance){
 
 	//remember to set the data in the BMSInstance
 
-
+	char msg8[] = "reading cell temps\n";
+	BMSInstance.VCP_UART.write(msg8, sizeof(msg8));
 	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
 		// cell voltage based faults...
 		for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
@@ -263,6 +256,10 @@ void checkForFaults(BMS &BMSInstance){
 			BMSInstance.nBMS_Fault_3V3 = 0;
 		}
 	}
+	if(BMSInstance.currentState == BMSInstance.FAULT){
+		char msg9[] = "reading cell temps\n";
+		BMSInstance.VCP_UART.write(msg9, sizeof(msg9));
+	}
 	
 
 
@@ -292,7 +289,7 @@ void checkShutdownCircuit(BMS &BMSInstance){
 
 void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 	if(BMSInstance.currentState != BMSInstance.FAULT){
-		chargingActions(BMSInstance);
+		//chargingActions(BMSInstance);
 		turnOffCellBalancing(BMSInstance);
 		ThisThread::sleep_for(3ms);
 		readCellVoltages(ltcBusInterface, BMSInstance);
