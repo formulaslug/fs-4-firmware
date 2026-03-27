@@ -1,9 +1,35 @@
 #include "BMSFaultDetection.h"
 
-Timer t;
+
+// need to add some sort of logging for testing - over uart
+
 
 void chargingActions(BMS &BMSInstance){
 		//current work in progress - needs to detect soc over can......
+	//code from fs3 adapted to fs4
+		uint8_t canData = 0;
+        BMSInstance.CAN_POWERTRAIN.read(BMSInstance.msg);
+            uint32_t id = BMSInstance.msg.id;
+            unsigned char* data = BMSInstance.msg.data;
+
+            if (!(BMSInstance.currentState==BMSInstance.FAULT)){
+                switch (id) {
+                case 0x682: // temperature message from MC
+                    canData = (data[2] | (data[3] << 8));
+                    break;
+                default:
+                    break;
+                }
+            } else {
+                switch (id) {
+                case 0x190: // charge status from charger, 180 + node ID (10)
+                    canData = (data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24)) / 100;
+                default:
+                    break;
+                }
+            }
+    // we still need to do safety checks on this --- perhaps we can store the data from this in BMSInstance and then have checks in checkForFaults
+
 }	
 
 
@@ -19,7 +45,7 @@ void turnOffCellBalancing(BMS &BMSInstance){
 void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 
 	//ltcBusInterface.WakeupBus();
-	if(t.elapsed_time()>=100ms){
+	if(BMSInstance.ltcTimeoutTimer.elapsed_time()>=100ms){
 		BMSInstance.currentState=BMSInstance.FAULT;
 		return;
 	}
@@ -37,8 +63,9 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		if(stat == LTC681xBus::LTC681xBusStatus::PollTimeout){
 			// printf("ADC poll timeout, on Bank %d\n", i);
 			tempsConverted = false;
-			t.start();
-			 // the rules require that we need to ensure we are getting data and that all sensors are working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
+			BMSInstance.ltcTimeoutTimer.start();
+			// the rules require that we need to ensure we are getting data and that all sensors are working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
+			// that time period is a little arbitrary and probably should be adjusted 
 		}
 	}
 
@@ -46,8 +73,8 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 
 
 	if(tempsConverted){
-		t.stop();
-		t.reset();
+		BMSInstance.ltcTimeoutTimer.stop();
+		BMSInstance.ltcTimeoutTimer.reset();
 		//reset timer after successful adc conversions...
 		for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
 			uint8_t voltageReading[12] = {0};
@@ -139,34 +166,35 @@ void readCellTemps(BMS &BMSInstance){
 // our balancing threshold is at 85% of maximum charges
 void decideBalancing(BMS &BMSInstance){
 	//turns on balancing for chips 
-
-	if(BMSInstance.maxVoltage >= BALANCING_THRESHOLD && BMSInstance.minVoltage > MIN_CELL_VOLTAGE){
-		for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
-			uint8_t dischargeValue = 0x00;
-			LTC6810::Configuration &config = BMSInstance.chips[i].getConfig();
-			// uint16_t moduleVolts[NUM_VOLTAGES_PER_MODULE] = BMSInstance.voltages[i];
-			uint16_t minModuleVolt = BMSInstance.voltages[i][0];
-			uint16_t maxModuleVolt = BMSInstance.voltages[i][0];
-			for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
-				if(BMSInstance.voltages[i][j] < minModuleVolt){
-					minModuleVolt = BMSInstance.voltages[i][j];
+	if(BMSInstance.currentState!=BMSInstance.FAULT){
+		if(BMSInstance.maxVoltage >= BALANCING_THRESHOLD && BMSInstance.minVoltage > MIN_CELL_VOLTAGE){
+			for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
+				uint8_t dischargeValue = 0x00;
+				LTC6810::Configuration &config = BMSInstance.chips[i].getConfig();
+				// uint16_t moduleVolts[NUM_VOLTAGES_PER_MODULE] = BMSInstance.voltages[i];
+				uint16_t minModuleVolt = BMSInstance.voltages[i][0];
+				uint16_t maxModuleVolt = BMSInstance.voltages[i][0];
+				for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
+					if(BMSInstance.voltages[i][j] < minModuleVolt){
+						minModuleVolt = BMSInstance.voltages[i][j];
+					}
+					if(BMSInstance.voltages[i][j] > maxModuleVolt){
+						maxModuleVolt = BMSInstance.voltages[i][j];
+					}
+					if((maxModuleVolt - minModuleVolt) >= DIFFERENCE_THRESHOLD){
+						dischargeValue |= (0x1<<j);
+					}
 				}
-				if(BMSInstance.voltages[i][j] > maxModuleVolt){
-					maxModuleVolt = BMSInstance.voltages[i][j];
-				}
-				if((maxModuleVolt - minModuleVolt) >= DIFFERENCE_THRESHOLD){
-					dischargeValue |= (0x1<<j);
-				}
+				config.dischargeState.value = dischargeValue;
+				BMSInstance.chips[i].updateConfig();	
 			}
-			config.dischargeState.value = dischargeValue;
-			BMSInstance.chips[i].updateConfig();	
 		}
 	}
 }
 
 
 
-void throwFault(BMS &BMSInstance){	
+void checkForFaults(BMS &BMSInstance){	
 	// uint8_t module_fault_index = 0; // battery module where fault occured 
 	// uint8_t temp_index = 0; // temp sensor (within a module) where a fault was detected
 	// uint8_t voltage_fault_index = 0; // voltage group (1 of 6 parrallel groups) where a fault was detected
@@ -208,11 +236,13 @@ void throwFault(BMS &BMSInstance){
 			int8_t tempReading = BMSInstance.cellTemps[i][j];
 			if(BMSInstance.currentState == BMSInstance.CHARGING){
 				if(tempReading>=CHARGING_CELL_MAX){
+					BMSInstance.currentState = BMSInstance.FAULT;
 					BMSInstance.nBMS_Fault_3V3 = 0;
 					// module_fault_index = i;
 					// temp_index = j;
 					//NOT DONE HERE have to add some stuff for telemetry
 				}else if(tempReading <= CHARGING_CELL_MIN){
+					BMSInstance.currentState = BMSInstance.FAULT;
 					BMSInstance.nBMS_Fault_3V3 = 0;
 					// module_fault_index = i;
 					// temp_index = j;
@@ -230,6 +260,7 @@ void throwFault(BMS &BMSInstance){
 		uint8_t trayTemp = BMSInstance.trayTempSensors[i].retrieve_conversion();
 		if(trayTemp >= CELL_MAX || trayTemp <= CELL_MIN){
 			BMSInstance.currentState = BMSInstance.FAULT;
+			BMSInstance.nBMS_Fault_3V3 = 0;
 		}
 	}
 	
@@ -266,12 +297,14 @@ void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		ThisThread::sleep_for(3ms);
 		readCellVoltages(ltcBusInterface, BMSInstance);
 		readCellTemps(BMSInstance);
-		throwFault(BMSInstance);
+		checkForFaults(BMSInstance);
 		decideBalancing(BMSInstance);
 		//checkShutdownCircuit(BMSInstance);
 	}else{
 		turnOffCellBalancing(BMSInstance);
 		//need to turn on indicator lights as well ..... 
+		// precharge relay should be open in this case
+
 	}
 
 }

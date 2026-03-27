@@ -5,7 +5,6 @@
 #include "LTC681xCommand.h"
 #include "DS18B20.h"
 
-// #include ""
 //general config
 inline constexpr uint8_t NUM_BATTERY_MODULES = 5; 
 inline constexpr uint8_t NUM_VOLTAGES_PER_MODULE = 6;
@@ -96,7 +95,7 @@ class BMS{
       int8_t cowling_exhaustTemp;
     };
 
-    struct cellVoltages{
+    struct cellVoltages{ // i dont know exactly how to pack this
       uint16_t module1Volts;
       uint16_t module2Volts;
       uint16_t module3Volts;
@@ -139,7 +138,7 @@ class BMS{
       AnalogIn V_Out_Negative = AnalogIn(PC_1);
       DigitalIn Charge_State_Filtered = DigitalIn(PC_2); // assume 1 for charging 0 for not charging
       DigitalIn IMD_Fault_3V3 = DigitalIn(PC_4);
-      DigitalOut nBMS_Fault_3V3 = DigitalOut(PC_5);
+      DigitalOut nBMS_Fault_3V3 = DigitalOut(PC_5, 1);
       PwmOut Fan_PWM = PwmOut(PC_8);
       DigitalOut TS_READY = DigitalOut(PC_9); //look more into this one (i think its a precharge indicator )
       DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0); // status of the shutdown circuit before bms
@@ -149,7 +148,7 @@ class BMS{
       AnalogIn GLV_Voltage = AnalogIn(PA_7);
       BufferedSerial VCP_UART = BufferedSerial(PA_9, PA_10); // some configuration for this needs to be done at startup see mbedosce
       CAN CAN_POWERTRAIN = CAN(PA_11, PA_12);
-      DigitalOut nPrechargeControl = DigitalOut(PB_0);
+      DigitalOut nPrechargeControl = DigitalOut(PB_0,0); // no precharge at this point
       SPI spiInterface = SPI(PB_4, PB_5, PB_10, PB_9, use_gpio_ssel);
       DigitalOut TS1W_PU_Control = DigitalOut(PB_15);
       OneWire TS1W = OneWire(PB_14); // look up more on 1 wire interface 
@@ -163,6 +162,11 @@ class BMS{
 
     bms_state currentState;
     status_msg bms_stat_message;
+    cellVoltages currentCellVoltages;
+
+    Timer ltcTimeoutTimer;
+    CANMessage msg;
+
 
     BMS();
 

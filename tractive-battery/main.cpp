@@ -11,16 +11,15 @@ shutdown circuit monitoring - not implemented - part of BMSFaultDetection (go th
 current sensing - not implemented - part of telemetry
 imd monitoring  - not implemented - part of telemetry
 
-
 precharge - in progress........
 
 
 
 Status of 1 wire:
-cannot find info on the ids of the sensors, we can search for them however can be searched for so.....
+cannot find info on the ids of the sensors, we can search for them however so.....
 
 */
-
+// need to initialize everything on startup - assume everything is okay at first
 
 bool eMeterPresent = false;
 
@@ -34,7 +33,6 @@ int main(){
 
 	LTC681xParallelBus ltcBusInterface(&BMSInstance.spiInterface);
 
-//initialize an event queue here 
 	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
 		for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
 			LTC6810::TMP1075_Handle_t sens;
@@ -49,7 +47,7 @@ int main(){
 	/*
 	we are using the ds18b20 sensors on the 1 wire bus, according to https://www.analog.com/en/resources/technical-articles/how-to-power-the-extended-features-of-1wire-devices.html 
 	these sensors need a little extra power for temperature conversions.... when the emeter is connected to the car it is able to provide this power
-	when the e meter is not connected to the car, a pmos pull up transistor is used to provide this extra power.
+	when the e meter is not connected to the car, a pmos pull up transistor is used to provide this extra power (I think).
 
 	*/
 
@@ -73,8 +71,6 @@ int main(){
 	}
 
 
-
-
 	// find out wether or not we are charging
 	if(BMSInstance.Charge_State_Filtered.read()){
 		BMSInstance.currentState = BMSInstance.CHARGING;
@@ -82,16 +78,16 @@ int main(){
 		BMSInstance.currentState = BMSInstance.ACTIVE;
 	}
 
-	//create a pointer to the bms instance
-	// BMS* BMSInstancePtr = &BMSInstance;
 
-	queue.call_every(100ms, controller, ltcBusInterface, std::ref(BMSInstance)); // dont attempt to create a copy of the BMS class just pass it by reference
+	//again assuming everything is good at startup dont keep the shutdown circuit closed 
+
+	BMSInstance.nBMS_Fault_3V3 = 1;
+
+
+
+	//period of this is temporary and arbitrary - ideally i would want this to run more often, the current period is for testing purposes 
+	queue.call_every(2000ms, controller, ltcBusInterface, std::ref(BMSInstance)); // dont attempt to create a copy of the BMS class just pass it by reference
 	queue.dispatch_forever();
-
-
-
-
-
 
 	return 0;
 }

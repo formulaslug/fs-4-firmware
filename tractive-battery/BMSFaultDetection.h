@@ -12,7 +12,7 @@ void turnOffCellBalancing(BMS&);
 void readCellVoltages(LTC681xParallelBus&, BMS&);
 void readCellTemps(BMS&);
 void decideBalancing(BMS&);
-void throwFault(BMS&);
+void checkForFaults(BMS&);
 void generateStatusMessage(BMS&);
 void controller(LTC681xParallelBus&, BMS&);
 void checkShutdownCircuit(BMS&);
