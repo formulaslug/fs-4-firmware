@@ -5,10 +5,9 @@
 /*
 
 current need to dos:
-1 wire for tray temp sensors not implemented - important - part of BMSFaultDetection
+1 wire for tray temp sensors sort of implemented - need more info - important - part of BMSFaultDetection
 fans not implemented - part of BMSFaultDetection
 shutdown circuit monitoring - not implemented - part of BMSFaultDetection (go through shutdown sequence for battery but do not throw a fault, also open precharge relay )
-
 current sensing - not implemented - part of telemetry
 imd monitoring  - not implemented - part of telemetry
 
@@ -25,6 +24,9 @@ cannot find info on the ids of the sensors, we can search for them however can b
 
 bool eMeterPresent = false;
 
+EventQueue queue(5*EVENTS_EVENT_SIZE);
+
+// BMS BMSInstance;
 
 
 int main(){
@@ -66,6 +68,11 @@ int main(){
 
 
 
+	for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
+		BMSInstance.trayTempSensors.push_back(DS18B20(BMSInstance.TS1W, TRAYTEMP_SENSOR_ADDRESSES[i]));
+	}
+
+
 
 
 	// find out wether or not we are charging
@@ -74,6 +81,17 @@ int main(){
 	}else{
 		BMSInstance.currentState = BMSInstance.ACTIVE;
 	}
+
+	//create a pointer to the bms instance
+	// BMS* BMSInstancePtr = &BMSInstance;
+
+	queue.call_every(100ms, controller, ltcBusInterface, std::ref(BMSInstance)); // dont attempt to create a copy of the BMS class just pass it by reference
+	queue.dispatch_forever();
+
+
+
+
+
 
 	return 0;
 }

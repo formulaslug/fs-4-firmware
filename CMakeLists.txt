@@ -6,7 +6,7 @@ set(CUSTOM_TARGETS_JSON_PATH custom_targets/custom_targets.json5)
 set(CUSTOM_UPLOAD_CFG_PATH custom_targets/UploadMethods.cmake)
 
 include(mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
-project(BMStestbench
+project(tractive-battery-board
     LANGUAGES C CXX ASM)
 include(mbed_project_setup)
 

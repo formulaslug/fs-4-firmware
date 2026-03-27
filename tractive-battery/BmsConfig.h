@@ -10,10 +10,13 @@
 inline constexpr uint8_t NUM_BATTERY_MODULES = 5; 
 inline constexpr uint8_t NUM_VOLTAGES_PER_MODULE = 6;
 inline constexpr uint8_t NUM_TEMP_SENSORS_PER_MODULE = 12;
+inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 4;
 //okay so ive looked at the kicad and these have not been wired differently so 11/12 sensors have the address of 0x48 (based on the data sheet) based on how they are wired
 // i assume this is a wip and will be updated later
 inline constexpr uint16_t TMP1075_ADDRESSES[NUM_TEMP_SENSORS_PER_MODULE] = {0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48,0x48, 0x48, 0x48, 0x48}; 
 
+//this is a temporary thing - i dont know the actual addresses - 64 bit unique address for each sensor 
+inline constexpr uint64_t TRAYTEMP_SENSOR_ADDRESSES[NUM_TRAY_TEMP_SENSORS] = {0x00000000,0x00000000,0x00000000,0x00000000};
 
 
 //battery cell info for inr-18650-p30b
@@ -121,6 +124,10 @@ class BMS{
     std::vector<LTC6810> chips;
     LTC6810::TMP1075_Handle_t sensors[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
     uint16_t voltages[NUM_BATTERY_MODULES][NUM_VOLTAGES_PER_MODULE];
+
+    std::vector<DS18B20> trayTempSensors;
+
+
     enum bms_state{
       ACTIVE = 0,
       CHARGING = 1,

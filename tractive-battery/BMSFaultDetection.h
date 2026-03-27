@@ -14,9 +14,8 @@ void readCellTemps(BMS&);
 void decideBalancing(BMS&);
 void throwFault(BMS&);
 void generateStatusMessage(BMS&);
-void controller(BMS&);
-void checkIMDStatus(BMS&);
-
+void controller(LTC681xParallelBus&, BMS&);
+void checkShutdownCircuit(BMS&);
 
 
 #endif

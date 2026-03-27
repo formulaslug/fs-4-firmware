@@ -221,12 +221,42 @@ void throwFault(BMS &BMSInstance){
 		}
 	}
 
-
-
-	// do bus bar temperature based fault throwing here ..... 
+	//tray temp sensor checks
+	// for testing purposes i am going to use the cell temperature limits here, will be updated later
+	//telemetry stuff needs to be added but the logic is there. 
+	for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
+		BMSInstance.trayTempSensors[i].start_conversion(true); // assume no e meter here CHANGE LATER
+		ThisThread::sleep_for(3ms);
+		uint8_t trayTemp = BMSInstance.trayTempSensors[i].retrieve_conversion();
+		if(trayTemp >= CELL_MAX || trayTemp <= CELL_MIN){
+			BMSInstance.currentState = BMSInstance.FAULT;
+		}
+	}
+	
 
 
 }
+
+
+// i am undecided wether or not to put the bms into a fault state here - might add a state that doesnt turn on any bms indicator lights but essentially stops the bms functions like in a fault state
+// not totally sure whats required of the bms in this case making a best guess
+void checkShutdownCircuit(BMS &BMSInstance){
+	if(BMSInstance.Shutdown_In_3V3_Filtered.read()==0 || BMSInstance.Shutdown_Out_3V3_Filtered.read()==0){
+		// shutdown circuit open before the bms
+		turnOffCellBalancing(BMSInstance);
+		//precharge should also be turned off but thats in a different task 
+		if(BMSInstance.Shutdown_Out_3V3_Filtered.read()==0){
+			//shutdown circuit opened after the bms
+			turnOffCellBalancing(BMSInstance);
+		}
+		if(BMSInstance.Shutdown_In_3V3_Filtered.read()==0){
+			turnOffCellBalancing(BMSInstance);
+		}
+	}
+
+}
+
+
 
 
 void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
@@ -238,7 +268,7 @@ void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		readCellTemps(BMSInstance);
 		throwFault(BMSInstance);
 		decideBalancing(BMSInstance);
-		checkIMDStatus(BMSInstance);
+		//checkShutdownCircuit(BMSInstance);
 	}else{
 		turnOffCellBalancing(BMSInstance);
 		//need to turn on indicator lights as well ..... 
