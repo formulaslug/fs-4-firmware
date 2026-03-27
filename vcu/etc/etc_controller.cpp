@@ -34,59 +34,69 @@ void ETCController::clearImp(){
     implausTimerRunning = false;
 }
 
-AppsReadings ETCController::readApps(){
-    AppsReadings data{};
+ETCState ETCController::sample(){
+    ETCState state{};
 
-    data.voltage1 = apps1_input.read_voltage();
-    data.voltage2 = apps2_input.read_voltage();
+    state.apps1Voltage = apps1_input.read_voltage();
+    state.apps2Voltage = apps2_input.read_voltage();
+    state.bppsVoltage = bpps_input.read_voltage();
 
-    const bool ok1 = inRange(data.voltage1, apps1MinV, apps1MaxV, boundMargin);
-    const bool ok2 = inRange(data.voltage2, apps2MinV, apps2MaxV, boundMargin);
-    data.bounds_ok = ok1 && ok2;
+    const bool ok1 = inRange(state.apps1Voltage, apps1MinV, apps1MaxV, boundMargin);
+    const bool ok2 = inRange(state.apps2Voltage, apps2MinV, apps2MaxV, boundMargin);
+    state.appsBoundsOk = ok1 && ok2;
 
     const float range1 = apps1MaxV - apps1MinV;
     const float range2 = apps2MaxV - apps2MinV;
 
-    data.travel1 = clamp((data.voltage1 - apps1MinV) / range1);
-    data.travel2 = clamp((data.voltage2 - apps2MinV) / range2);
+    state.travel1 = clamp((state.apps1Voltage - apps1MinV) / range1);
+    state.travel2 = clamp((state.apps2Voltage - apps2MinV) / range2);
 
-    const float diff = fabsf(data.travel1 - data.travel2);
-    data.mismatch_ok = (diff <= mismatchTol);
+    state.mismatchOk = (fabsf(state.travel1 - state.travel2) <= mismatchTol);
+    state.pedalTravel = 0.5f * (state.travel1 + state.travel2);
+    state.brakePressed = (state.bppsVoltage >= bPressedThresh);
+    state.tsActive = ts_active;
+    state.implausLatched = implausLatched;
+    state.rtdEnabled = rtd_enabled;
+    state.torqueAllowed = torqueAllowed();
 
-    data.pedal = 0.5f * (data.travel1 + data.travel2);
+    if (!implausLatched){
+        const bool impCondition = (!state.appsBoundsOk) || (!state.mismatchOk);
 
-    const bool impCondition = (!data.bounds_ok) || (!data.mismatch_ok);
+        if (impCondition){
+            if (!implausTimerRunning){
+                implausTimer.reset();
+                implausTimer.start();
+                implausTimerRunning = true;
+            }
 
-    if (implausLatched){
-        return data;
+            const float t =
+                std::chrono::duration<float>(implausTimer.elapsed_time()).count();
+
+            if (t >= impTime){
+                implausLatched = true;
+                implausTimer.stop();
+                implausTimer.reset();
+                implausTimerRunning = false;
+                stopRTD();
+            }
+        }
+        else{
+            if (implausTimerRunning){
+                implausTimer.stop();
+                implausTimer.reset();
+                implausTimerRunning = false;
+            }
+        }
     }
 
-    if (impCondition){
-        if (!implausTimerRunning){
-            implausTimer.reset();
-            implausTimer.start();
-            implausTimerRunning = true;
-        }
+    state.implausLatched = implausLatched;
+    state.rtdEnabled = rtd_enabled;
+    state.torqueAllowed = torqueAllowed();
+    return state;
+}
 
-        const float t =
-            std::chrono::duration<float>(implausTimer.elapsed_time()).count();
-
-        if (t >= impTime){
-            implausLatched = true;
-            implausTimer.stop();
-            implausTimerRunning = false;
-            stopRTD();
-        }
-    }
-    else{
-        if (implausTimerRunning){
-            implausTimer.stop();
-            implausTimer.reset();
-            implausTimerRunning = false;
-        }
-    }
-
-    return data;
+void ETCController::setTSActive(bool active){
+    TSActive(active);
 }
 
 void ETCController::TSActive(bool active){
@@ -136,7 +146,7 @@ void ETCController::startRTD(){
     rtd_output = 1;
 
     rtds_timeout.detach();
-    rtds_timeout.attach(callback(this, &ETCController::stopRTDSound), dur);
+    rtds_timeout.attach(callback(this, &ETCController::stopRTDSound), std::chrono::milliseconds(static_cast<int>(dur * 1000.0f)));
 }
 
 void ETCController::stopRTDSound(){

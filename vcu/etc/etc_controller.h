@@ -4,21 +4,33 @@
 #include "mbed.h"
 #include <cstdint>
 
-struct AppsReadings{
-    float voltage1;
-    float voltage2;
+struct ETCState {
+    float apps1Voltage;
+    float apps2Voltage;
+    float bppsVoltage;
     float travel1;
     float travel2;
-    float pedal;
-    bool bounds_ok;
-    bool mismatch_ok;
+    float pedalTravel;
+    bool appsBoundsOk;
+    bool mismatchOk;
+    bool brakePressed;
+    bool implausLatched;
+    bool rtdEnabled;
+    bool tsActive;
+    bool torqueAllowed;
 };
+
+using AppsReadings = ETCState;
 
 class ETCController {
 public:
     ETCController();
 
-    AppsReadings readApps();
+    ETCState sample();
+
+    ETCState readApps() { return sample(); }
+
+    void setTSActive(bool active);
 
     bool impState() const;
 
@@ -36,6 +48,9 @@ public:
     void stopRTD();
     bool torqueAllowed() const;
 
+    bool isRTDEnabled() const { return rtdState(); }
+    bool isTorqueAllowed() const { return torqueAllowed(); }
+
 private:
     AnalogIn apps1_input;
     AnalogIn apps2_input;
@@ -51,7 +66,7 @@ private:
     bool rtd_enabled = false;
     volatile bool rtd_request = false;
 
-    static constexpr float rtd_duration = 2.0f;
+    static constexpr float rtd_duration = 2.0f; //need to verify these values before testing.
     static constexpr float bPressedThresh = 0.4f;
 
     static constexpr float apps1MinV = 0.3125f;
@@ -61,8 +76,8 @@ private:
     static constexpr float apps2MaxV = 1.6875f;
 
     static constexpr float boundMargin = 0.05f;
-    static constexpr float mismatchTol = 0.10f;
-    static constexpr float impTime = 0.100f;
+    static constexpr float mismatchTol = 0.10f; 
+    static constexpr float impTime = 0.100f; 
 
     Timer implausTimer;
     bool implausTimerRunning = false;
