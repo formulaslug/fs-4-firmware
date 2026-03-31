@@ -131,7 +131,7 @@ class BMS{
       ACTIVE = 0,
       CHARGING = 1,
       FAULT = 2,
-      PRECHARGEING = 3
+      PRECHARGING = 3
     };
 
       //pin definitions 
