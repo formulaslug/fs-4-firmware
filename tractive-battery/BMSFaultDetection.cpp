@@ -285,7 +285,29 @@ void checkShutdownCircuit(BMS &BMSInstance){
 }
 
 
+void controlFans(BMS &BMSInstance) {
+    int8_t maxTemp = 0;
 
+    // Find the hottest cell across all modules and sensors
+    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+        for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
+            if (BMSInstance.cellTemps[i][j] > maxTemp) {
+                maxTemp = BMSInstance.cellTemps[i][j];
+            }
+        }
+    }
+
+    if (BMSInstance.prechargeDone) {
+        // Linear scaling: 20% at ~20°C, 100% at ~50°C
+        // Formula: (2.6667 * temp) - 33.3333, clamped to [20, 100]
+        int raw_percent = (int)((2.6667f * maxTemp) - 33.3333f);
+        uint8_t fan_percent = (uint8_t)std::clamp(raw_percent, 20, 100);
+        BMSInstance.Fan_PWM.write(fan_percent / 100.0f); // PWM expects 0.0 - 1.0
+    } else {
+        // Keep fans off until precharge is complete
+        BMSInstance.Fan_PWM.write(0.0f);
+    }
+}
 
 void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 	if(BMSInstance.currentState != BMSInstance.FAULT){
@@ -295,12 +317,15 @@ void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		readCellVoltages(ltcBusInterface, BMSInstance);
 		readCellTemps(BMSInstance);
 		checkForFaults(BMSInstance);
+		controlFans(BMSInstance);
 		decideBalancing(BMSInstance);
 		//checkShutdownCircuit(BMSInstance);
 	}else{
 		turnOffCellBalancing(BMSInstance);
 		//need to turn on indicator lights as well ..... 
 		// precharge relay should be open in this case
+		//fans turn off on fault
+		 BMSInstance.Fan_PWM.write(0.0f);
 
 	}
 
