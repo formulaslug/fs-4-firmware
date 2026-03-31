@@ -1,12 +1,19 @@
-# set(MBED_UPLOAD_ENABLED true)
-# set(MBED_RESET_BAUDRATE 115200)
+# Upload Method
+if(CMAKE_HOST_WIN32)
+    # OpenOCD is too painful to install on windows so we just use pyocd instead,
+    # which is slower but still works fine.
+    set(UPLOAD_METHOD_DEFAULT PYOCD) 
+else()
+    set(UPLOAD_METHOD_DEFAULT OPENOCD) 
+endif()
 
-
-# OPENOCD Upload Method
-set(UPLOAD_METHOD_DEFAULT PYOCD) 
 set(OPENOCD_UPLOAD_ENABLED true)
 set(PYOCD_UPLOAD_ENABLED true)
 set(PYOCD_CLOCK_SPEED 10M)
+
+# In case we really need it for some reason
+set(MBED_UPLOAD_ENABLED true)
+set(MBED_RESET_BAUDRATE 115200)
 
 # STLINK Upload Method, here in case OPENOCD and PYOCD doesn't work
 #set(UPLOAD_METHOD_DEFAULT = STLINK)
@@ -40,7 +47,6 @@ if (MBED_TARGET STREQUAL "TRACTIVE_BATTERY_BOARD" OR
 
     set(OPENOCD_CHIP_CONFIG_COMMANDS
         -f interface/stlink-dap.cfg
-        # -c "transport select hla_swd"
         -c "transport select dapdirect_swd"
         -f target/stm32f4x.cfg
         )
@@ -51,9 +57,13 @@ endif()
 if (MBED_TARGET STREQUAL "NUCLEO_L432KC")
 
     set(OPENOCD_CHIP_CONFIG_COMMANDS
-        -f interface/stlink.cfg
-        -c "transport select hla_swd"
+        -f interface/stlink-dap.cfg
+        -c "transport select dapdirect_swd"
         -f target/stm32l4x.cfg
         )
     set(PYOCD_TARGET_NAME STM32L432KC)
 endif()
+
+
+# -f interface/stlink.cfg
+# -c "transport select hla_swd"
