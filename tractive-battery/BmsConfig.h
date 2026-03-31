@@ -18,7 +18,7 @@ inline constexpr uint16_t TMP1075_ADDRESSES[NUM_TEMP_SENSORS_PER_MODULE] = {0x48
 inline constexpr uint64_t TRAYTEMP_SENSOR_ADDRESSES[NUM_TRAY_TEMP_SENSORS] = {0x00000000,0x00000000,0x00000000,0x00000000};
 
 
-//battery cell info for inr-18650-p30b
+//battery cell info for inr-18650-p30b - based on datasheet
 
 inline constexpr int8_t CHARGING_CELL_MAX = 60;
 inline constexpr int8_t CHARGING_CELL_MIN = 0;
@@ -119,12 +119,16 @@ class BMS{
     int8_t cellTemps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
     uint16_t minVoltage;
     uint16_t maxVoltage;
+    uint16_t maxCellTemp;
 
     std::vector<LTC6810> chips;
     LTC6810::TMP1075_Handle_t sensors[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
     uint16_t voltages[NUM_BATTERY_MODULES][NUM_VOLTAGES_PER_MODULE];
 
     std::vector<DS18B20> trayTempSensors;
+
+    uint8_t trayTemps[NUM_TRAY_TEMP_SENSORS];
+    
 
 
     enum bms_state{

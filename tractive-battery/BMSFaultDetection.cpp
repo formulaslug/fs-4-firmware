@@ -137,7 +137,7 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 }
 
 
-void readCellTemps(BMS &BMSInstance){
+void readTemps(BMS &BMSInstance){
 	char msg6[] = "reading cell temps\n";
 	BMSInstance.VCP_UART.write(msg6, sizeof(msg6));
 
@@ -147,6 +147,27 @@ void readCellTemps(BMS &BMSInstance){
 			BMSInstance.cellTemps[i][j]= BMSInstance.chips[i].readTemperatureTMP1075(&BMSInstance.sensors[i][j]);
 		}
 	}
+
+	int8_t maxTemp = 0;
+
+    // Find the hottest cell across all modules and sensors
+    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+        for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
+            if (BMSInstance.cellTemps[i][j] > maxTemp) {
+                maxTemp = BMSInstance.cellTemps[i][j];
+            }
+        }
+    }
+    BMSInstance.maxCellTemp = maxTemp;
+
+
+    for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
+		BMSInstance.trayTempSensors[i].start_conversion(true); // assume no e meter here CHANGE LATER
+		ThisThread::sleep_for(3ms);
+		uint8_t trayTemp = BMSInstance.trayTempSensors[i].retrieve_conversion();
+		BMSInstance.trayTemps[i] = trayTemp;
+	}
+
 }
 
 
@@ -247,18 +268,15 @@ void checkForFaults(BMS &BMSInstance){
 	//tray temp sensor checks
 	// for testing purposes i am going to use the cell temperature limits here, will be updated later
 	//telemetry stuff needs to be added but the logic is there. 
+	//
+	char msg9[] = "reading cell temps\n";
+	BMSInstance.VCP_UART.write(msg9, sizeof(msg9));
 	for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
-		BMSInstance.trayTempSensors[i].start_conversion(true); // assume no e meter here CHANGE LATER
-		ThisThread::sleep_for(3ms);
-		uint8_t trayTemp = BMSInstance.trayTempSensors[i].retrieve_conversion();
+		uint8_t trayTemp = BMSInstance.trayTemps[i];
 		if(trayTemp >= CELL_MAX || trayTemp <= CELL_MIN){
 			BMSInstance.currentState = BMSInstance.FAULT;
 			BMSInstance.nBMS_Fault_3V3 = 0;
 		}
-	}
-	if(BMSInstance.currentState == BMSInstance.FAULT){
-		char msg9[] = "reading cell temps\n";
-		BMSInstance.VCP_UART.write(msg9, sizeof(msg9));
 	}
 	
 
@@ -286,18 +304,9 @@ void checkShutdownCircuit(BMS &BMSInstance){
 
 
 void controlFans(BMS &BMSInstance) {
-    int8_t maxTemp = 0;
+    int8_t maxTemp = BMSInstance.maxCellTemp;
 
-    // Find the hottest cell across all modules and sensors
-    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-        for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-            if (BMSInstance.cellTemps[i][j] > maxTemp) {
-                maxTemp = BMSInstance.cellTemps[i][j];
-            }
-        }
-    }
-
-    if (BMSInstance.prechargeDone) {
+    if (BMSInstance.currentState != BMSInstance.PRECHARGING) {
         // Linear scaling: 20% at ~20°C, 100% at ~50°C
         // Formula: (2.6667 * temp) - 33.3333, clamped to [20, 100]
         int raw_percent = (int)((2.6667f * maxTemp) - 33.3333f);
@@ -315,7 +324,7 @@ void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		turnOffCellBalancing(BMSInstance);
 		ThisThread::sleep_for(3ms);
 		readCellVoltages(ltcBusInterface, BMSInstance);
-		readCellTemps(BMSInstance);
+		readTemps(BMSInstance);
 		checkForFaults(BMSInstance);
 		controlFans(BMSInstance);
 		decideBalancing(BMSInstance);

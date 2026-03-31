@@ -6,7 +6,6 @@
 
 current need to dos:
 1 wire for tray temp sensors sort of implemented - need more info - important - part of BMSFaultDetection
-fans not implemented - part of BMSFaultDetection
 shutdown circuit monitoring - not implemented - part of BMSFaultDetection (go through shutdown sequence for battery but do not throw a fault, also open precharge relay )
 current sensing - not implemented - part of telemetry
 imd monitoring  - not implemented - part of telemetry
