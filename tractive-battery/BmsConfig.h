@@ -130,7 +130,8 @@ class BMS{
     enum bms_state{
       ACTIVE = 0,
       CHARGING = 1,
-      FAULT = 2  
+      FAULT = 2,
+      PRECHARGEING = 3
     };
 
       //pin definitions 
