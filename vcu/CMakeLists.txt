@@ -21,11 +21,16 @@ add_subdirectory(../mbed-os mbed-os)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(${PROJECT_NAME} 
-        etc/etc_controller.cpp
         main.cpp
 )
-target_include_directories(${PROJECT_NAME} PUBLIC 
-        etc
+
+add_library(etc STATIC ./ETC/etc_controller.cpp)
+target_include_directories(etc PUBLIC ./ETC)
+target_link_libraries(etc mbed-core-flags)
+
+target_link_libraries(${PROJECT_NAME} 
+	mbed-os
+	etc
 )
-target_link_libraries(${PROJECT_NAME} mbed-os)
+
 mbed_set_post_build(${PROJECT_NAME})

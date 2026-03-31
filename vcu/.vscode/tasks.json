@@ -6,8 +6,8 @@
 		{
 			"label": "Build vcu",
 			"type": "shell",
-			"command": "C:/Program Files/CMake/bin/cmake.exe",
-			"args": ["--build", "C:/Users/reaga/OneDrive/Desktop/FS Repos/fs-4-firmware/vcu/build/VEHICLE_CONTROL_UNIT-Develop", "--target", "vcu"],
+			"command": "/opt/homebrew/bin/cmake",
+			"args": ["--build", "/Users/jpins/Documents/Coding/CPP/Hardware/formula-slug/fs-4/fs-4-firmware/VCU/build", "--target", "vcu"],
 		},
 		// Build vcu and run the GDB server
 		{
@@ -18,7 +18,7 @@
 		{
 			"label": "GDB Server",
 			"type": "shell",
-			"command": "C:/Users/reaga/OneDrive/Desktop/FS Repos/fs-4-firmware/mbed-os/venv/Scripts/python.exe",
+			"command": "/Users/jpins/Documents/Coding/CPP/Hardware/formula-slug/fs-4/fs-4-firmware/mbed-os/venv/bin/python3",
 			"args": ["-m", "pyocd", "gdbserver", "--no-wait", "-t", "STM32F446RET6", "-f", "-p", "23331"],
 			"isBackground": true,
 			// This task is run to start the GDB server, so that the launch configuration can connect to it.

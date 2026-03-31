@@ -5,16 +5,16 @@
 	{
 	    "type": "cortex-debug",
 	    "name": "Debug vcu VEHICLE_CONTROL_UNIT Develop",
-	    "executable": "C:/Users/reaga/OneDrive/Desktop/FS Repos/fs-4-firmware/vcu/build/VEHICLE_CONTROL_UNIT-Develop/vcu.elf",
+	    "executable": "/Users/jpins/Documents/Coding/CPP/Hardware/formula-slug/fs-4/fs-4-firmware/VCU/build/vcu.elf",
 	    "cwd": "${workspaceRoot}",
-	    "gdbPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.3 rel1/bin/arm-none-eabi-gdb.exe",
-		"objdumpPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.3 rel1/bin/arm-none-eabi-objdump.exe",
+	    "gdbPath": "/System/Volumes/Data/Applications/ArmGNUToolchain/14.3.rel1/arm-none-eabi/bin/arm-none-eabi-gdb",
+		"objdumpPath": "/System/Volumes/Data/Applications/ArmGNUToolchain/14.3.rel1/arm-none-eabi/bin/arm-none-eabi-objdump",
 		"servertype": "external",
 		"gdbTarget": "127.0.0.1:23331",
 		"request": "launch",
 		"preLaunchTask": "Build vcu and start GDB server",
 		// Override the command sequences used by VS Code to be correct for this GDB server
-		"overrideLaunchCommands": ["monitor reset halt", "load \"C:/Users/reaga/OneDrive/Desktop/FS Repos/fs-4-firmware/vcu/build/VEHICLE_CONTROL_UNIT-Develop/vcu.hex\"", "tbreak main", "set mem inaccessible-by-default off", "monitor reset halt"],
+		"overrideLaunchCommands": ["monitor reset halt", "load \"/Users/jpins/Documents/Coding/CPP/Hardware/formula-slug/fs-4/fs-4-firmware/VCU/build/vcu.hex\"", "tbreak main", "set mem inaccessible-by-default off", "monitor reset halt"],
 		"overrideRestartCommands": ["monitor reset halt"],
 	},
     ]

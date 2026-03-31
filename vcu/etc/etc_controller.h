@@ -1,78 +1,103 @@
 #ifndef ETC_CONTROLLER_H
 #define ETC_CONTROLLER_H
 
+#include "AnalogIn.h"
+#include "DigitalIn.h"
+#include "DigitalOut.h"
+#include "PinNames.h"
+#include "Timer.h"
 #include "mbed.h"
 #include <cstdint>
 
-struct AppsReadings{
-    float voltage1;
-    float voltage2;
-    float travel1;
-    float travel2;
-    float pedal;
-    bool bounds_ok;
-    bool mismatch_ok;
+struct ETCState {
+    float APPS1_voltage = 0.0f;
+    float APPS2_voltage = 0.0f;
+    float APPS1_position = 0.0f;
+    float APPS2_position = 0.0f;
+    float APPS_position_avg = 0.0f;
+    float BPPS_voltage = 0.0f;
+    float BPPS_position = 0.0f;
+    float front_BSE_voltage = 0.0f;
+    float rear_BSE_voltage = 0.0f;
+    bool RTD_button_active = false;
+    bool RTD_state = false;
+    bool motor_enabled = false;
+    bool APPS_deviation_implaus = false;
+    bool APPS_range_implaus = false;
+    bool BPPS_range_implaus = false;
+    bool brake_and_accel_implaus = false;
+    bool TS_active = false;
+    bool can_regen = false;
+    bool must_use_hydraulic_brakes = false;
 };
 
 class ETCController {
 public:
-    ETCController();
+    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName RTD_button_pin, PinName RTD_light_pin, PinName RTD_buzzer_pin, PinName BSPD_fault_pin);
 
-    AppsReadings readApps();
+    bool update_state();
+    
+    static float clamp(float value);
 
-    bool impState() const;
+    static bool in_range(float value, float low, float high, float margin);
 
-    void clearImp();
+    void update_implaus();
 
-    void TSActive(bool active);
+    void update_RTD(bool GLV_charged);
 
-    bool rtdState() const;
+    void update_regen(float speed);
 
-    void updateRTD();
+    void update_implaus_timer(Timer &timer, bool &timer_running, float min_time, bool implaus_state, bool &etc_implaus); 
 
-    bool brakePressed();
+    void toggle_RTD(bool new_RTD_state);
 
-    void startRTD();
-    void stopRTD();
-    bool torqueAllowed() const;
-
+    ETCState get_ETC_state();
 private:
-    AnalogIn apps1_input;
-    AnalogIn apps2_input;
-    AnalogIn bpps_input;
+    ETCState ETC_state;
 
-    InterruptIn rtd_button;
+    AnalogIn APPS1_input;
+    AnalogIn APPS2_input;
+    AnalogIn BPPS_input;
+    AnalogIn front_BSE_input;
+    AnalogIn rear_BSE_input;
 
-    DigitalOut rtd_output;
+    DigitalIn RTD_button;
+    DigitalIn BSPD_fault_input;
 
-    Timeout rtds_timeout;
+    DigitalOut RTD_light;
+    DigitalOut RTD_buzzer;
 
-    bool ts_active = false;
-    bool rtd_enabled = false;
-    volatile bool rtd_request = false;
+    Timeout RTD_buzzer_timeout;
 
-    static constexpr float rtd_duration = 2.0f;
-    static constexpr float bPressedThresh = 0.4f;
+    static constexpr std::chrono::seconds RTD_buzzer_duration = 2s;
 
-    static constexpr float apps1MinV = 0.3125f;
-    static constexpr float apps1MaxV = 2.8125f;
+    static constexpr float APPS1_min_voltage = 0.3125f;
+    static constexpr float APPS1_max_voltage = 2.8125f;
 
-    static constexpr float apps2MinV = 0.1875f;
-    static constexpr float apps2MaxV = 1.6875f;
+    static constexpr float APPS2_min_voltage = 0.1875f;
+    static constexpr float APPS2_max_voltage = 1.6875f;
 
-    static constexpr float boundMargin = 0.05f;
-    static constexpr float mismatchTol = 0.10f;
-    static constexpr float impTime = 0.100f;
+    static constexpr float BPPS_min_voltage = 0.3125f;
+    static constexpr float BPPS_max_voltage = 2.8125f;
 
-    Timer implausTimer;
-    bool implausTimerRunning = false;
-    bool implausLatched = false;
+    static constexpr float PS_voltage_margin = 0.05f;
 
-    static float clamp(float x);
-    static bool inRange(float v, float lo, float hi, float margin);
+    static constexpr float front_BSE_activation_voltage = 0.5f;
+    static constexpr float rear_BSE_activation_voltage = 0.5f;
+    static constexpr float BPPS_max_non_regen_braking = 0.9f;
+    
+    static constexpr float BPPS_brake_engage_percent = 0.1f;
+    static constexpr float max_APPS_position_deviation = 0.10f;
+    static constexpr float implaus_min_time = 0.100f; // when greater than 0.1s, activate implaus
 
-    void onRTDButtonPressed();
-    void stopRTDSound();
+    Timer APPS_deviation_implaus_timer;
+    Timer APPS_range_implaus_timer;
+    Timer BPPS_range_implaus_timer;
+    Timer brake_and_accel_implaus_timer;
+    bool APPS_deviation_implaus_timer_runnning = false;
+    bool APPS_range_implaus_timer_running = false;
+    bool BPPS_range_implaus_timer_running = false;
+    bool brake_and_accel_implaus_timer_running = false;
 };
 
 #endif
