@@ -22,15 +22,10 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(${PROJECT_NAME} 
         main.cpp
+        ./etc/etc_controller.cpp
 )
 
-add_library(etc STATIC ./ETC/etc_controller.cpp)
-target_include_directories(etc PUBLIC ./ETC)
-target_link_libraries(etc mbed-core-flags)
-
-target_link_libraries(${PROJECT_NAME} 
-	mbed-os
-	etc
-)
+target_include_directories(${PROJECT_NAME} PUBLIC ./etc)
+target_link_libraries(${PROJECT_NAME} mbed-os)
 
 mbed_set_post_build(${PROJECT_NAME})

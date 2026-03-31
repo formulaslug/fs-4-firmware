@@ -13,7 +13,7 @@ void send_CAN_message();
 int main() {
     printf("Hello World!!\n");
 
-    VCU_can_timeout.attach(&send_CAN_message, 1000ms / VCU_can_frequency);
+    VCU_can_timeout.attach(&send_CAN_message, duration_cast<chrono::microseconds>(1000ms / VCU_can_frequency));
 
     CANMessage rx;
     while (true) {
@@ -79,5 +79,5 @@ void send_CAN_message() {
     can.write(msg0);
     can.write(msg1);
 
-    VCU_can_timeout.attach(&send_CAN_message, 1000ms / VCU_can_frequency);
+    VCU_can_timeout.attach(&send_CAN_message, duration_cast<chrono::microseconds>(1000ms / VCU_can_frequency));
 }
