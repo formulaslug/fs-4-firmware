@@ -47,7 +47,9 @@ void drawChargerDefaultLayout(BT817Q& display,
     display.drawFormattedText(475, 265, "Energy Used: %0.1f", white, 24, 0, energy_used);
     display.drawFormattedText(475, 320, "Charge Time: %lu min", white, 24, 0,
                               static_cast<unsigned long>(charge_time));
-
+    display.drawFormattedText(30, 100, "Voltage: %0.1f V", white, 24, 0, pack_voltage / 10.0f);
+    display.drawFormattedText(30, 155, "SOC: %d %%", white, 24, 0, soc);
+    display.drawFormattedText(30, 210, "Current: %0.1f A", white, 24, 0, current);
     display.endFrame();
 
 

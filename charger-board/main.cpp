@@ -14,7 +14,7 @@ void sendCAN();
 // TODO: Get correct pins from charger-board schematic
 BT817Q eve{PA_1, PA_1, PA_1, PA_1, PA_1, PA_1, EvePresets::CFA800480E3};
 
-CAN can{PIN_CAN1_RD, PIN_CAN1_TD, CAN_FREQUENCY};
+CAN can{PIN_CAN1_RD, PIN_CAN1_TD, CAN_FREQUENCY}; //PB_8 and PB_9
 
 AnalogIn control_pilot{PIN_CONTROL_PILOT};
 AnalogIn proximity_pilot{PIN_PROXIMITY_PILOT};
@@ -64,6 +64,7 @@ int main() {
         CANMessage msg;
 
         while (can.read(msg)) {
+
             switch (msg.id) {
             case 0x188: // ACC_TPDO_STATUS
                 prechargeDone = msg.data[0] & 0b00001000;
