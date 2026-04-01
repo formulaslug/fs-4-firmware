@@ -16,36 +16,36 @@ void drawChargerDefaultLayout(BT817Q& display,
     display.startFrame();
     display.clear(0, 0, 0);
     if (is_charging) {
-        display.drawText(400, 10, "CHARGING", green, 30, BT817Q::OPT_CENTER);
+        display.drawText(350, 10, "CHARGING", green, 30, BT817Q::OPT_CENTER);
     } else {
-        display.drawText(400, 10, "NOT CHARGING", red, 30, BT817Q::OPT_CENTER);
+        display.drawText(350, 10, "NOT CHARGING", red, 30, BT817Q::OPT_CENTER);
     }
     //space for future live graphs
     //Voltage graph
-    display.drawRect(Point{20, 60}, Point{460, 175}, white);
+    display.drawRect(Point{0, 60}, Point{460, 175}, white);
     display.drawText(35, 75, "Voltage", white, 24, 0);
     display.drawFormattedText(240, 110, "%0.1f V", white, 28, BT817Q::OPT_CENTER, pack_voltage / 10.0f);
     //SOC graph
-    display.drawRect(Point{20, 160}, Point{460, 245}, white);
+    display.drawRect(Point{0, 160}, Point{460, 245}, white);
     display.drawText(35, 175, "State of Charge", white, 24, 0);
     display.drawFormattedText(240, 210, "%d %%", white, 28, BT817Q::OPT_CENTER, soc);
 
     //current graph
-    display.drawRect(Point{20, 260}, Point{460, 345}, white);
+    display.drawRect(Point{0, 260}, Point{460, 345}, white);
     display.drawText(35, 275, "Current Limit", white, 24, 0);
     display.drawFormattedText(240, 310, "%0.1f A", white, 28, BT817Q::OPT_CENTER, current);\
     
     //temp grap
-    display.drawRect(Point{20, 360}, Point{460, 445}, white);
+    display.drawRect(Point{0, 360}, Point{460, 445}, white);
     display.drawText(35, 375, "Temperature", white, 24, 0);
     display.drawFormattedText(240, 410, "%0.1f C", white, 28, BT817Q::OPT_CENTER, max_temp);
 
     //Stats column right side of screen
-    display.drawFormattedText(520, 100, "Min Temp: %0.1f C", white, 24, 0, min_temp);
-    display.drawFormattedText(520, 155, "Avg Temp: %0.1f C", white, 24, 0, avg_temp);
-    display.drawFormattedText(520, 210, "Max Temp: %0.1f C", white, 24, 0, max_temp);
-    display.drawFormattedText(520, 265, "Energy Used: %0.1f", white, 24, 0, energy_used);
-    display.drawFormattedText(520, 320, "Charge Time: %lu min", white, 24, 0,
+    display.drawFormattedText(450, 100, "Min Temp: %0.1f C", white, 24, 0, min_temp);
+    display.drawFormattedText(450, 155, "Avg Temp: %0.1f C", white, 24, 0, avg_temp);
+    display.drawFormattedText(450, 210, "Max Temp: %0.1f C", white, 24, 0, max_temp);
+    display.drawFormattedText(450, 265, "Energy Used: %0.1f", white, 24, 0, energy_used);
+    display.drawFormattedText(450, 320, "Charge Time: %lu min", white, 24, 0,
                               static_cast<unsigned long>(charge_time));
 
     display.endFrame();
