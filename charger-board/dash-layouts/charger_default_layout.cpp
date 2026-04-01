@@ -16,17 +16,17 @@ void drawChargerDefaultLayout(BT817Q& display,
     display.startFrame();
     display.clear(0, 0, 0);
     if (is_charging) {
-        display.drawText(400, 20, "CHARGING", green, 30, BT817Q::OPT_CENTER);
+        display.drawText(400, 10, "CHARGING", green, 30, BT817Q::OPT_CENTER);
     } else {
-        display.drawText(400, 20, "NOT CHARGING", red, 30, BT817Q::OPT_CENTER);
+        display.drawText(400, 10, "NOT CHARGING", red, 30, BT817Q::OPT_CENTER);
     }
     //space for future live graphs
     //Voltage graph
     display.drawRect(Point{20, 60}, Point{460, 175}, white);
     display.drawText(35, 75, "Voltage", white, 24, 0);
-    display.drawFormattedText(240, 110, "$0.1f V", white, 28, BT817Q::OPT_CENTER, pack_voltage);
+    display.drawFormattedText(240, 110, "%0.1f V", white, 28, BT817Q::OPT_CENTER, pack_voltage / 10.0f);
     //SOC graph
-     display.drawRect(Point{20, 160}, Point{460, 245}, white);
+    display.drawRect(Point{20, 160}, Point{460, 245}, white);
     display.drawText(35, 175, "State of Charge", white, 24, 0);
     display.drawFormattedText(240, 210, "%d %%", white, 28, BT817Q::OPT_CENTER, soc);
 

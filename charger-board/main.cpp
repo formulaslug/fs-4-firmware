@@ -6,6 +6,7 @@
 
 void initIO();
 void initScreen();
+void initChargerCAN();
 void sendCAN();
 
 
@@ -15,29 +16,33 @@ BT817Q eve{PA_1, PA_1, PA_1, PA_1, PA_1, PA_1, EvePresets::CFA800480E3};
 
 CAN can{PIN_CAN1_RD, PIN_CAN1_TD, CAN_FREQUENCY};
 
+AnalogIn control_pilot{PIN_CONTROL_PILOT};
+AnalogIn proximity_pilot{PIN_PROXIMITY_PILOT};
+
+EventQueue queue{EVENTS_EVENT_SIZE * 32};
+
 uint32_t max_voltage_mV = 0;
 uint16_t max_dc_current_cA = 0; // in centiamps (0.01 amps)
 uint8_t max_ac_current_A = 0;
 
 uint16_t pack_voltage = 0;
-uint16_t soc = 0;
+uint8_t soc = 0;
 
-float display_currrent = 0.0f;
+float pack_current = 0.0f;
 float min_temp_C = 0.0f;
 float avg_temp_C = 0.0f;
 float max_temp_C = 0.0f;
 float energy_used = 0.0f;
-uint32_t charge_time_min = 0;
-Timer charge_timer = 0;
-bool charging = false;
 
+uint32_t temp_sample_count = 0;
+uint32_t charge_time_min = 0;
+Timer charge_timer;
+bool charging = false;
 bool enable = false;
 
 
-AnalogIn control_pilot{PIN_CONTROL_PILOT};
-AnalogIn proximity_pilot{PIN_PROXIMITY_PILOT};
 
-EventQueue queue{EVENTS_EVENT_SIZE * 32};
+
 
 int main() {
     printf("charger-board main!\n");
@@ -69,19 +74,34 @@ int main() {
             case 0x288: // ACC_TPDO_POWER
                 pack_voltage = msg.data[0] + (msg.data[1] << 8);
                 soc = msg.data[2];
-                int16_t live_current = msg.data[3] | msg.data[4] << 8;
-                float pack_current = live_current * 0.1f;
-                display_currrent = pack_current;
+                pack_current = (static_cast<int16_t>(msg.data[3] | (msg.data[4] << 8))) * 0.1f;
+
+                break;
+
+            case 0x388: //ACC_TDPO_CELL_TEMPS (placeholder id)
+                min_temp_C = static_cast<float>(static_cast<int8_t>(msg.data[0]));
+                avg_temp_C = static_cast<float>(static_cast<int8_t>(msg.data[1]));
+                max_temp_C = static_cast<float>(static_cast<int8_t>(msg.data[2]));
+
+                break;
+            case 0x488:// Energy usage stuff potentially? (placeholder id)
+                energy_used = static_cast<float>(msg.data[0]
+                                    | (msg.data[1] << 8)
+                                    | (msg.data[2] << 16)
+                                    | (msg.data[3] << 24));
                 break;
             default:
                 break;
             }
+
         }
 
         // if proximity pilot is about 2.7v then no EVSE connected
         // if proximity pilot is about 1.7v then EVSE connected and button pressed
         // if proximity pilot is about 0.9v then EVSE connected and button not pressed
         bool proximity_pilot_ready = (proximity_pilot.read() * 3.3 < 1.2);
+        enable = proximity_pilot_ready && prechargeDone && !fault && shutdown_closed && cell_temps_fine;
+
 
         // printf("pp: %f\n",proximity_pilot.read());
 
@@ -107,25 +127,30 @@ int main() {
             shutdown_closed,
             cell_temps_fine);
 
-        enable = proximity_pilot_ready && prechargeDone && !fault && shutdown_closed && cell_temps_fine;
         if (enable && !charging) {
+            charge_timer.reset();
             charge_timer.start();
+            charging = true;
         } else if (!enable && charging) {
             charge_timer.stop();
+            charging = false;
         }
 
-        charging = enable;
+        if(charging){
+            float power_W = (pack_voltage / 10.0f) * pack_current;
+            energy_used += (power_W / 10.0f) / 3600.0f;
+        
+        }
+        
+        //add energy timer logic here
         charge_time_min = std::chrono::duration_cast<std::chrono::minutes>(
                                 charge_timer.elapsed_time())
                                 .count();
 
-        printf("Enable: %x\nVoltage: %f\nSOC: %d\n\n", enable, pack_voltage / 100.0, soc);
+        max_dc_current_cA = enable ? CURRENT_MAX_CA : 0;
+        max_ac_current_A = std::min((int)(control_pilot.read() * 3.3 * 19), MAX_AC_CURRENT);
 
-        if (enable) {
-            max_dc_current_cA = CURRENT_MAX_CA;
-        } else {
-            max_dc_current_cA = 0;
-        }
+        printf("Enable: %x\nVoltage: %f\nSOC: %d\n\n", enable, pack_voltage / 100.0, soc);
 
         queue.dispatch_once();
     }
@@ -141,9 +166,9 @@ void initScreen() {
     queue.call_every(100ms, [&]() {
         drawChargerDefaultLayout(eve, 
                                 enable,
-                                pack_voltage / 100.0f,
-                                soc,
-                                display_currrent,
+                                pack_voltage / 10.0f,
+                                soc * 0.5f,
+                                pack_current,
                                 min_temp_C,
                                 max_temp_C,
                                 avg_temp_C,
