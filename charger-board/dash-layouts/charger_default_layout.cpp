@@ -16,9 +16,9 @@ void drawChargerDefaultLayout(BT817Q& display,
     display.startFrame();
     display.clear(0, 0, 0);
     if (is_charging) {
-        display.drawText(375, 10, "CHARGING", green, 30, BT817Q::OPT_CENTER);
+        display.drawText(375, 30, "CHARGING", green, 30, BT817Q::OPT_CENTER);
     } else {
-        display.drawText(375, 10, "NOT CHARGING", red, 30, BT817Q::OPT_CENTER);
+        display.drawText(375, 30, "NOT CHARGING", red, 30, BT817Q::OPT_CENTER);
     }
     //space for future live graphs
     //Voltage graph
