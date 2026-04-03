@@ -15,7 +15,6 @@
       "clock_source": "USE_PLL_HSE_XTAL",
       "lse_available": 0,
       "hse_value": 24000000,
-      //"sysclock": 160000000,
     },
   },
 
@@ -49,9 +48,18 @@
       "stdio_uart_rx": "PB_7",
       "clock_source": "USE_PLL_HSE_XTAL",
       "lse_available": 0,
-      // "hse_value": 24000000 should run fine, datasheet references 4-26 Mhz HSE
-      // commented out bc. f4 chips have no hse_value macro
-      // see config below for future reference
+       "hse_value": 24000000,
+    },
+
+    // NOTE: For some reason mbed's MCU_STM32F4 target in targets.json does
+    // not include this config definition (I think they assume you use an 8MHz),
+    // so we need to add it here to be able to use our 24MHz.
+    "config": {
+      "hse_value": {
+        "help": "HSE default value is 8MHz in stm32f4xx_hal_conf.h",
+        "value": "8000000",
+        "macro_name": "HSE_VALUE"
+      }
     },
   },
 
@@ -81,32 +89,33 @@
     "device_name": "STM32F446RETx",
     
     "overrides": {
-      "stdio_uart_tx": "PB_6",
-      "stdio_uart_rx": "PB_7",
+      "stdio_uart_tx": "PC_10",
+      "stdio_uart_rx": "PC_11",
       "clock_source": "USE_PLL_HSE_XTAL",
       "lse_available": 0,
-      // "hse_value": 24000000 should run fine, datasheet references 4-26 Mhz HSE
-      // commented out bc. f4 chips have no hse_value macro
-      // see config below for future reference
+      "hse_value": 24000000,
     },
+
+    // NOTE: For some reason mbed's MCU_STM32F4 target in targets.json does
+    // not include this config definition (I think they assume you use an 8MHz),
+    // so we need to add it here to be able to use our 24MHz.
+    "config": {
+      "hse_value": {
+        "help": "HSE default value is 8MHz in stm32f4xx_hal_conf.h",
+        "value": "8000000",
+        "macro_name": "HSE_VALUE"
+      }
+    },
+
+    //// NOTE: 
+    //"config": {
+    //  "hse_value": {
+    //    "help": "HSE default value is 8MHz in stm32f4xx_hal_conf.h",
+    //    "value": "24000000",
+    //    "macro_name": "HSE_VALUE"
+    //  }
+    //},
   },
-
-  // Other targets will go here!
-
-  //{
-  //    "BLUEPILL_F103C8": {
-  //        "inherits": [
-  //            "MCU_STM32F103x8"
-  //        ],
-  //        "overrides": {
-  //            "clock_source": "USE_PLL_HSE_XTAL"
-  //        },
-  //        "device_has_remove": [
-  //            "STDIO_MESSAGES"
-  //        ],
-  //        "device_name": "STM32F103C8"
-  //    }
-  //}
 
   // hse_value defined as a config bc STM32F446xE in targets.json has no HSE config
   //"config": {
