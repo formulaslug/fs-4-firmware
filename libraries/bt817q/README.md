@@ -10,8 +10,8 @@ A standalone CMake library for controlling the BT817Q LCD display controller, ex
 Add this as a subdirectory in your CMake project:
 
 ```cmake
-add_subdirectory(path/to/fs-bt817q-dash bt817q-dash)
-target_link_libraries(your_target bt817q-dash)
+add_subdirectory(../libraries/bt817q bt817q)
+target_link_libraries(${PROJECT_NAME} bt817q) # add bt817q to this call
 ```
 
 ## API

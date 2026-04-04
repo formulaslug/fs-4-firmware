@@ -6,6 +6,7 @@ add_library(mbed-vehicle-control-unit INTERFACE)
 target_sources(mbed-vehicle-control-unit
     INTERFACE
         PeripheralPins.c
+        system_clock_24mhz.c
 )
 
 target_include_directories(mbed-vehicle-control-unit
