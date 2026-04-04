@@ -17,6 +17,7 @@ void generateStatusMessage(BMS&);
 void controlFans(BMS &BMSInstance);
 void controller(LTC681xParallelBus&, BMS&);
 void checkShutdownCircuit(BMS&);
+void checkIMDStatus(BMS&);
 
 
 #endif

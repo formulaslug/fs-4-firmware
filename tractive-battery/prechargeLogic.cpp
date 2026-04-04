@@ -15,26 +15,6 @@ i dont think we really need a state to tell us when the precharge is complete, i
 
 no global variables should be defined here nor should an event queue be defined here
 
-potential logic issues: 
- if we are in precharge idle state we start precharging if we have no faults (prechargeAllowed returns true, and the pack voltage is okay),
- the issue is that we just close the precharge relay no matter what if were allowed to, and we dont check dcBusVoltage later on it does check,
- when its in PRECHARGE_ACTIVE but i think we should always know the dcBusVoltage before we close the precharge relay....
-
-
- the other issue is that once we are in the PRECHARGE_COMPLETE state the only way we can ever precharge again is if we have a fault somewhere, which only happens if:
- prechargeAllowed returns false - note that precharge allowed does not check the dcBusVoltage
- 
- i think the assumption might have been we precharge once on startup, but this isnt true. 
-
-
-
-
-the cars dc voltage can drop under high load during driving, so we need to be able to precharge the car while its actually running. we should assume we need to do this somewhat often 
-
-
-i think its worth it to do a full rewrite, going to double check what is needed then maybe make fsm model so its clear what needs to be implemented 
-
-
 
 
 

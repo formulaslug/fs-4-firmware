@@ -4,6 +4,23 @@
 // need to add some sort of logging for testing - over uart
 
 
+
+/*
+	move structs and telemetry data to seperate can class
+	move BMSfaultDetection functions to BMS class so we dont have to keep passing a reference 
+	make changes to precharge ... soon - note ideally precharge runs once per startup we do NOT close the precharge relay while the car is running
+	(add real tmp1075 addresses)
+
+
+	- implementing current sensor is underway make sure changes are announced beforehand 
+
+
+*/
+
+
+
+
+
 void chargingActions(BMS &BMSInstance){
 		//current work in progress - needs to detect soc over can......
 	//code from fs3 adapted to fs4
@@ -63,6 +80,7 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
 		command = LTC681xParallelBus::BuildAddressedBusCommand(PollADCStatus(),i);
 		stat = ltcBusInterface.PollAdcCompletion(command, 0);
+
 		if(stat == LTC681xBus::LTC681xBusStatus::PollTimeout){
 			// printf("ADC poll timeout, on Bank %d\n", i);
 			voltsConverted = false;
@@ -190,6 +208,12 @@ void decideBalancing(BMS &BMSInstance){
 	}
 }
 
+void checkIMDStatus(BMS &BMSInstance){
+
+
+
+}
+
 
 
 void checkForFaults(BMS &BMSInstance){	
@@ -259,6 +283,7 @@ void checkForFaults(BMS &BMSInstance){
 	for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
 		uint8_t trayTemp = BMSInstance.trayTemps[i];
 		if(trayTemp >= CELL_MAX || trayTemp <= CELL_MIN){
+			//should not cause a fault just for data 4-4-26
 			BMSInstance.currentState = BMSInstance.FAULT;
 			BMSInstance.nBMS_Fault_3V3 = 0;
 		}
@@ -271,6 +296,16 @@ void checkForFaults(BMS &BMSInstance){
 
 // i am undecided wether or not to put the bms into a fault state here - might add a state that doesnt turn on any bms indicator lights but essentially stops the bms functions like in a fault state
 // not totally sure whats required of the bms in this case making a best guess
+/*
+	only one we care about is the final shutdown circuit reading - we only care about it for the purposes of precharing again after a shutdown
+
+	the other shutdown circuit inputs should be reported to can 4-4-26
+
+
+*/
+
+
+
 void checkShutdownCircuit(BMS &BMSInstance){
 	if(BMSInstance.Shutdown_In_3V3_Filtered.read()==0 || BMSInstance.Shutdown_Out_3V3_Filtered.read()==0){
 		// shutdown circuit open before the bms
