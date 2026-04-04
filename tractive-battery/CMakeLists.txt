@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 4.1.1)
-cmake_policy(VERSION 4.1.1)
+cmake_minimum_required(VERSION 3.19)
+cmake_policy(VERSION 3.19...3.22)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(MBED_APP_JSON_PATH mbed_app.json5)
