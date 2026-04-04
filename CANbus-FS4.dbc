@@ -32,8 +32,21 @@ NS_ :
     SG_MUL_VAL_
 
 BS_: 
-BU_: VCU TELEM_LOGGER VDM SME BATT_BOARD STEERING TPERIPH_FL TPERIPH_FR TPERIPH_BL TPERIPH_BR CHARGER_BOARD 
+BU_: VCU VDM SME BATT STEERING_WHEEL TPERIPH_FL TPERIPH_FR TPERIPH_BL TPERIPH_BR IZZE1 CHARGER_BOARD SMPC
+
+BA_DEF_ "BusType" STRING ;
+BA_DEF_DEF_ "BusType" "";
+BA_ "BusType" "CAN";
+
 BO_ 128 SYNC: 0 VCU
+
+BO_ 385 SMPC_UNKNOWN_1: 0 SMPC
+
+BO_ 641 SMPC_UNKNOWN_2: 0 SMPC
+
+BO_ 898 SMPC_UNKNOWN_3: 0 SMPC
+
+BO_ 1793 SMPC_UNKNOWN_4: 0 SMPC
 
 BO_ 390 SME_RPDO_Throttle_Demand: 8 VCU
    SG_ SME_THROTL_PowerReady : 35|1@1+ (1,0) [0|1] "" Vector__XXX
@@ -47,19 +60,29 @@ BO_ 646 SME_RPDO_Max_Currents: 8 VCU
    SG_ SME_CURRLIM_ChargeCurrentLim : 0|16@1+ (1,0) [0|65535] "A" Vector__XXX
    SG_ SME_CURRLIM_DischargeCurrentLim : 16|16@1+ (1,0) [0|65535] "A" Vector__XXX
 
-BO_ 393 ETC_TPDO_STATUS: 8 VCU
-   SG_ ETC_STATUS_HE1 : 0|16@1+ (1,0) [0|65535] "mV" Vector__XXX
-   SG_ ETC_STATUS_HE2 : 16|16@1+ (1,0) [0|65535] "mV" Vector__XXX
-   SG_ ETC_STATUS_BRAKE_SENSE_VOLTAGE : 32|16@1+ (1,0) [0|65535] "mV" Vector__XXX
-   SG_ ETC_STATUS_RTD_BUTTON : 56|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ ETC_STATUS_RTDS : 57|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ ETC_STATUS_REVERSE : 58|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ ETC_STATUS_BRAKELIGHT : 59|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ ETC_STATUS_PEDAL_TRAVEL : 48|8@1+ (1,0) [0|100] "%" Vector__XXX
-   SG_ ETC_STATUS_RTD : 60|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ ETC_STATUS_IMPLAUSIBILITY : 61|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ ETC_STATUS_BATT_PRECHARGE_DONE : 62|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ ETC_STATUS_CAN_REGEN : 63|1@1+ (1,0) [0|1] "" Vector__XXX
+BO_ 393 VCU_TPDO_ETC_STATUS_1: 8 VCU
+   SG_ VCU_ETC_APPS1_HE : 0|16@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ VCU_ETC_APPS2_HE : 16|16@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ VCU_ETC_BPPS_HE : 32|16@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ VCU_ETC_ACCEL_PEDAL_TRAVEL : 48|8@1+ (1,0) [0|100] "%" Vector__XXX
+   SG_ VCU_ETC_BRAKE_PEDAL_TRAVEL : 56|8@1+ (1,0) [0|100] "%" Vector__XXX
+
+BO_ 394 VCU_TPDO_ETC_STATUS_2: 6 VCU
+   SG_ VCU_ETC_BRAKE_PRESSSURE_FRONT : 0|16@1+ (1,0) [0|65535] "psi" Vector__XXX
+   SG_ VCU_ETC_BRAKE_PRESSSURE_REAR : 16|16@1+ (1,0) [0|65535] "psi" Vector__XXX
+   SG_ VCU_ETC_READY_TO_DRIVE : 32|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_MOTOR_ENABLED : 33|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_RTD_BUTTON_PRESSED : 34|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_BATT_PRECHARGE_DONE : 35|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUSIBILITY_APPS_OUT_OF_RANGE : 36|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUSIBILITY_BPPS_OUT_OF_RANGE : 37|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUSIBILITY_APPS_DEVIATION : 38|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUSIBILITY_BSE_OUT_OF_RANGE : 39|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUSIBILITY_BRAKE_AND_ACCEL : 40|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_REVERSE : 41|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_BRAKELIGHT : 42|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_CAN_REGEN : 43|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_MUST_USE_HYDRAULIC_BRAKES : 44|1@1+ (1,0) [0|1] "" Vector__XXX
 
 BO_ 1154 SME_TPDO_Torque_speed: 8 SME
    SG_ SME_TRQSPD_SOC_Low_Traction : 32|1@1+ (1,0) [0|1] "" Vector__XXX
@@ -69,8 +92,8 @@ BO_ 1154 SME_TPDO_Torque_speed: 8 SME
    SG_ SME_TRQSPD_Park_Brake : 36|1@1+ (1,0) [0|1] "" Vector__XXX
    SG_ SME_TRQSPD_Pedal_Brake : 37|1@1+ (1,0) [0|1] "" Vector__XXX
    SG_ SME_TRQSPD_Controller_Overtermp : 38|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ SME_TRQSPD_Key_switch_overvolt : 39|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ SME_TRQSPD_Key_switch_undervolt : 40|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SME_TRQSPD_Key_Switch_Overvolt : 39|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SME_TRQSPD_Key_Switch_Undervolt : 40|1@1+ (1,0) [0|1] "" Vector__XXX
    SG_ SME_TRQSPD_Running : 41|1@1+ (1,0) [0|1] "" Vector__XXX
    SG_ SME_TRQSPD_Traction : 42|1@1+ (1,0) [0|1] "" Vector__XXX
    SG_ SME_TRQSPD_Hydraulic : 43|1@1+ (1,0) [0|1] "" Vector__XXX
@@ -90,35 +113,42 @@ BO_ 1666 SME_TPDO_Temperature: 8 SME
    SG_ SME_TEMP_MotorTemperature : 0|8@1+ (1,-40) [0|255] "C" Vector__XXX
    SG_ SME_TEMP_BusCurrent : 48|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
 
-BO_ 392 BATT_TPDO_STATUS: 8 BATT_BOARD
+BO_ 392 BATT_TPDO_STATUS: 8 BATT
    SG_ BATT_STATUS_BMS_FAULT : 0|1@1+ (1,0) [0|1] "" Vector__XXX
    SG_ BATT_STATUS_IMD_FAULT : 1|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_SHUTDOWN_STATE : 2|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_PRECHARGE_DONE : 3|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_PRECHARGING : 4|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_CELL_TOO_LOW : 8|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_CELL_TOO_HIGH : 9|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_TEMP_TOO_LOW : 10|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_TEMP_TOO_HIGH : 11|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_TEMP_TOO_HIGH_CRG : 12|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_CHARGING : 5|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ BATT_STATUS_GLV_VOLTAGE : 16|16@1+ (1,0) [0|65635] "mV" Vector__XXX
-   SG_ BATT_STATUS_CELL_FAULT_INDEX : 32|8@1+ (1,0) [0|255] "" Vector__XXX
-   SG_ BATT_STATUS_BALANCING : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_SHUTDOWN_FINAL : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_SHUTDOWN_IN : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_SHUTDOWN_OUT : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_PRECHARGING : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_PRECHARGE_DONE : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_CHARGING : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_BALANCING : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_CELL_VOLTAGE_TOO_LOW : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_CELL_VOLTAGE_TOO_HIGH : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_PACK_TEMP_TOO_LOW : 11|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_PACK_TEMP_TOO_HIGH : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_PACK_TEMP_TOO_HIGH_CRG : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ BATT_STATUS_FAULT_MODULE_INDEX : 16|8@1+ (1,0) [0|4] "" Vector__XXX
+   SG_ BATT_STATUS_FAULT_SENSOR_INDEX : 24|8@1+ (1,0) [0|11] "" Vector__XXX
+   SG_ BATT_STATUS_FAULT_INDEX : 32|8@1+ (1,0) [0|60] "" Vector__XXX
+   SG_ BATT_STATUS_GLV_VOLTAGE : 40|16@1+ (0.001,0) [0|65.635] "V" Vector__XXX
+   SG_ BATT_STATUS_FAN_PWM_DUTY : 56|8@1+ (1,0) [0|100] "%" Vector__XXX
 
-BO_ 648 BATT_TPDO_POWER: 8 BATT_BOARD
+BO_ 648 BATT_TPDO_POWER: 8 BATT
    SG_ BATT_POWER_PACK_VOLTAGE : 0|16@1+ (0.01,0) [0|655.35] "V" Vector__XXX
-   SG_ BATT_POWER_SOC : 16|8@1+ (1,0) [0|255] "Percentage" Vector__XXX
-   SG_ BATT_POWER_CURRENT : 24|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+   SG_ BATT_POWER_CURRENT : 16|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+   SG_ BATT_POWER_INSTANTANEOUS_POWER : 32|18@1- (1,0) [-131072|131071] "W" Vector__XXX
+   SG_ BATT_POWER_SOC : 50|10@1+ (0.1,0) [0|100] "%" Vector__XXX
 
-BO_ 1160 BATT_TPDO_CELL_STAT: 0 BATT_BOARD
-   SG_ BATT_STAT_AVG_CELL_TEMP : 0|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_STAT_HIGH_TEMP_CELL : 8|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_STAT_LOW_TEMP_CELL : 16|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_STAT_HIGH_VOLT_CELL : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_STAT_LOW_VOLT_CELL : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+BO_ 1160 BATT_TPDO_CELL_STATS: 6 BATT
+   SG_ BATT_STAT_AVG_CELL_TEMP : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_STAT_HIGH_CELL_TEMP : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_STAT_LOW_CELL_TEMP : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_STAT_AVG_CELL_VOLT : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_STAT_HIGH_CELL_VOLT : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_STAT_LOW_CELL_VOLT : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 401 BATT_TPDO_MOD0_VOLTS: 6 BATT_BOARD
+BO_ 401 BATT_TPDO_MOD0_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
@@ -126,79 +156,119 @@ BO_ 401 BATT_TPDO_MOD0_VOLTS: 6 BATT_BOARD
    SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 657 BATT_TPDO_MOD0_TEMPS: 6 BATT_BOARD
-   SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD0_TEMPS_CELL3 : 24|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1- (1,0) [-128|127] "C" Vector__XXX
+BO_ 657 BATT_TPDO_MOD0_TEMPS_A: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL3 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 402 BATT_TPDO_MOD1_VOLTS: 6 BATT_BOARD
-   SG_ BATT_MOD1_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD1_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD1_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD1_VOLTS_CELL3 : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD1_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD1_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+BO_ 658 BATT_TPDO_MOD0_TEMPS_B: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL9 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 658 BATT_TPDO_MOD1_TEMPS: 6 BATT_BOARD
-   SG_ BATT_MOD1_TEMPS_CELL0 : 0|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD1_TEMPS_CELL1 : 8|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD1_TEMPS_CELL2 : 16|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD1_TEMPS_CELL3 : 24|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD1_TEMPS_CELL4 : 32|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD1_TEMPS_CELL5 : 40|8@1- (1,0) [-128|127] "C" Vector__XXX
+BO_ 402 BATT_TPDO_MOD1_VOLTS: 6 BATT
+   SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL3 : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 403 BATT_TPDO_MOD2_VOLTS: 6 BATT_BOARD
-   SG_ BATT_MOD2_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD2_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD2_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD2_VOLTS_CELL3 : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD2_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD2_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+BO_ 659 BATT_TPDO_MOD1_TEMPS_A: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL3 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 659 BATT_TPDO_MOD2_TEMPS: 6 BATT_BOARD
-   SG_ BATT_MOD2_TEMPS_CELL0 : 0|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD2_TEMPS_CELL1 : 8|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD2_TEMPS_CELL2 : 16|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD2_TEMPS_CELL3 : 24|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD2_TEMPS_CELL4 : 32|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD2_TEMPS_CELL5 : 40|8@1- (1,0) [-128|127] "C" Vector__XXX
+BO_ 660 BATT_TPDO_MOD1_TEMPS_B: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL9 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 404 BATT_TPDO_MOD3_VOLTS: 6 BATT_BOARD
-   SG_ BATT_MOD3_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD3_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD3_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD3_VOLTS_CELL3 : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD3_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD3_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+BO_ 403 BATT_TPDO_MOD2_VOLTS: 6 BATT
+   SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL3 : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 660 BATT_TPDO_MOD3_TEMPS: 6 BATT_BOARD
-   SG_ BATT_MOD3_TEMPS_CELL0 : 0|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD3_TEMPS_CELL1 : 8|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD3_TEMPS_CELL2 : 16|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD3_TEMPS_CELL3 : 24|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD3_TEMPS_CELL4 : 32|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD3_TEMPS_CELL5 : 40|8@1- (1,0) [-128|127] "C" Vector__XXX
+BO_ 661 BATT_TPDO_MOD2_TEMPS_A: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL3 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 405 BATT_TPDO_MOD4_VOLTS: 6 BATT_BOARD
-   SG_ BATT_MOD4_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD4_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD4_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD4_VOLTS_CELL3 : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD4_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
-   SG_ BATT_MOD4_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+BO_ 662 BATT_TPDO_MOD2_TEMPS_B: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL9 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 661 BATT_TPDO_MOD4_TEMPS: 6 BATT_BOARD
-   SG_ BATT_MOD4_TEMPS_CELL0 : 0|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD4_TEMPS_CELL1 : 8|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD4_TEMPS_CELL2 : 16|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD4_TEMPS_CELL3 : 24|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD4_TEMPS_CELL4 : 32|8@1- (1,0) [-128|127] "C" Vector__XXX
-   SG_ BATT_MOD4_TEMPS_CELL5 : 40|8@1- (1,0) [-128|127] "C" Vector__XXX
+BO_ 404 BATT_TPDO_MOD3_VOLTS: 6 BATT
+   SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL3 : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 904 BATT_TPDO_TRAY_TEMPS: 5 BATT_BOARD
+BO_ 663 BATT_TPDO_MOD3_TEMPS_A: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL3 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+
+BO_ 664 BATT_TPDO_MOD3_TEMPS_B: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL9 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+
+BO_ 405 BATT_TPDO_MOD4_VOLTS: 6 BATT
+   SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL3 : 24|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+   SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
+
+BO_ 665 BATT_TPDO_MOD4_TEMPS_A: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL3 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+
+BO_ 666 BATT_TPDO_MOD4_TEMPS_B: 6 BATT
+   SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL9 : 24|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+   SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
+
+BO_ 904 BATT_TPDO_TRAY_TEMPS: 5 BATT
    SG_ BATT_TRAY_TEMPS_BOLTED_CONNECTION : 0|8@1+ (0.5,0) [0|127.5] "" Vector__XXX
    SG_ BATT_TRAY_TEMPS_BUSBAR : 8|8@1+ (0.5,0) [0|127.5] "" Vector__XXX
    SG_ BATT_TRAY_TEMPS_PACK_FUSE : 16|8@1+ (0.5,0) [0|127.5] "" Vector__XXX
@@ -299,29 +369,115 @@ BO_ 676 TPERIPH_BR_TPDO_TIRETEMP: 8 TPERIPH_BR
    SG_ TPERIPH_BR_TIRETEMP_7 : 48|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_BR_TIRETEMP_8 : 56|8@1+ (1,0) [0|255] "C" Vector__XXX
 
-BO_ 888 STEERING_DIAL_MODES: 0 STEERING
-   SG_ STEERING_DRIVE_MODE : 1|2@1+ (1,0) [0|2] "" Vector__XXX
-   SG_ STEERING_TRACTION_MODE : 1|2@1+ (1,0) [0|2] "" Vector__XXX
-   SG_ STEERING_REGEN_MODE : 1|2@1+ (1,0) [0|2] "" Vector__XXX
+BO_ 888 STEERING_DIAL_MODES: 1 STEERING_WHEEL
+   SG_ STEERING_DRIVE_MODE : 0|2@1+ (1,0) [0|2] "" Vector__XXX
+   SG_ STEERING_TRACTION_MODE : 2|2@1+ (1,0) [0|2] "" Vector__XXX
+   SG_ STEERING_REGEN_MODE : 4|2@1+ (1,0) [0|2] "" Vector__XXX
 
-BA_DEF_ "BusType" STRING ;
-BA_DEF_ BO_ "GenMsgBackgroundColor" STRING ;
-BA_DEF_ BO_ "GenMsgForegroundColor" STRING ;
-BA_DEF_ BO_ "matchingcriteria" INT 0 0;
-BA_DEF_ BO_ "filterlabeling" INT 0 0;
-BA_DEF_ BO_ "matchingcriteria" INT 0 0;
-BA_DEF_ BO_ "filterlabeling" INT 0 0;
-BA_DEF_ BO_ "matchingcriteria" INT 0 0;
-BA_DEF_ BO_ "filterlabeling" INT 0 0;
-BA_DEF_ BO_ "matchingcriteria" INT 0 0;
-BA_DEF_ BO_ "filterlabeling" INT 0 0;
-BA_DEF_ BO_ "matchingcriteria" INT 0 0;
-BA_DEF_ BO_ "filterlabeling" INT 0 0;
-BA_DEF_DEF_ "BusType" "CAN";
-BA_DEF_DEF_ "GenMsgBackgroundColor" "#1e1e1e";
-BA_DEF_DEF_ "GenMsgForegroundColor" "#ffffff";
-BA_DEF_DEF_ "matchingcriteria" 0;
-BA_DEF_DEF_ "filterlabeling" 0;
-BA_DEF_DEF_ "matchingcriteria" 0;
-BA_DEF_DEF_ "filterlabeling" false;
-CM_ SG_ 1154 SME_TRQSPD_Speed "Not_sure_if_signed_or_unsigned";
+BO_ 2021 LSS_COMMAND: 8 CHARGER_BOARD
+   SG_ COMMAND_MODE : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+   SG_ COMMAND_COMMAND_SPECIFIER : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 2020 LSS_RESPONSE: 8 SMPC
+   SG_ RESPONSE_COMMAND_SPECIFIER : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 518 SMPC_RPDO_CONTROL: 8 CHARGER_BOARD
+   SG_ SMPC_CONTROL_PACK_VOLTAGE : 16|32@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ SMPC_CONTROL_DEST_NODE_ID : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+   SG_ SMPC_CONTROL_ENABLE : 9|1@1+ (1,0) [0|0] "" Vector__XXX
+   SG_ SMPC_CONTROL_CURRENT_10X_MULT : 11|1@1+ (1,0) [0|0] "" Vector__XXX
+   SG_ SMPC_CONTROL_EVSE_OVERRIDE : 13|1@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 774 SMPC_RPDO_MAX_VOLTAGE_CURRENT: 8 CHARGER_BOARD
+   SG_ SMPC_MAX_DEST_NODE_ID : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+   SG_ SMPC_MAX_CHRG_VOLTAGE : 8|32@1+ (1,0) [0|0] "mV" Vector__XXX
+   SG_ SMPC_MAX_CHRG_CURRENT : 40|16@1+ (1,0) [0|0] "mA" Vector__XXX
+   SG_ SMPC_MAX_INPUT_EVSE_OVERRIDE : 56|8@1+ (1,0) [0|255] "A" Vector__XXX
+
+BO_ 400 SMPC_TPDO_STATUS: 8 SMPC
+   SG_ SMPC_STATUS_CURRENT_MA : 48|16@1+ (1,0) [0|65535] "mA" Vector__XXX
+   SG_ SMPC_STATUS_VOLTAGE_MV : 16|32@1+ (1,0) [0|2704] "mV" Vector__XXX
+   SG_ SMPC_STATUS_J1772_DISCONN : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_REQUEST_EXCLUSIVE : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_CHARGER_UNPLUGGED : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_CHARGING : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_INTERNAL_FAULT : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_UNDERVOLTAGE_FAULT : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_OVERVOLTAGE_FAULT : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_OVERCURRENT_FAULT : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_OVERTEMP_FAULT : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_CHARGE_COMPLETE : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_STATUS_READY : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 656 SMPC_TPDO_MAX_VOLTAGE_CURRENT: 8 SMPC
+   SG_ SMPC_MAX2_INPUT_CURR_LIM : 56|8@1+ (1,0) [0|255] "A" Vector__XXX
+   SG_ SMPC_MAX2_EVSE_CURRENT : 48|8@1+ (1,0) [0|255] "A" Vector__XXX
+   SG_ SMPC_MAX2_MAX_CURRENT_MA : 32|16@1+ (1,0) [0|65535] "mA" Vector__XXX
+   SG_ SMPC_MAX2_MAX_VOLTAGE_MV : 0|32@1+ (1,0) [0|2704] "mV" Vector__XXX
+
+BO_ 912 SMPC_TPDO_INPUT_AC: 8 SMPC
+   SG_ SMPC_INPUT_MAX_CHARGER_TEMP_C : 40|8@1+ (1,-50) [-50|205] "C" Vector__XXX
+   SG_ SMPC_INPUT_AC_INPUT_FREQUENCY_HZ : 32|8@1+ (1,0) [0|255] "HZ" Vector__XXX
+   SG_ SMPC_INPUT_AC_INPUT_CURRENT_MA : 16|16@1+ (1,0) [0|65535] "mA" Vector__XXX
+   SG_ SMPC_INPUT_J1772_TRIGGERED : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_INPUT_J1772_DISCONNECTED : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_INPUT_J1772_CONNECTED : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ SMPC_INPUT_AC_INPUT_VOLTAGE : 0|8@1+ (1,0) [0|255] "Vac" Vector__XXX
+
+BO_ 1168 SMPC_TPDO_SERIAL_PART_NUM: 8 SMPC
+   SG_ SMPC_SER_FIRMWARE_VER : 48|16@1+ (1,0) [0|65535] "" Vector__XXX
+   SG_ SMPC_SER_SERIAL_NUMBER : 16|32@1+ (1,0) [0|2704] "" Vector__XXX
+   SG_ SMPC_SER_PART_NUMBER : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+
+BO_ 1220 IZZE_BRAKETEMP_S1M1: 8 IZZE1
+   SG_ IZZE_BRAKETEMP_S1_CH1 : 7|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH2 : 23|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH3 : 39|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH4 : 55|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+
+BO_ 1221 IZZE_BRAKETEMP_S1M2: 8 IZZE1
+   SG_ IZZE_BRAKETEMP_S1_CH5 : 7|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH6 : 23|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH7 : 39|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH8 : 55|16@0+ (0.1,-100) [-100|1500] "C" Vector__XXX
+
+BO_ 1222 IZZE_BRAKETEMP_S1M3: 8 IZZE1
+   SG_ IZZE_BRAKETEMP_S1_CH9 : 7|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH10 : 23|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH11 : 39|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH12 : 55|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+
+BO_ 1223 IZZE_BRAKETEMP_S1M4: 8 IZZE1
+   SG_ IZZE_BRAKETEMP_S1_CH13 : 7|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH14 : 23|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH15 : 39|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+   SG_ IZZE_BRAKETEMP_S1_CH16 : 55|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+
+BO_ 1224 IZZE_BRAKETEMP_S1M5: 8 IZZE1
+   SG_ IZZE_BRAKETEMP_S1_STEMP : 7|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
+
+
+CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_APPS_OUT_OF_RANGE "APPS1 or APPS2 reading is outside of expected voltage range (for >100ms) (T.4.2.10)";
+CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_BPPS_OUT_OF_RANGE "BPPS reading is outside of expected voltage range (for >100ms) (not rules-required)";
+CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_APPS_DEVIATION "APPS1 and APPS2 readings deviate by >10% (for >100ms) (T.4.2.4)";
+CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_BSE_OUT_OF_RANGE "Front or Rear brake pressure sensor (BSE) is outside of expected voltage range (for >100ms) (T.4.3.3/4)";
+CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_BRAKE_AND_ACCEL "Mechanical braking (BSE) is engaged while APPS is at >25% pedal travel (EV.4.7)";
+
+CM_ SG_ 394 VCU_ETC_READY_TO_DRIVE "Whether the Ready-To-Drive sequence has been completed. ETC Implausibilities will disable the motor even though RTD remains true and shutdown remains closed.";
+CM_ SG_ 394 VCU_ETC_MOTOR_ENABLED "Whether the motor is enabled. True when Ready-To-Drive AND no ETC implausibilities are detected.";
+
+CM_ SG_ 394 VCU_ETC_BATT_PRECHARGE_DONE "Whether the VCU has detected that the Tractive Battery has finished Precharging (read from BATT_TPDO_STATUS). Purely for debugging. (previously called 'TS_ACTIVE')";
+
+CM_ SG_ 392 BATT_STATUS_SHUTDOWN_FINAL "Shutdown Circuit reading at the very end of the circuit, i.e. whether the IRs can close & Discharge can open (previously called 'IRs_Final')";
+CM_ SG_ 392 BATT_STATUS_SHUTDOWN_IN "Shutdown Circuit reading after it enters the battery, before BMS & IMD relays";
+CM_ SG_ 392 BATT_STATUS_SHUTDOWN_OUT "Shutdown Circuit reading before it leaves the battery, after BMS & IMD relays";
+
+CM_ SG_ 392 BATT_STATUS_FAULT_MODULE_INDEX "The Tractive Battery module number index that the BMS fault occured in.";
+CM_ SG_ 392 BATT_STATUS_FAULT_SENSOR_INDEX "The sensor index that caused the BMS fault for the given module number. For Voltage faults, this ranges from 0-5 for the 6 series cell groups in the module. For Temperature faults, this ranges from 0-11 for the 12 temperature sensors in the module.";
+CM_ SG_ 392 BATT_STATUS_FAULT_INDEX "The final module-independent sensor index that caused the BMS fault. Calculated as module_index * NUM_SENSORS_PER_MODULE + sensor_index (where NUM_SENSORS_PER_MODULE is 6 for voltage faults and 12 for temperature faults).";
+
+CM_ BO_ 2021 "Layer Setting Services (LSS) Transmit message. Sent by the charger board to the Zero SMPC charger to switch it into configuration mode";
+CM_ BO_ 2020 "Layer Setting Services (LSS) Response message. Sent by the Zero SMPC charger in response to LSS configuration from the charger board";
+
+CM_ BO_ 128 "CANopen SYNC message. Sent by the VCU.";
+
