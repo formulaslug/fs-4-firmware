@@ -6,13 +6,20 @@
 
 
 /*
-	move structs and telemetry data to seperate can class
-	move BMSfaultDetection functions to BMS class so we dont have to keep passing a reference 
+	move structs and telemetry data to seperate can class - call can class every so often using data from BMS instance 
+	move BMSfaultDetection functions to BMS class so we dont have to keep passing a reference (in the event queue we would make controller a public function and call that )
 	make changes to precharge ... soon - note ideally precharge runs once per startup we do NOT close the precharge relay while the car is running
 	(add real tmp1075 addresses)
 
 
-	- implementing current sensor is underway make sure changes are announced beforehand 
+
+
+	note for precharge - precharge should be run once during startup and once after each time the shutdown circuit is open 
+
+	- implementing current sensor is underway make sure changes are announced beforehand
+
+
+
 
 
 */
@@ -112,9 +119,11 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 			uint16_t* castVoltages = (uint16_t*)voltageReading;
 			for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
 			//volt = castVoltages[j];
+				printf("%d\n", castVoltages[j]); // printing the cell voltages for testing purposes
 
 				BMSInstance.voltages[i][j] = castVoltages[j];
 			}
+			printf("\n");
 		//6 bytes per cell group reading (2 bytes per cell) ... transmitted in little endian 
 		//casted so that its easier to read
 		}
