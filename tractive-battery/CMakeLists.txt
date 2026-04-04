@@ -9,7 +9,7 @@ set(CUSTOM_UPLOAD_CFG_PATH ../custom_targets/UploadMethods.cmake)
 
 add_subdirectory(../custom_targets custom_targets)
 
-set(MBED_TARGET STM32_TEST_BOARD_V1)
+set(MBED_TARGET TRACTIVE_BATTERY_BOARD)
 
 include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
 project(tractive-battery-board
