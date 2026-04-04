@@ -35,14 +35,12 @@ void chargingActions(BMS &BMSInstance){
 
 void turnOffCellBalancing(BMS &BMSInstance){
 	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
-		
-		char msg2[] = "cell balancing deactivated\n";
-		BMSInstance.VCP_UART.write(msg2, sizeof(msg2));
-
 		LTC6810::Configuration &config = BMSInstance.chips[i].getConfig();
 		config.dischargeState = {.value = 0};
 		BMSInstance.chips[i].updateConfig();
 	}
+	char msg2[] = "cell balancing deactivated\n";
+	BMSInstance.VCP_UART.write(msg2, sizeof(msg2));
 }
 
 
@@ -119,20 +117,6 @@ void readCellVoltages(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		}
 	}
 
-	BMSInstance.minVoltage = BMSInstance.voltages[0][0];
-	BMSInstance.maxVoltage = BMSInstance.voltages[0][0];
-
-	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
-		for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
-			if(BMSInstance.voltages[i][j] < BMSInstance.minVoltage){
-				BMSInstance.minVoltage = BMSInstance.voltages[i][j];
-			}
-			if(BMSInstance.voltages[i][j] > BMSInstance.maxVoltage){
-				BMSInstance.maxVoltage = BMSInstance.voltages[i][j];
-			}
-		}
-	}
-
 
 }
 
@@ -180,6 +164,7 @@ void decideBalancing(BMS &BMSInstance){
 	char msg7[] = "deciding balancing\n";
 	BMSInstance.VCP_UART.write(msg7, sizeof(msg7));
 	if(BMSInstance.currentState!=BMSInstance.FAULT){
+		// do we balance based on the whole battery or per module? - need to ask
 		if(BMSInstance.maxVoltage >= BALANCING_THRESHOLD && BMSInstance.minVoltage > MIN_CELL_VOLTAGE){
 			for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
 				uint8_t dischargeValue = 0x00;
@@ -269,7 +254,7 @@ void checkForFaults(BMS &BMSInstance){
 	// for testing purposes i am going to use the cell temperature limits here, will be updated later
 	//telemetry stuff needs to be added but the logic is there. 
 	//
-	char msg9[] = "reading cell temps\n";
+	char msg9[] = "reading tray temp sensors\n";
 	BMSInstance.VCP_UART.write(msg9, sizeof(msg9));
 	for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
 		uint8_t trayTemp = BMSInstance.trayTemps[i];

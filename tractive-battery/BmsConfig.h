@@ -19,7 +19,6 @@ inline constexpr uint64_t TRAYTEMP_SENSOR_ADDRESSES[NUM_TRAY_TEMP_SENSORS] = {0x
 
 
 //battery cell info for inr-18650-p30b - based on datasheet
-
 inline constexpr int8_t CHARGING_CELL_MAX = 60;
 inline constexpr int8_t CHARGING_CELL_MIN = 0;
 inline constexpr int8_t CELL_MAX = 60;
@@ -139,7 +138,7 @@ class BMS{
     };
 
       //pin definitions 
-      AnalogIn V_Out_Positive = AnalogIn(PC_0);
+      AnalogIn V_Out_Positive = AnalogIn(PC_0); // current sensors need to be implemented 
       AnalogIn V_Out_Negative = AnalogIn(PC_1);
       DigitalIn Charge_State_Filtered = DigitalIn(PC_2); // assume 1 for charging 0 for not charging
       DigitalIn IMD_Fault_3V3 = DigitalIn(PC_4);
@@ -162,7 +161,7 @@ class BMS{
 
       // temperature sensor interface
       // dont know ids but will be implemented here 
-      //
+
 
 
     bms_state currentState;

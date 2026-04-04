@@ -1,5 +1,5 @@
-#ifndef STARTUPSEQUENCE_H
-#define STARTUPSEQUENCE_H
+#ifndef PRECHARGELOGIC_H
+#define PRECHARGELOGIC_H
 
 #include "mbed.h"
 #include "BmsConfig.h"

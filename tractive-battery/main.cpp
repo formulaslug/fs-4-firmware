@@ -24,8 +24,6 @@ bool eMeterPresent = false;
 
 EventQueue queue(5*EVENTS_EVENT_SIZE);
 
-// BMS BMSInstance;
-
 
 int main(){ 
 
@@ -76,7 +74,7 @@ int main(){
 
 	//TEMPORARY: searching for 1 wire sensors......
 
-	//should print out to serial the address of any one wire bu
+	//should print out to serial the address of any one wire bus temp sensor is it the same as fs3? idk
 	debug_search_for_ds18b20_address(BMSInstance.TS1W);
 
 
