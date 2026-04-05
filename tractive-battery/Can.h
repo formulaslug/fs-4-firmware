@@ -13,7 +13,7 @@
 #define ID_ACC_TRAY_TEMPS    0x388
 
 // Messaged recieved (car to BMS)
-#define ID_SMPC_CHARGE_CTRL  0x206how 
+#define ID_SMPC_CHARGE_CTRL  0x206
 
 // DBC Scaling Constants
 #define VOLT_OFFSET 2.0f
