@@ -1,11 +1,11 @@
-#include "BMSFaultDetection.h"
+// #include "BMSFaultDetection.h"
 #include "mbed.h"
-
+#include "BMS.h"
 
 /*
 
 current need to dos:
-1 wire for tray temp sensors sort of implemented - need more info - important - part of BMSFaultDetection
+1 wire for tray temp sensors sort of implemented - need more info - important - part of BMSFaultDetection - as of 4-4-26 still not enough info 
 shutdown circuit monitoring - not implemented - part of BMSFaultDetection (go through shutdown sequence for battery but do not throw a fault, also open precharge relay )
 current sensing - not implemented - part of telemetry
 imd monitoring  - not implemented - part of telemetry
@@ -22,29 +22,16 @@ cannot find info on the ids of the sensors, we can search for them however so...
 
 bool eMeterPresent = false;
 
-EventQueue queue(5*EVENTS_EVENT_SIZE);
+// EventQueue queue(5*EVENTS_EVENT_SIZE);
 
 
 int main(){ 
 
-
-
-
 	BMS BMSInstance;
-
-
-
 	//intializing the uart stuff
 	// this implementation is temporary
-
-
 	BMSInstance.VCP_UART.set_baud(115200);
 
-
-
-
-
-	LTC681xParallelBus ltcBusInterface(&BMSInstance.spiInterface);
 
 	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
 		for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
@@ -84,26 +71,20 @@ int main(){
 	}
 
 
-	// find out wether or not we are charging
-	if(BMSInstance.Charge_State_Filtered.read()){
-		BMSInstance.currentState = BMSInstance.CHARGING;
-	}else{
-		BMSInstance.currentState = BMSInstance.ACTIVE;
-	}
+	// char msg1[] = "Intialization complete\n";
+	// BMSInstance.VCP_UART.write(msg1, sizeof(msg1));
 
-
-	//again assuming everything is good at startup dont keep the shutdown circuit closed 
-
-	BMSInstance.nBMS_Fault_3V3 = 1;
-
-	char msg1[] = "Intialization complete\n";
-	BMSInstance.VCP_UART.write(msg1, sizeof(msg1));
+	printf("Initialization complete\n");
 
 
 
+	// BMSInstance.spiInterface.write(0xaa); //temporary debug 
+
+	// controller(ltcBusInterface, BMSInstance);
 	//period of this is temporary and arbitrary - ideally i would want this to run more often, the current period is for testing purposes 
-	queue.call_every(2000ms, controller, ltcBusInterface, std::ref(BMSInstance)); // dont attempt to create a copy of the BMS class just pass it by reference
-	queue.dispatch_forever();
+	// queue.call_every(2000ms, &BMSInstance, &BMS::controller);
+	// queue.dispatch_forever();
+
 
 	return 0;
 }

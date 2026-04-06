@@ -35,85 +35,39 @@ inline constexpr uint16_t DIFFERENCE_THRESHOLD = 00300; // 30 milivolts
 
 
 class BMS{
+  private:
+
+    void chargingActions();
+    void decideBalancing();
+    void turnOffCellBalancing();
+    void readCellVoltages();
+    void readTemps();
+    void checkForFaults();
+    void generateStatusMessage();
+    void controlFans();
+    void checkShutdownCircuit();
+    void checkIMDStatus();
+
+    enum bms_state{
+        ACTIVE = 0,
+        CHARGING = 1,
+        FAULT = 2,
+        PRECHARGING = 3
+    };
+
+    bms_state currentState;
+
   public:
+    BMS();
+    void controller();
+
     struct TMP1075_Handle_t{
       uint8_t i2c_address;
       uint8_t temp_reg;
     };
 
-
-    struct status_msg { // this struct needs to be updated to match what were actually sending - 
-      bool bmsFault;
-      bool imdFault;
-      bool shutdownFinal;
-      bool shutdownIn;
-      bool shutdownOut;
-      bool precharging;
-      bool prechargedone;
-      bool charging;
-      bool balancing;
-      bool cell_too_low;
-      bool cell_too_high;
-      bool temp_too_low;
-      bool temp_too_high;
-      bool temp_too_high_charging;
-      uint16_t glv_voltage;
-      int8_t fault_index;
-      int8_t module_fault_index;
-      int8_t temp_sensor_fault_index;
-    };
-
-
-
-    struct tray_temps_msg { // this one too needs to be updated - look into 1 wire bus
-      uint8_t temp_busbar;
-      uint8_t temp_pack_fuse;
-      uint8_t temp_bolted_connection;
-    };
-
-
-    struct powerPerformanceData{
-      uint16_t packVoltage;
-      uint16_t packCurrent;
-      uint8_t Soc;
-      uint8_t fanPWM;
-      uint32_t instantPwr;
-    };
-
-
-    struct ThermalStats{ 
-    // not totally sure how to implement this it involves sensor data the BMS doesnt have access to
-    // given we have a seperate cell temperature message maybe we dont have to? ill keep this here for now
-      int8_t maxCellTemp;
-      int8_t minCellTemp;
-      int8_t avgCellTemp;
-      int8_t boltedConnectionTemp;
-      int8_t busBarTemp;
-      int8_t packFuseTemp;
-      int8_t intake_air_temp;
-      int8_t cowling_exhaustTemp;
-    };
-
-    struct cellVoltages{ // i dont know exactly how to pack this
-      uint16_t module1Volts;
-      uint16_t module2Volts;
-      uint16_t module3Volts;
-      uint16_t module4Volts;
-      uint16_t module5Volts;
-    };
-
-    struct cellTemperatures{
-      int8_t modlule1TempsA;
-      int8_t modlule1TempsB;
-      int8_t molduelATempsB;
-      int8_t molduel2TempsB;
-      int8_t modlule3TempsA;
-      int8_t molduel3TempsB;
-      int8_t modlule4TempsA;
-      int8_t molduel4TempsB;
-      int8_t modlule5TempsA;
-      int8_t molduel5TempsB;
-    };
+    Timer ltcTimeoutTimer;
+    CANMessage msg;
 
     int8_t cellTemps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
     uint16_t minVoltage;
@@ -127,22 +81,12 @@ class BMS{
     std::vector<DS18B20> trayTempSensors;
 
     uint8_t trayTemps[NUM_TRAY_TEMP_SENSORS];
-    
-
-
-    enum bms_state{
-      ACTIVE = 0,
-      CHARGING = 1,
-      FAULT = 2,
-      PRECHARGING = 3
-    };
-
       //pin definitions 
       AnalogIn V_Out_Positive = AnalogIn(PC_0); // current sensors need to be implemented 
       AnalogIn V_Out_Negative = AnalogIn(PC_1);
       DigitalIn Charge_State_Filtered = DigitalIn(PC_2); // assume 1 for charging 0 for not charging
       DigitalIn IMD_Fault_3V3 = DigitalIn(PC_4);
-      DigitalOut nBMS_Fault_3V3 = DigitalOut(PC_5, 1);
+      DigitalOut nBMS_Fault_3V3 = DigitalOut(PC_5);
       PwmOut Fan_PWM = PwmOut(PC_8);
       DigitalOut TS_READY = DigitalOut(PC_9); //look more into this one (i think its a precharge indicator )
       DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0); // status of the shutdown circuit before bms
@@ -152,26 +96,11 @@ class BMS{
       AnalogIn GLV_Voltage = AnalogIn(PA_7);
       BufferedSerial VCP_UART = BufferedSerial(PA_9, PA_10); // some configuration for this needs to be done at startup see mbedosce
       CAN CAN_POWERTRAIN = CAN(PA_11, PA_12);
-      DigitalOut nPrechargeControl = DigitalOut(PB_0,1); // no precharge at this point
+      DigitalOut nPrechargeControl = DigitalOut(PB_0);
       SPI spiInterface = SPI(PB_5, PB_4, PB_10, PB_9, use_gpio_ssel);
+      LTC681xParallelBus ltcBusInterface;
       DigitalOut TS1W_PU_Control = DigitalOut(PB_15);
       OneWire TS1W = OneWire(PB_14); // look up more on 1 wire interface 
-
-
-
       // temperature sensor interface
       // dont know ids but will be implemented here 
-
-
-
-    bms_state currentState;
-    status_msg bms_stat_message;
-    cellVoltages currentCellVoltages;
-
-    Timer ltcTimeoutTimer;
-    CANMessage msg;
-
-
-    BMS();
-
 };
