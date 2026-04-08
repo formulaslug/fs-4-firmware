@@ -17,6 +17,7 @@ project(vcu
 include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 
 add_subdirectory(../mbed-os mbed-os)
+# add_subdirectory(../libraries/FilterUtils FilterUtils)
 
 set(CMAKE_CXX_STANDARD 20)
 

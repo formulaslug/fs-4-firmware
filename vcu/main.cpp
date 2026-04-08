@@ -1,19 +1,22 @@
+#include "Callback.h"
+#include "EventQueue.h"
 #include "PinNames.h"
 #include "mbed.h"
 #include "etc_controller.h"
 
-float VCU_can_frequency = 50.0f; // in hz
-Timeout VCU_can_timeout;
+EventQueue vcu_queue;
+Thread queue_thread;
 
 CAN can{PA_11, PA_12, 500000};
-ETCController ETC(PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PA_2);
+ETCController etc(PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PA_2);
 
 void send_CAN_message();
 
 int main() {
     printf("Hello World!!\n");
 
-    VCU_can_timeout.attach(&send_CAN_message, duration_cast<chrono::microseconds>(1000ms / VCU_can_frequency));
+    vcu_queue.call_every(50ms, &send_CAN_message);
+    queue_thread.start(callback(&vcu_queue, &EventQueue::dispatch_forever));
 
     CANMessage rx;
     while (true) {
@@ -21,63 +24,62 @@ int main() {
             switch (rx.id) {
                 case 392: {
                     bool is_charged = rx.data[0] & 0b00001000; // checking if BATT_STATUS_PRECHARGE_DONE is true
-                    ETC.update_RTD(is_charged);
+                    etc.update_RTD(is_charged);
                     break;
                 }
-                case 655361: {
-                    float gps_speed = (rx.data[0] << 8) | rx.data[1]; // in mph, unscaled
-                    gps_speed /= 100.0f; // scaling to 0.01 
-                    gps_speed *= 1.60934f; // mph -> km/hr
+                case 1154: {
+                    uint16_t wheel_rpm = rx.data[0] | (rx.data[1] << 8); 
+                    float wheel_radius = 0.190f;
+                    float ground_speed = (11 / 40.0f) * ( 2 * M_PI * wheel_radius); // gear ratio * circumference
+                    ground_speed *= wheel_rpm; // meters / minute
+                    ground_speed *= 60.0f / 1000.0f; // km / hr
 
-                    ETC.update_regen(gps_speed);
+                    etc.update_regen(ground_speed);
                     break;
                 }
             }
         }
 
-        ETC.update_state();
+        etc.update_state();
     }
 
     return 0;
 }
 
-void send_CAN_message() {    
-    ETCState ETC_state = ETC.get_ETC_state();
+void send_CAN_message() {
+    ETCState etc_state = etc.state;
 
     uint8_t buf0[8];
-    uint16_t APPS1_scaled_voltage = static_cast<uint16_t>(ETC_state.APPS1_voltage * 1000);
-    uint16_t APPS2_scaled_voltage = static_cast<uint16_t>(ETC_state.APPS2_voltage * 1000);
-    uint16_t BPPS_scaled_voltage = static_cast<uint16_t>(ETC_state.BPPS_voltage * 1000);
-    buf0[0] = APPS1_scaled_voltage & 0b11111111; // first 8 bits of APPS1_voltage
-    buf0[1] = APPS1_scaled_voltage >> 8; // last 8 bits of APPS1_voltage
-    buf0[2] = APPS2_scaled_voltage & 0b11111111; // first 8 bits of APPS2_voltage
-    buf0[3] = APPS2_scaled_voltage >> 8; // last 8 bits of APPS2_voltage
-    buf0[4] = BPPS_scaled_voltage & 0b11111111; // first 8 bits of BPPS_voltage
-    buf0[5] = BPPS_scaled_voltage >> 8; // last 8 bits of BPPS_voltage
-    buf0[6] = static_cast<uint8_t>(ETC_state.APPS_position_avg * 100);
-    buf0[7] = static_cast<uint8_t>(ETC_state.BPPS_position * 100);
+    uint16_t APPS1_scaled_voltage = static_cast<uint16_t>(etc_state.APPS1_voltage * 1000);
+    uint16_t APPS2_scaled_voltage = static_cast<uint16_t>(etc_state.APPS2_voltage * 1000);
+    uint16_t BPPS_scaled_voltage = static_cast<uint16_t>(etc_state.BPPS_voltage * 1000);
+    buf0[0] = APPS1_scaled_voltage & 0xFF;
+    buf0[1] = APPS1_scaled_voltage >> 8;
+    buf0[2] = APPS2_scaled_voltage & 0xFF;
+    buf0[3] = APPS2_scaled_voltage >> 8;
+    buf0[4] = BPPS_scaled_voltage & 0xFF;
+    buf0[5] = BPPS_scaled_voltage >> 8;
+    buf0[6] = static_cast<uint8_t>(etc_state.APPS_position_avg * 100);
+    buf0[7] = static_cast<uint8_t>(etc_state.BPPS_position * 100);
 
     uint8_t buf1[8];
-    uint16_t front_BSE_scaled_voltage = static_cast<uint16_t>(ETC_state.front_BSE_voltage * 1000);
-    uint16_t rear_BSE_scaled_voltage = static_cast<uint16_t>(ETC_state.rear_BSE_voltage * 1000);
-    buf1[0] = front_BSE_scaled_voltage & 0b11111111; // first 8 bits of front_BSE_voltage 
-    buf1[1] = front_BSE_scaled_voltage >> 8; // last 8 bits of front_BSE_voltage 
-    buf1[2] = rear_BSE_scaled_voltage & 0b11111111; // first 8 bits of rear_BSE_voltage 
-    buf1[3] = rear_BSE_scaled_voltage >> 8; // last 8 bits of rear_BSE_voltage 
-    buf1[4] = ETC_state.RTD_state |
-        (ETC_state.motor_enabled << 1) |
-        (ETC_state.APPS_deviation_implaus << 2) |
-        (ETC_state.APPS_range_implaus << 3) |
-        (ETC_state.BPPS_range_implaus << 4) |
-        (ETC_state.brake_and_accel_implaus << 5) |
-        (ETC_state.can_regen << 6) |
-        (ETC_state.must_use_hydraulic_brakes << 7);
-    buf1[5] = ETC_state.TS_active;
+    uint16_t front_BSE_scaled_voltage = static_cast<uint16_t>(etc_state.front_BSE_voltage * 1000);
+    uint16_t rear_BSE_scaled_voltage = static_cast<uint16_t>(etc_state.rear_BSE_voltage * 1000);
+    buf1[0] = front_BSE_scaled_voltage & 0xFF;
+    buf1[1] = front_BSE_scaled_voltage >> 8;
+    buf1[2] = rear_BSE_scaled_voltage & 0xFF;
+    buf1[3] = rear_BSE_scaled_voltage >> 8;
+    buf1[4] = etc_state.ready_to_drive |
+        (etc_state.motor_enabled << 1) |
+        (etc_state.implaus_APPS_deviation << 2) |
+        (etc_state.implaus_APPS_range << 3) |
+        (etc_state.implaus_BPPS_range << 4) |
+        (etc_state.implaus_brake_and_accel << 5) |
+        (etc_state.can_regen << 6) |
+        (etc_state.must_use_hydraulic_brakes << 7);
 
     CANMessage msg0{393, buf0, 8};
     CANMessage msg1{394, buf1, 6};
     can.write(msg0);
     can.write(msg1);
-
-    VCU_can_timeout.attach(&send_CAN_message, duration_cast<chrono::microseconds>(1000ms / VCU_can_frequency));
 }
