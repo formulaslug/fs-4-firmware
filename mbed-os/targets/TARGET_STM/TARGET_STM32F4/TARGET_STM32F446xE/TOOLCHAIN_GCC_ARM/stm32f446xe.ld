@@ -18,13 +18,13 @@
 #include "../cmsis_nvic.h"
 
 
-#if !defined(MBED_APP_START)
+/* #if !defined(MBED_APP_START)
   #define MBED_APP_START  MBED_ROM_START
 #endif
 
 #if !defined(MBED_APP_SIZE)
   #define MBED_APP_SIZE  MBED_ROM_SIZE
-#endif
+#endif */
 
 #if !defined(MBED_CONF_TARGET_BOOT_STACK_SIZE)
     /* This value is normally defined by the tools
@@ -35,10 +35,17 @@
 /* Round up VECTORS_SIZE to 8 bytes */
 #define VECTORS_SIZE  (((NVIC_NUM_VECTORS * 4) + 7) & 0xFFFFFFF8)
 
+/* FLASH_HOLE in sector 3, move to sector 1 or 2 if we need more room for code
+ * We can also move some things into FLASH_ISR if we run out of room, ie preinit, init, finit
+ * arm.extab, arm.exidx, etc... 
+ * these things might be necessary to move but have not as of 4/6/2026 - daniel
+*/
 MEMORY
 {
-    FLASH (rx)   : ORIGIN = MBED_APP_START, LENGTH = MBED_APP_SIZE
-    RAM (rwx)    : ORIGIN = MBED_RAM_START + VECTORS_SIZE, LENGTH = MBED_RAM_SIZE - VECTORS_SIZE
+    FLASH_ISR (rx)  : ORIGIN = 0x08000000, LENGTH = 48K
+    FLASH_HOLE (rx) : ORIGIN = 0x0800C000, LENGTH = 16K
+    FLASH (rx)      : ORIGIN = 0x08010000, LENGTH = 448K
+    RAM (rwx)       : ORIGIN = MBED_RAM_START + VECTORS_SIZE, LENGTH = MBED_RAM_SIZE - VECTORS_SIZE
 }
 
 /* Linker script to place sections and symbol values. Should be used together
@@ -72,9 +79,19 @@ ENTRY(Reset_Handler)
 
 SECTIONS
 {
-    .text :
+    .isr_vector :   
     {
         KEEP(*(.isr_vector))
+    } > FLASH_ISR
+
+    .allocatedUserFlash :
+    {
+        KEEP(*(.allocatedUserFlash))
+        /* might not be necessary, as long as sector 3 is reserved */
+    } > FLASH_HOLE
+
+    .text :
+    {
         *(.text*)
 
         KEEP(*(.init))

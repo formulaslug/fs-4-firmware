@@ -1,6 +1,7 @@
 // #include "BMSFaultDetection.h"
 #include "mbed.h"
 #include "BMS.h"
+#include "prechargeLogic.h"
 
 /*
 
