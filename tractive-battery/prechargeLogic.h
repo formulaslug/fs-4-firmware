@@ -7,7 +7,6 @@
 enum precharge_state {
     PRECHARGE_IDLE,
     PRECHARGE_ACTIVE,
-    PRECHARGE_COMPLETE,
     PRECHARGE_FAULT
 };
 

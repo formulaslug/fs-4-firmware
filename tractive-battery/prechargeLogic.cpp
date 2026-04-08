@@ -1,26 +1,13 @@
 #include "prechargeLogic.h"
 #include "BmsConfig.h"
 #include "mbed.h"
+#include "BMSFaultDetection.h"
 
 
 /*
 I think some major rewrites are needed here, i dont think the logic fully holds up
-I think it would be simpler and better to have 3 states
-PRECHARGE_ACTIVE
-PRECHARGE_IDLE
-PRECHARGE_FAULT
-
-
-i dont think we really need a state to tell us when the precharge is complete, ideally thats always idle when the car is running ... 
-
-no global variables should be defined here nor should an event queue be defined here
-
-
-
 
 */
-
-
 
 bool precharging = false;
 bool prechargeDone = false;
@@ -54,15 +41,14 @@ bool shutdownClosed(BMS &BMSInstance) {
 }
 
 bool imdOk(BMS &BMSInstance) {
-    // return imdFaultPin.read();
+     return imdFaultPin.read();
     // i think this should probably be in BMSFaultDetection, but for
     return BMSInstance.IMD_Fault_3V3.read();
 }
 
 bool preChargeAllowed(BMS &BMSInstance) {
-    return shutdownClosed(BMSInstance) && imdOk(BMSInstance) && !isBmsFaultActive(BMSInstance) && glvOk(BMSInstance);
+    return shutdownClosed(BMSInstance) && imdOk(BMSInstance) && !isBmsFaultActive(BMSInstance) && glvOk(BMSInstance) && dcBusVoltage < 0.9f * packVoltage; 
 }
-
 bool prechargeComplete(float packVoltage) {
     return dcBusVoltage >= 0.9f * packVoltage; // i think this is good i wanna double check tho
 }
@@ -71,7 +57,6 @@ void updatePrecharge(BMS &BMSInstance) {
     switch (prechargeState) {
         case PRECHARGE_IDLE:
             precharging = false;
-            prechargeDone = false;
             if(BMSInstance.currentState==BMSInstance.ACTIVE){ // added by Ethan going to be removed later 
             // CurrentBMSStatus.prechargeDone = false;
                 /*
@@ -106,7 +91,7 @@ void updatePrecharge(BMS &BMSInstance) {
                 CurrentBMSStatus.precharging = false;
                 CurrentBMSStatus.prechargeDone = true;
                 prechargeTimer.stop();
-                prechargeState = PRECHARGE_COMPLETE;
+                prechargeState = PRECHARGE_IDLE;
             } 
             else if (prechargeTimer.read() > PRECHARGE_TIMEOUT) {
                 prechargeRelay = 0;
@@ -115,18 +100,6 @@ void updatePrecharge(BMS &BMSInstance) {
                 CurrentBMSStatus.precharging = false;
                 CurrentBMSStatus.prechargeDone = false;
                 prechargeState = PRECHARGE_FAULT;
-            }
-            break;
-
-        case PRECHARGE_COMPLETE:
-            precharging = false;
-            prechargeDone = true;
-            CurrentBMSStatus.precharging = false;
-            CurrentBMSStatus.prechargeDone = true;
-            if (!preChargeAllowed()) {
-                prechargeDone = false;
-                CurrentBMSStatus.prechargeDone = false;
-                prechargeState = PRECHARGE_IDLE; // why does it only go to idle here, we can only precharge again if we fault somehow? 
             }
             break;
 
