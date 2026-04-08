@@ -5,8 +5,9 @@
 #ifndef ETC_CONTROLLER_H
 #define ETC_CONTROLLER_H
 
-#include "DigitalIn.h"
 #include "mbed.h"
+#include "debounced_digital_in.h"
+#include "filtered_analog_in.h"
 
 struct ETCState {
     float APPS1_voltage = 0.0f;
@@ -21,6 +22,7 @@ struct ETCState {
     bool rtd_button_pressed = false;
     bool ready_to_drive = false;
     bool motor_enabled = false;
+    bool ts_active = false;
     bool implaus_APPS_deviation = false;
     bool implaus_APPS_range = false;
     bool implaus_BPPS_range = false;
@@ -36,22 +38,29 @@ public:
     bool GLV_ok = false;
     bool shutdown_closed = false;
 
-    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName BSPD_fault_pin);
+    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin);
 
     bool update_state();
 
-    void update_RTD();
+    void update_rtd();
 
     void update_regen(float speed);
 private:
-    AnalogIn APPS1_input;
-    AnalogIn APPS2_input;
-    AnalogIn BPPS_input;
-    AnalogIn front_BSE_input;
-    AnalogIn rear_BSE_input;
+    FilteredAnalogIn APPS1_input;
+    FilteredAnalogIn APPS2_input;
+    FilteredAnalogIn BPPS_input;
+    FilteredAnalogIn front_BSE_input;
+    FilteredAnalogIn rear_BSE_input;
 
-    DigitalIn rtd_button;
-    DigitalIn BSPD_fault_input;
+    DebouncedDigitalIn rtd_button;
+
+    // AnalogIn APPS1_input;
+    // AnalogIn APPS2_input;
+    // AnalogIn BPPS_input;
+    // AnalogIn front_BSE_input;
+    // AnalogIn rear_BSE_input;
+    //
+    // DigitalIn rtd_button;
 
     DigitalOut rtd_light;
     DigitalOut rtd_buzzer;
@@ -82,6 +91,8 @@ private:
     static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.1f;
     static constexpr float MAX_APPS_POSITION_DEVIATION = 0.10f;
 
+    bool rtd_button_rise = false; // makes it so that update_rtd only occurs on every rise
+
     Timer implaus_APPS_deviation_timer;
     Timer implaus_APPS_range_timer;
     Timer implaus_BPPS_range_timer;
@@ -101,7 +112,7 @@ private:
 
     void update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus); 
 
-    void enable_RTD();
+    void toggle_rtd(bool rtd_state);
 };
 
 #endif

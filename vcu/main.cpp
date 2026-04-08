@@ -8,7 +8,8 @@ EventQueue vcu_queue;
 Thread queue_thread;
 
 CAN can{PA_11, PA_12, 500000};
-ETCController etc(PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PA_2);
+ETCController etc(PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7);
+const ETCState &etc_state = etc.state;
 
 void send_CAN_message();
 
@@ -47,8 +48,6 @@ int main() {
 }
 
 void send_CAN_message() {
-    const ETCState &etc_state = etc.state;
-
     uint8_t buf0[8];
     uint16_t APPS1_scaled_voltage = static_cast<uint16_t>(etc_state.APPS1_voltage * 1000);
     uint16_t APPS2_scaled_voltage = static_cast<uint16_t>(etc_state.APPS2_voltage * 1000);

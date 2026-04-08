@@ -4,16 +4,15 @@
 
 #include "etc_controller.h"
 
-ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName BSPD_fault_pin) :
-    APPS1_input(APPS1_pin),
-    APPS2_input(APPS2_pin),
-    BPPS_input(BPPS_pin),
-    front_BSE_input(front_BSE_pin),
-    rear_BSE_input(rear_BSE_pin),
-    rtd_button(rtd_button_pin),
+ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin) :
+    APPS1_input(AnalogIn(APPS1_pin), 60),
+    APPS2_input(AnalogIn(APPS2_pin), 60),
+    BPPS_input(AnalogIn(BPPS_pin), 60),
+    front_BSE_input(AnalogIn(front_BSE_pin), 60),
+    rear_BSE_input(AnalogIn(rear_BSE_pin), 60),
+    rtd_button(DigitalIn(rtd_button_pin), 2),
     rtd_light(rtd_light_pin),
-    rtd_buzzer(rtd_buzzer_pin),
-    BSPD_fault_input(BSPD_fault_pin)
+    rtd_buzzer(rtd_buzzer_pin)
 {
     rtd_buzzer.write(0);
     rtd_light.write(0);
@@ -44,6 +43,14 @@ bool ETCController::update_state() {
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
 
     update_implaus();
+
+    if (!rtd_button_rise && state.rtd_button_pressed) {
+        rtd_button_rise = true;
+        update_rtd();
+    }
+    if (rtd_button_rise && !state.rtd_button_pressed) {
+        rtd_button_rise = false;
+    }
 }
 
 void ETCController::update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus) { 
@@ -100,11 +107,15 @@ void ETCController::update_implaus() {
     }
 }
 
-void ETCController::update_RTD() {
-    bool ts_active = state.GLV_ok && state.shutdown_closed; // send BSPD_fault over CAN seperatiely and read Shutdown from BMS CAN
+void ETCController::update_rtd() {
+    state.ts_active = GLV_ok && shutdown_closed; // send BSPD_fault over CAN seperatiely and read Shutdown from BMS CAN
 
-    if (!state.ready_to_drive && ts_active && (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT) && state.rtd_button_pressed) {
-        enable_RTD();
+    if (!state.ready_to_drive && state.ts_active && (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT)) {
+        toggle_rtd(true);
+    }
+    else if (state.ready_to_drive) {
+        state.ready_to_drive = false;
+        toggle_rtd(false);
     }
 }
 
@@ -113,10 +124,12 @@ void ETCController::update_regen(float speed) {
     state.must_use_hydraulic_brakes = state.BPPS_position > BPPS_MAX_NON_REGEN_BRAKING;
 }
 
-void ETCController::enable_RTD() {
-    state.ready_to_drive = true;
-
-    rtd_light.write(1);
-    rtd_buzzer.write(1);
-    rtd_buzzer_timeout.attach([this]{ rtd_buzzer.write(0); }, RTD_BUZZER_DURATION);
+void ETCController::toggle_rtd(bool rtd_state) {
+    state.ready_to_drive = rtd_state;
+    rtd_light.write(rtd_state);
+    
+    if (rtd_state) {
+        rtd_buzzer.write(1);
+        rtd_buzzer_timeout.attach([this]{ rtd_buzzer.write(0); }, RTD_BUZZER_DURATION);
+    }
 }
