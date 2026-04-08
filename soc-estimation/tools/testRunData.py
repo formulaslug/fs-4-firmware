@@ -47,15 +47,18 @@ currentConverted = (currentArray/CELLS_IN_PARALLEL)*MILLI
 voltageCurrentPairs = tuple(map(tuple,np.vstack((voltageConverted,currentConverted)).T))
 
 # Call function on every pair for estimated capacity drained
-C_TEST_FUNC = ".\\..\\src\\testRunDataFuncRunner.exe"
+#C_TEST_FUNC = ".\\..\\src\\testRunDataFuncRunner.exe"
+# for mac
+C_TEST_FUNC = "../src/testRunDataFuncRunner"
 estimatedDischargeCapacity = np.zeros(len(voltageCurrentPairs))
 for i in range(len(voltageCurrentPairs)):
   milliVolts = int(voltageCurrentPairs[i][0])
   milliAmps = int(voltageCurrentPairs[i][1])
 
-  cmd = C_TEST_FUNC+" "+str(milliVolts)+" "+str(milliAmps)
+  #cmd = C_TEST_FUNC+" "+str(milliVolts)+" "+str(milliAmps)
+  cmd = [C_TEST_FUNC, str(milliVolts), str(milliAmps)]
+  #cmdOutput = subprocess.run(cmd, capture_output=True, text=True)
   cmdOutput = subprocess.run(cmd, capture_output=True, text=True)
-
   if int(cmdOutput.returncode) != 0:
     print(cmdOutput.stderr)
   else:
@@ -68,7 +71,47 @@ emptyDischargeMask = np.ma.make_mask(np.nan_to_num(estimatedDischargeCapacity))
 BATTERY_CAPACITY = 2600 # mAh
 estimatedSOC = 1-(estimatedDischargeCapacity[emptyDischargeMask]/BATTERY_CAPACITY)
 
-# Plot data
+# -------------------- COULOMB COUNTING ADDED --------------------
+C_COULOMB_FUNC = "../src/testRunCoulombCountingRunner"
+
+COULOMB_INITIAL_SOC = 100.0
+COULOMB_CAPACITY_AH = 2.6
+COULOMB_ETA_CHARGE = 1.0
+COULOMB_ETA_DISCHARGE = 1.0
+
+coulombSOC = np.zeros(len(currentConverted))
+if len(currentConverted) > 0:
+  coulombSOC[0] = COULOMB_INITIAL_SOC / 100.0
+
+prev_soc_pct = COULOMB_INITIAL_SOC
+
+for i in range(1, len(currentConverted)):
+  prev_current_A = currentConverted[i-1] / 1000.0
+  current_A = currentConverted[i] / 1000.0
+  dt_s = (timeArray[i] - timeArray[i-1]) / 1000.0
+
+  cmd = [
+    C_COULOMB_FUNC,
+    str(prev_soc_pct),
+    str(COULOMB_CAPACITY_AH),
+    str(COULOMB_ETA_CHARGE),
+    str(COULOMB_ETA_DISCHARGE),
+    str(dt_s),
+    str(prev_current_A),
+    str(current_A)
+  ]
+
+  cmdOutput = subprocess.run(cmd, capture_output=True, text=True)
+
+  if int(cmdOutput.returncode) != 0:
+    print(cmdOutput.stderr)
+    coulombSOC[i] = coulombSOC[i-1]
+  else:
+    prev_soc_pct = float(cmdOutput.stdout)
+    coulombSOC[i] = prev_soc_pct / 100.0
+# ------------------ END COULOMB COUNTING ADDED ------------------
+'''
+# Plot data 
 if TIME_DATA_PROVIDED:
   indexArray = timeArray 
 else:
@@ -90,3 +133,32 @@ currentPlotParasite.plot(indexArray[emptyDischargeMask], estimatedSOC,color="k")
 currentPlot.set_ylabel("Current (mA)")
 currentPlotParasite.set_ylabel("SOC %")
 plt.legend()
+'''
+# Plot data
+if TIME_DATA_PROVIDED:
+  indexArray = timeArray 
+else:
+  indexArray = np.linspace(0,len(voltageCurrentPairs),len(voltageCurrentPairs))
+plt.figure(1,figsize=[20,12])
+
+voltagePlot = host_subplot(211)
+voltagePlotParasite = voltagePlot.twinx()
+voltagePlot.plot(indexArray, voltageConverted, label="Voltage")
+voltagePlotParasite.plot(indexArray[emptyDischargeMask], estimatedSOC, color="k", label="Lookup SOC")
+voltagePlotParasite.plot(indexArray, coulombSOC, color="g", label="Coulomb SOC")
+voltagePlot.set_ylabel("Voltage (mV)")
+voltagePlotParasite.set_ylabel("SOC %")
+voltagePlot.legend(loc="upper left")
+voltagePlotParasite.legend(loc="upper right")
+
+currentPlot = host_subplot(212)
+currentPlotParasite = currentPlot.twinx()
+currentPlot.plot(indexArray, currentConverted, label="Current")
+currentPlotParasite.plot(indexArray[emptyDischargeMask], estimatedSOC, color="k", label="Lookup SOC")
+currentPlotParasite.plot(indexArray, coulombSOC, color="g", label="Coulomb SOC")
+currentPlot.set_ylabel("Current (mA)")
+currentPlotParasite.set_ylabel("SOC %")
+currentPlot.legend(loc="upper left")
+currentPlotParasite.legend(loc="upper right")
+
+plt.show()
