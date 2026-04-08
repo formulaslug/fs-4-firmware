@@ -19,6 +19,8 @@ include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 add_subdirectory(../mbed-os mbed-os)
 # add_subdirectory(../libraries/FilterUtils FilterUtils)
 
+add_subdirectory(../libraries/FilterUtils FilterUtils)
+
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(${PROJECT_NAME} 
@@ -27,6 +29,5 @@ add_executable(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ./etc)
-target_link_libraries(${PROJECT_NAME} mbed-os)
-
+target_link_libraries(${PROJECT_NAME} mbed-os filter-utils)
 mbed_set_post_build(${PROJECT_NAME})
