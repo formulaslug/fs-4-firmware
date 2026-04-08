@@ -23,8 +23,8 @@ int main() {
         if (can.read(rx)) {
             switch (rx.id) {
                 case 392: {
-                    bool is_charged = rx.data[0] & 0b00001000; // checking if BATT_STATUS_PRECHARGE_DONE is true
-                    etc.update_RTD(is_charged);
+                    etc.GLV_ok = rx.data[0] & 0b00001000; // CHANGE TO WHATEVER BATT_STATUS_PRECHARGE_DONE IS
+                    etc.shutdown_closed = rx.data[0] & 0b00001000; // CHANGE TO WHATEVER BATT_STATUS_SHUTDOWN_FINAL IS
                     break;
                 }
                 case 1154: {
@@ -47,7 +47,7 @@ int main() {
 }
 
 void send_CAN_message() {
-    ETCState etc_state = etc.state;
+    const ETCState &etc_state = etc.state;
 
     uint8_t buf0[8];
     uint16_t APPS1_scaled_voltage = static_cast<uint16_t>(etc_state.APPS1_voltage * 1000);

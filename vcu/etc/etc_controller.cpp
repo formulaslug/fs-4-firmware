@@ -109,7 +109,7 @@ void ETCController::update_RTD() {
 }
 
 void ETCController::update_regen(float speed) {
-    state.can_regen = in_range(speed, 0.0f, 5.0f);
+    state.can_regen = !in_range(speed, 0.0f, 5.0f);
     state.must_use_hydraulic_brakes = state.BPPS_position > BPPS_MAX_NON_REGEN_BRAKING;
 }
 

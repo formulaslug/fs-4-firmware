@@ -5,6 +5,7 @@
 #ifndef ETC_CONTROLLER_H
 #define ETC_CONTROLLER_H
 
+#include "DigitalIn.h"
 #include "mbed.h"
 
 struct ETCState {
@@ -27,19 +28,19 @@ struct ETCState {
     bool implaus_brake_and_accel = false;
     bool can_regen = false;
     bool must_use_hydraulic_brakes = false;
-    bool GLV_ok = false;
-    bool shutdown_closed = false;
 };
 
 class ETCController {
 public:
     ETCState state;
+    bool GLV_ok = false;
+    bool shutdown_closed = false;
 
     ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName BSPD_fault_pin);
 
     bool update_state();
 
-    void update_RTD(bool GLV_charged);
+    void update_RTD();
 
     void update_regen(float speed);
 private:
