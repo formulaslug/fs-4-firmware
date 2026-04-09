@@ -3,11 +3,11 @@
 #include <cmath>
 
 //ideally I would want thse in BMS.h for now its fine tho.
-static constexpr float ADC_REF_VOLTAGE = 3.3f;
-//this will probably be adjusted and tuned as testing happens
-static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f; // first-pass estimate
-static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
-static constexpr float MAX_PACK_CURRENT_AMPS = 1000.0f; // adjust later
+// static constexpr float ADC_REF_VOLTAGE = 3.3f;
+// //this will probably be adjusted and tuned as testing happens
+// static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f; // first-pass estimate
+// static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
+// static constexpr float MAX_PACK_CURRENT_AMPS = 1000.0f; // adjust later
 
 BMS::BMS():
     ltcBusInterface(&spiInterface) // not a huge fan of this but i think its required 
@@ -374,9 +374,9 @@ void BMS::controller(){
         checkForFaults();
         printf("checked for faults\n");//
         controlFans();
-        printf("fan pwm set ...\n")
+        printf("fan pwm set ...\n");
         decideBalancing();
-        printf("battery balancing set....") 
+        printf("battery balancing set...."); 
         //d266270a (testing updates)
         //checkShutdownCircuit(;
     }else{

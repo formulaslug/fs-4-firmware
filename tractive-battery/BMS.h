@@ -39,6 +39,11 @@ inline constexpr float MAX_PACK_CURRENT_AMPS  = 1000.0f;                     // 
 inline constexpr size_t CURRENT_FILTER_SAMPLES = 10;                         // Rolling average window size
 
 
+static constexpr float ADC_REF_VOLTAGE = 3.3f;
+//this will probably be adjusted and tuned as testing happens
+static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f; // first-pass estimate
+static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
+
 
 
 class BMS{
@@ -73,6 +78,10 @@ class BMS{
       uint8_t i2c_address;
       uint8_t temp_reg;
     };
+
+    float currentSensorOffsetVolts;
+    float packCurrentAmps;
+    bool currentSensorCalibrated;
 
     Timer ltcTimeoutTimer;
     CANMessage msg;
@@ -111,5 +120,4 @@ class BMS{
       OneWire TS1W = OneWire(PB_14); // look up more on 1 wire interface 
       // temperature sensor interface
       // dont know ids but will be implemented here 
-      float packCurrentAmps;
 };
