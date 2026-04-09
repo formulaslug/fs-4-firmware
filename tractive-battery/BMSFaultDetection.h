@@ -19,5 +19,11 @@ void controller(LTC681xParallelBus&, BMS&);
 void checkShutdownCircuit(BMS&);
 void checkIMDStatus(BMS&);
 
+//for the current sensor
+void calibrateCurrentSensor(BMS&);
+void readPackCurrent(BMS&);
+float getPackCurrentAmps(BMS&);
+
+
 
 #endif

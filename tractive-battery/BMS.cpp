@@ -1,7 +1,12 @@
 #include "BMS.h"
-
+#include <algorithm>
+#include <cmath>
 //literally just a constructor for the BMS object
-
+static constexpr float ADC_REF_VOLTAGE = 3.3f;
+//this will probably be adjusted and tuned as testing happens
+static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f; // first-pass estimate
+static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
+static constexpr float MAX_PACK_CURRENT_AMPS = 1000.0f; // adjust later
 
 BMS::BMS():
     // :spiInterface(PB_5, PB_4, PB_10, PB_9, use_gpio_ssel),
@@ -12,6 +17,10 @@ BMS::BMS():
     CANMessage msg;
     nBMS_Fault_3V3 = 1; // assume no fault at startup 
     nPrechargeControl = 1; 
+
+    currentSensorOffsetVolts = 0.0f;
+    packCurrentAmps = 0.0f;
+    currentSensorCalibrated = false;
 
 
 
@@ -311,6 +320,12 @@ void BMS::checkForFaults(){
         }
     }
     
+    //to watch pack current
+    if (std::fabs(packCurrentAmps) > MAX_PACK_CURRENT_AMPS) {
+        currentState = FAULT;
+        nBMS_Fault_3V3 = 0;
+        printf("FAULT: overcurrent detected: %.2f A\n", packCurrentAmps);
+    }
 
 
 }
@@ -360,6 +375,51 @@ void BMS::controlFans(){
         Fan_PWM.write(0.0f);
     }
 }
+void BMS::calibrateCurrentSensor() {
+    float diffSum = 0.0f;
+
+    for (size_t i = 0; i < CURRENT_SENSOR_CALIBRATION_SAMPLES; i++) {
+        float vPos = V_Out_Positive.read() * ADC_REF_VOLTAGE;
+        float vNeg = V_Out_Negative.read() * ADC_REF_VOLTAGE;
+
+        diffSum += (vPos - vNeg);
+        ThisThread::sleep_for(2ms);
+    }
+
+    currentSensorOffsetVolts =
+        diffSum / static_cast<float>(CURRENT_SENSOR_CALIBRATION_SAMPLES);
+
+    currentSensorCalibrated = true;
+
+    printf("Current sensor calibrated. Offset = %.6f V\n",
+           currentSensorOffsetVolts);
+}
+
+float BMS::getPackCurrentAmps() {
+    float vPos = V_Out_Positive.read() * ADC_REF_VOLTAGE;
+    float vNeg = V_Out_Negative.read() * ADC_REF_VOLTAGE;
+
+    float vDiff = (vPos - vNeg) - currentSensorOffsetVolts;
+    return vDiff / CURRENT_SENSOR_VOLTS_PER_AMP;
+}
+
+void BMS::readPackCurrent() {
+    if (!currentSensorCalibrated) {
+        calibrateCurrentSensor();
+    }
+
+    constexpr int samples = 8;
+    float sum = 0.0f;
+
+    for (int i = 0; i < samples; i++) {
+        sum += getPackCurrentAmps();
+        ThisThread::sleep_for(1ms);
+    }
+
+    packCurrentAmps = sum / static_cast<float>(samples);
+
+    printf("Pack current: %.2f A\n", packCurrentAmps);
+}
 
 void BMS::controller(){
     printf("controller functions...\n");
@@ -369,6 +429,7 @@ void BMS::controller(){
         ThisThread::sleep_for(3ms);
         readCellVoltages();
         readTemps();
+        readPackCurrent();
         checkForFaults();
         controlFans();
         decideBalancing();

@@ -47,6 +47,9 @@ class BMS{
     void controlFans();
     void checkShutdownCircuit();
     void checkIMDStatus();
+    void calibrateCurrentSensor();
+    float getPackCurrentAmps();
+    void readPackCurrent();
 
     enum bms_state{
         ACTIVE = 0,
@@ -103,4 +106,7 @@ class BMS{
       OneWire TS1W = OneWire(PB_14); // look up more on 1 wire interface 
       // temperature sensor interface
       // dont know ids but will be implemented here 
+      float currentSensorOffsetVolts = 0.0f;
+      float packCurrentAmps = 0.0f;
+      bool currentSensorCalibrated = false;
 };

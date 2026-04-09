@@ -1,5 +1,13 @@
 #include "BMSFaultDetection.h"
 
+// ADC / sensor constants
+static constexpr float ADC_REF_VOLTAGE = 3.3f;
+
+// This is the differential sensitivity after your analog chain.
+// From the schematic, start with about 0.0037 V/A.
+// likely tune this during testing.
+static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f;
+
 
 // need to add some sort of logging for testing - over uart
 
@@ -287,6 +295,17 @@ void checkForFaults(BMS &BMSInstance){
 				}
 			}
 		}
+		// Pack current fault check
+		if (std::fabs(BMSInstance.packCurrentAmps) > MAX_PACK_CURRENT_AMPS) {
+			BMSInstance.currentState = BMSInstance.FAULT;
+			BMSInstance.nBMS_Fault_3V3 = 0;
+			BMSInstance.bms_stat_message.bmsFault = true;
+
+			// BMSInstance.bms_stat_message.overcurrent = true; maybe include?
+
+			printf("FAULT: pack overcurrent detected: %.2f A\n",
+				BMSInstance.packCurrentAmps);
+		}
 	}
 
 	//tray temp sensor checks
@@ -353,6 +372,79 @@ void controlFans(BMS &BMSInstance) {
     }
 }
 
+//for current sensor, we have an external current sensor at J9, analog signal conditioning with filters and buffers,
+//dual instrumentation amplifiers and MCU ADC sampling
+//the current sensor is outputting towo analog voltages (Raw_Curr_Out and Raw_Curr_VRef) which at zero current should be 2.5v(check this while testing)
+//the difference between them represents the current magnitude and direction
+//RC filters are removing high-frequency noise and MCP6004 op-amps buffer the signals so we have V_Curr_Out and V_Curr_VRef
+//INA826 are instrumentation amplifiers where V_Out_Positive where V+ = Vref and V- = Vout, and the other is a V_out_Negative which is the opposite of V_Out_Positive
+//Each amplifier outputs Vout = G * (V+ - V-) where G is a gain of 1.8
+//reading J9 directly would mean that signals are noisy and centered around 2.5v and have very small differences
+
+/*
+This function calibrates zero-current offset for current sensor
+it averages multiple samples of (Vpos-Vneg) and stores reuslt as offset
+it must be ran when no current is flowing to remove hardware bias and ADC offset
+*/
+void calibrateCurrentSensor(BMS &BMSInstance) {
+    float diffSum = 0.0f;
+
+    for (size_t i = 0; i < CURRENT_SENSOR_CALIBRATION_SAMPLES; i++) {
+        float vPos = BMSInstance.Curr_Positive_ADC.read() * ADC_REF_VOLTAGE;
+        float vNeg = BMSInstance.Curr_Negative_ADC.read() * ADC_REF_VOLTAGE;
+
+        diffSum += (vPos - vNeg);
+        ThisThread::sleep_for(2ms);
+    }
+
+    BMSInstance.currentSensorOffsetVolts =
+        diffSum / static_cast<float>(CURRENT_SENSOR_CALIBRATION_SAMPLES);
+
+    BMSInstance.currentSensorCalibrated = true;
+
+    printf("Current sensor calibrated. Offset = %.6f V\n",
+           BMSInstance.currentSensorOffsetVolts);
+}
+/*
+This computes instantaneous pack current
+it reads both INA outputs(positive and negative) and then substracts the offset and converts voltage difference to current
+I = (Vpos - Vneg - offset)/sensitivity
+*/
+float getPackCurrentAmps(BMS &BMSInstance) {
+    float vPos = BMSInstance.Curr_Positive_ADC.read() * ADC_REF_VOLTAGE;
+    float vNeg = BMSInstance.Curr_Negative_ADC.read() * ADC_REF_VOLTAGE;
+
+    float vDiff = (vPos - vNeg) - BMSInstance.currentSensorOffsetVolts;
+    float currentAmps = vDiff / CURRENT_SENSOR_VOLTS_PER_AMP;
+
+    return currentAmps;
+}
+/*
+this function reads and filters pack current measurement which ensures calibration is complete,
+averages multiple samples for noise reduction and stores result inpackCurrentAmps
+
+This is called inside controller loop which provides real-time current measurement and input for fault
+detection and telemetry
+*/
+void readPackCurrent(BMS &BMSInstance) {
+    if (!BMSInstance.currentSensorCalibrated) {
+        calibrateCurrentSensor(BMSInstance);
+    }
+
+    // Simple averaging to reduce noise
+    constexpr int samples = 8;
+    float currentSum = 0.0f;
+
+    for (int i = 0; i < samples; i++) {
+        currentSum += getPackCurrentAmps(BMSInstance);
+        ThisThread::sleep_for(1ms);
+    }
+
+    BMSInstance.packCurrentAmps = currentSum / static_cast<float>(samples);
+
+    printf("Pack current: %.2f A\n", BMSInstance.packCurrentAmps);
+}
+
 void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 	printf("controller functions...\n");
 	if(BMSInstance.currentState != BMSInstance.FAULT){
@@ -361,6 +453,7 @@ void controller(LTC681xParallelBus &ltcBusInterface, BMS &BMSInstance){
 		ThisThread::sleep_for(3ms);
 		readCellVoltages(ltcBusInterface, BMSInstance);
 		readTemps(BMSInstance);
+		readPackCurrent(BMSInstance);
 		checkForFaults(BMSInstance);
 		controlFans(BMSInstance);
 		decideBalancing(BMSInstance);
