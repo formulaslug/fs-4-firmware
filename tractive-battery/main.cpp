@@ -1,43 +1,25 @@
-#include "mbed.h"
 
-
-
-
-// int main(){
-// 	// ThisThread::sleep_for(1s);
-// 	BufferedSerial VCP_UART = BufferedSerial(PA_9, PA_10, 115200); // some configuration for this needs to be done at startup see mbedosce
-// 	// VCP_UART.set_baud(115200);
-
-// 	ThisThread::sleep_for(3s);
-// 	// char msg1[] = "Intialization complete\n";
-// 	// VCP_UART.write(msg1, sizeof(msg1));
-// 	while(1){
-// 		printf("aa\n");
-// 	}
-// 	printf("aa\n");
-// }
-
-
-
-// #include "BMSFaultDetection.h"
 #include "mbed.h"
 #include "BMS.h"
 // #include "prechargeLogic.h"
 
-/*
+/* need to dos in terms of priority 4-9-26
+precharge get logic and implementation down 
+make sure we have the core functionalities done
+	-  what do we do if we see the shutdown circuit elsewhere
+	-  get details on the 1 wire sensors
+	-  get details on the tmp1075s - jack mentioned there was an issue but
+	-  get details on the battery fault indication light - required by rules
+get testing done for core functionalities - go in with an oscilliscope and input test values
+Telemetry! - will require some modification of BMS class so that the telemetry class can get index of faults
+
+
 
 current need to dos:
 1 wire for tray temp sensors sort of implemented - need more info - important - part of BMSFaultDetection - as of 4-4-26 still not enough info 
 shutdown circuit monitoring - not implemented - part of BMSFaultDetection (go through shutdown sequence for battery but do not throw a fault, also open precharge relay )
-current sensing - not implemented - part of telemetry
-imd monitoring  - not implemented - part of telemetry
 
 precharge - in progress........
-
-
-
-Status of 1 wire:
-cannot find info on the ids of the sensors, we can search for them however so.....
 
 */
 // need to initialize everything on startup - assume everything is okay at first
@@ -48,31 +30,17 @@ EventQueue queue(5*EVENTS_EVENT_SIZE);
 BMS BMSInstance;
 int main(){ 
 
-	//printf("serial test\n");
+	// there should also be the startup checks for the ADCS on all the LTC6810s here. not a priority but nice to havce 
 
-	// BMS BMSInstance;
-	// //intializing the uart stuff
-	// // this implementation is temporary
-	BMSInstance.VCP_UART.set_baud(115200);
-	// ThisThread::sleep_for(3s);
-
-
-	uint8_t i = 0;
-	while(i < 20){
-		printf("%d\n", i);
-		i++;	
-	}
-
-	printf("Beginning of main");
-	printf("\n\n\n\n\n\n\n\n\n\n");
+	BMSInstance.VCP_UART.set_baud(115200); // intializing serial interface
 
 
 	for(uint i = 0; i < NUM_BATTERY_MODULES; i++){
-		BMSInstance.chips.push_back(LTC6810(BMSInstance.ltcBusInterface, i));
+		BMSInstance.chips.push_back(LTC6810(BMSInstance.ltcBusInterface, i)); // initializing ltc chip objects
 	}
 
 
-	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
+	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){ // initlaize the tmp1075 handlers
 		for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
 			LTC6810::TMP1075_Handle_t sens;
 			sens.i2c_address = TMP1075_ADDRESSES[j];
@@ -83,7 +51,7 @@ int main(){
 	}
 
 
-	for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
+	for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){ // initalizing the tray temp sensors 
 		BMSInstance.trayTempSensors.push_back(DS18B20(BMSInstance.TS1W, TRAYTEMP_SENSOR_ADDRESSES[i]));
 	}
 
@@ -106,25 +74,10 @@ int main(){
 	//TEMPORARY: searching for 1 wire sensors......
 
 	//should print out to serial the address of any one wire bus temp sensor is it the same as fs3? idk
-	//debug_search_for_ds18b20_address(BMSInstance.TS1W);
-
-
-
-	// for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
-	// 	BMSInstance.trayTempSensors.push_back(DS18B20(BMSInstance.TS1W, TRAYTEMP_SENSOR_ADDRESSES[i]));
-	// }
-
-
-	// char msg1[] = "Intialization complete\n";
-	// BMSInstance.VCP_UART.write(msg1, sizeof(msg1));
+	debug_search_for_ds18b20_address(BMSInstance.TS1W);
 
 	printf("Initialization complete\n");
 
-
-	
-	// BMSInstance.spiInterface.write(0xaa); //temporary debug 
-	// BMSInstance.controller();
-	// BMSInstance.turnOffCellBalancing();
 	queue.call_every(2000ms, &BMSInstance, &BMS::controller);
 	queue.dispatch_forever();
 

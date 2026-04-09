@@ -1,7 +1,8 @@
 #include "BMS.h"
 #include <algorithm>
 #include <cmath>
-//literally just a constructor for the BMS object
+
+//ideally I would want thse in BMS.h for now its fine tho.
 static constexpr float ADC_REF_VOLTAGE = 3.3f;
 //this will probably be adjusted and tuned as testing happens
 static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f; // first-pass estimate
@@ -9,14 +10,13 @@ static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
 static constexpr float MAX_PACK_CURRENT_AMPS = 1000.0f; // adjust later
 
 BMS::BMS():
-    // :spiInterface(PB_5, PB_4, PB_10, PB_9, use_gpio_ssel),
     ltcBusInterface(&spiInterface) // not a huge fan of this but i think its required 
     {
-    currentState = ACTIVE;
-    Timer ltcTimeoutTimer;
-    CANMessage msg;
+    currentState = ACTIVE; // assume everything is okay at startup 
+    Timer ltcTimeoutTimer; // timer for ltc6810 timeout
+    CANMessage msg; // can message object
     nBMS_Fault_3V3 = 1; // assume no fault at startup 
-    nPrechargeControl = 1; 
+    nPrechargeControl = 1; // no precharge during startup 
 
     currentSensorOffsetVolts = 0.0f;
     packCurrentAmps = 0.0f;
@@ -49,6 +49,7 @@ BMS::BMS():
 
 void BMS::chargingActions(){
         //current work in progress - needs to detect soc over can......
+    //I have several questions about this ... do we fault based on this data what exactly do we do with it - might reference fs3
     //code from fs3 adapted to fs4
         uint8_t canData = 0;
         CAN_POWERTRAIN.read(msg);
@@ -71,7 +72,6 @@ void BMS::chargingActions(){
                     break;
                 }
             }
-    // we still need to do safety checks on this --- perhaps we can store the data from this in and then have checks in checkForFaults
 
 }   
 
@@ -83,8 +83,7 @@ void BMS::turnOffCellBalancing(){
         chips[i].updateConfig();
     }
     printf("Cell balancing deactivated....\n");
-    // char msg2[] = "cell balancing deactivated\n";
-    // VCP_UART.write(msg2, sizeof(msg2));
+
 }
 
 
@@ -96,9 +95,7 @@ void BMS::readCellVoltages(){
     printf("%f\n", ltcTimeoutTimer.elapsed_time());
     //ltcBusInterface.WakeupBus();
     if(ltcTimeoutTimer.elapsed_time()>=100ms){
-        printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
         currentState=FAULT;
-        printf("fault thown in reading cell voltages\n");
         return;
     }
 
@@ -118,8 +115,6 @@ void BMS::readCellVoltages(){
             voltsConverted = false;
             ltcTimeoutTimer.start();
             printf("poll timeout occured...\n");
-            // char msg4[] = "poll timeout occured\n";
-            // VCP_UART.write(msg4, sizeof(msg4));
             // the rules require that we need to ensure we are getting data and that all sensors are working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
             // that time period is a little arbitrary and probably should be adjusted 
         }
@@ -153,8 +148,7 @@ void BMS::readCellVoltages(){
         //6 bytes per cell group reading (2 bytes per cell) ... transmitted in little endian 
         //casted so that its easier to read
         }
-        // char msg5[] = "successfully read voltages\n";
-        // VCP_UART.write(msg5, sizeof(msg5));
+
         printf("read voltages...\n");
         minVoltage = voltages[0][0];
         maxVoltage = voltages[0][0];
@@ -176,8 +170,6 @@ void BMS::readCellVoltages(){
 
 
 void BMS::readTemps(){
-    // char msg6[] = "reading cell temps\n";
-    // VCP_UART.write(msg6, sizeof(msg6));
 
     for(uint8_t i  = 0; i < NUM_BATTERY_MODULES; i++){
         for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
@@ -214,11 +206,8 @@ void BMS::readTemps(){
 // our balancing threshold is at 85% of maximum charges
 void BMS::decideBalancing(){
     //turns on balancing for chips 
-    // char msg7[] = "deciding balancing\n";
-    // VCP_UART.write(msg7, sizeof(msg7));
     printf("deciding balancing......");
     if(currentState!=FAULT){
-        // do we balance based on the whole battery or per module? - need to ask
         if(maxVoltage >= BALANCING_THRESHOLD && minVoltage > MIN_CELL_VOLTAGE){
             for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
                 uint8_t dischargeValue = 0x00;
@@ -227,15 +216,19 @@ void BMS::decideBalancing(){
                 uint16_t minModuleVolt = voltages[i][0];
                 uint16_t maxModuleVolt = voltages[i][0];
                 for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
-                    if(voltages[i][j] < minModuleVolt){
-                        minModuleVolt = voltages[i][j];
-                    }
+                    // if(voltages[i][j] < minModuleVolt){
+                    //     minModuleVolt = voltages[i][j];
+                    // }
                     if(voltages[i][j] > maxModuleVolt){
                         maxModuleVolt = voltages[i][j];
                     }
-                    if((maxModuleVolt - minModuleVolt) >= DIFFERENCE_THRESHOLD){
-                        dischargeValue |= (0x1<<j);
+                    if((maxModuleVolt - minVoltage) >= DIFFERENCE_THRESHOLD){
+                        dischargeValue |= (0x1<<j); // we balance based on the whole battery
                     }
+                    /*
+                        logic is find lowest voltage cell - go through each module and balance that module based on that cell reading so the whole battery is balanced
+
+                    */
                 }
                 config.dischargeState.value = dischargeValue;
                 chips[i].updateConfig();    
@@ -244,11 +237,7 @@ void BMS::decideBalancing(){
     }
 }
 
-void BMS::checkIMDStatus(){
 
-
-
-}
 
 void BMS::readPackCurrent() {
     float vout = V_Out_Positive.read() * HASS300_ADC_REF;
@@ -262,40 +251,15 @@ void BMS::readPackCurrent() {
 
 
 void BMS::checkForFaults(){  
-    // uint8_t module_fault_index = 0; // battery module where fault occured 
-    // uint8_t temp_index = 0; // temp sensor (within a module) where a fault was detected
-    // uint8_t voltage_fault_index = 0; // voltage group (1 of 6 parrallel groups) where a fault was detected
 
-    //remember to set the data in the 
-    // char msg8[] = "reading cell temps\n";
-    // VCP_UART.write(msg8, sizeof(msg8));
-    printf("reading cell temps ");
+    //we will need to modify this for telemetry purposes ie which module is faulting which parrallel group is faulting etccc
     for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
         // cell voltage based faults...
         for(uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++){
             uint16_t voltVal = voltages[i][j];
             if(voltVal >= MAX_CELL_VOLTAGE || voltVal <= MIN_CELL_VOLTAGE){
-
-
-
                 currentState = FAULT;
-
                 nBMS_Fault_3V3 = 0;
-                // module_fault_index = i;
-                // voltage_fault_index = j;
-
-                //set status.....
-
-                // bms_stat_message.bmsFault = true;
-                // if(voltVal >= MAX_CELL_VOLTAGE){
-                //     bms_stat_message.cell_too_high = true;
-                // }else if(voltVal <= MIN_CELL_VOLTAGE){
-                //     bms_stat_message.cell_too_low = true;
-                // }
-                // bms_stat_message.fault_index = j;
-                // bms_stat_message.module_fault_index = i;
-
-
             } 
         }
 
@@ -306,14 +270,9 @@ void BMS::checkForFaults(){
                 if(tempReading>=CHARGING_CELL_MAX){
                     currentState = FAULT;
                     nBMS_Fault_3V3 = 0;
-                    // module_fault_index = i;
-                    // temp_index = j;
-                    //NOT DONE HERE have to add some stuff for telemetry
                 }else if(tempReading <= CHARGING_CELL_MIN){
                     currentState = FAULT;
                     nBMS_Fault_3V3 = 0;
-                    // module_fault_index = i;
-                    // temp_index = j;
                 }
             }
         }
@@ -323,12 +282,12 @@ void BMS::checkForFaults(){
     // for testing purposes i am going to use the cell temperature limits here, will be updated later
     //telemetry stuff needs to be added but the logic is there. 
 
-    for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
+    for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){ // keeping this here for now but its mainily a telemetrey
         uint8_t trayTemp = trayTemps[i];
         if(trayTemp >= CELL_MAX || trayTemp <= CELL_MIN){
             //should not cause a fault just for data 4-4-26
-            currentState = FAULT;
-            nBMS_Fault_3V3 = 0;
+            // currentState = FAULT;
+            // nBMS_Fault_3V3 = 0;
         }
     }
     
@@ -339,6 +298,16 @@ void BMS::checkForFaults(){
         printf("FAULT: overcurrent detected: %.2f A\n", packCurrentAmps);
     }
 
+
+    //to check IMDStatus.....
+    // faults on high reading i think - double check
+    // i believe this opens the shutdown cirtui
+
+
+    if(IMD_Fault_3V3.read()==0){
+        printf("IMD FAULT READ ... \n");
+        // this will open the shutdown circuit on its own so i think its mostly a telemetry thing
+    }
 
 }
 
@@ -355,20 +324,20 @@ void BMS::checkForFaults(){
 
 
 
-void BMS::checkShutdownCircuit(){
-    if(Shutdown_In_3V3_Filtered.read()==0 || Shutdown_Out_3V3_Filtered.read()==0){
-        // shutdown circuit open before the bms
-        turnOffCellBalancing();
-        //precharge should also be turned off but thats in a different task 
-        if(Shutdown_Out_3V3_Filtered.read()==0){
-            //shutdown circuit opened after the bms
-            turnOffCellBalancing();
-        }
-        if(Shutdown_In_3V3_Filtered.read()==0){
-            turnOffCellBalancing();
-        }
-    }
-}
+// void BMS::checkShutdownCircuit(){
+//     if(Shutdown_In_3V3_Filtered.read()==0 || Shutdown_Out_3V3_Filtered.read()==0){
+//         // shutdown circuit open before the bms
+//         turnOffCellBalancing();
+//         //precharge should also be turned off but thats in a different task 
+//         if(Shutdown_Out_3V3_Filtered.read()==0){
+//             //shutdown circuit opened after the bms
+//             turnOffCellBalancing();
+//         }
+//         if(Shutdown_In_3V3_Filtered.read()==0){
+//             turnOffCellBalancing();
+//         }
+//     }
+// }
 
 
 
@@ -399,14 +368,16 @@ void BMS::controller(){
         printf("turn off cell balancing completed okay...\n");
         ThisThread::sleep_for(3ms);
         readCellVoltages();
-        // printf("cellvoltages read okay\n");
+        printf("cellvoltages read okay\n");
         // readTemps();
-        // printf("read temps went okay....\n");
-        // checkForFaults();
-
-        // controlFans();
-        // decideBalancing();
-        d266270a (testing updates)
+        printf("read temps went okay....\n");
+        checkForFaults();
+        printf("checked for faults\n");//
+        controlFans();
+        printf("fan pwm set ...\n")
+        decideBalancing();
+        printf("battery balancing set....") 
+        //d266270a (testing updates)
         //checkShutdownCircuit(;
     }else{
         printf("WE ARE IN FAULT");
@@ -415,7 +386,7 @@ void BMS::controller(){
         //need to turn on indicator lights as well ..... 
         // precharge relay should be open in this case
         //fans turn off on fault
-         Fan_PWM.write(0.0f);
+        Fan_PWM.write(0.0f);
 
     }
 

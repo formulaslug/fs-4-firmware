@@ -46,15 +46,14 @@ class BMS{
 
     void chargingActions();
     void decideBalancing();
-    // void turnOffCellBalancing();
     void readCellVoltages();
     void readTemps();
     void checkForFaults();
     void generateStatusMessage();
     void controlFans();
     void checkShutdownCircuit();
-    void checkIMDStatus();
     void readPackCurrent();
+    void turnOffCellBalancing();
 
     enum bms_state{
         ACTIVE = 0,
@@ -67,8 +66,9 @@ class BMS{
 
   public:
     BMS();
+
     void controller();
-    void turnOffCellBalancing();
+
     struct TMP1075_Handle_t{
       uint8_t i2c_address;
       uint8_t temp_reg;
