@@ -247,6 +247,15 @@ void BMS::checkIMDStatus(){
 
 }
 
+void BMS::readPackCurrent() {
+    float vout = V_Out_Positive.read() * HASS300_ADC_REF;
+
+    // HASS 300-S: I = (Vout - Vref) * IPN / 0.625
+    packCurrentAmps = (vout - HASS300_VREF) / HASS300_SENSITIVITY;
+
+    printf("Current sense Vout: %.3f V  =>  Pack current: %.2f A\n",
+           vout, packCurrentAmps);
+}
 
 
 void BMS::checkForFaults(){  
@@ -375,51 +384,7 @@ void BMS::controlFans(){
         Fan_PWM.write(0.0f);
     }
 }
-void BMS::calibrateCurrentSensor() {
-    float diffSum = 0.0f;
 
-    for (size_t i = 0; i < CURRENT_SENSOR_CALIBRATION_SAMPLES; i++) {
-        float vPos = V_Out_Positive.read() * ADC_REF_VOLTAGE;
-        float vNeg = V_Out_Negative.read() * ADC_REF_VOLTAGE;
-
-        diffSum += (vPos - vNeg);
-        ThisThread::sleep_for(2ms);
-    }
-
-    currentSensorOffsetVolts =
-        diffSum / static_cast<float>(CURRENT_SENSOR_CALIBRATION_SAMPLES);
-
-    currentSensorCalibrated = true;
-
-    printf("Current sensor calibrated. Offset = %.6f V\n",
-           currentSensorOffsetVolts);
-}
-
-float BMS::getPackCurrentAmps() {
-    float vPos = V_Out_Positive.read() * ADC_REF_VOLTAGE;
-    float vNeg = V_Out_Negative.read() * ADC_REF_VOLTAGE;
-
-    float vDiff = (vPos - vNeg) - currentSensorOffsetVolts;
-    return vDiff / CURRENT_SENSOR_VOLTS_PER_AMP;
-}
-
-void BMS::readPackCurrent() {
-    if (!currentSensorCalibrated) {
-        calibrateCurrentSensor();
-    }
-
-    constexpr int samples = 8;
-    float sum = 0.0f;
-
-    for (int i = 0; i < samples; i++) {
-        sum += getPackCurrentAmps();
-        ThisThread::sleep_for(1ms);
-    }
-
-    packCurrentAmps = sum / static_cast<float>(samples);
-
-    printf("Pack current: %.2f A\n", packCurrentAmps);
-}
 
 void BMS::controller(){
     printf("controller functions...\n");

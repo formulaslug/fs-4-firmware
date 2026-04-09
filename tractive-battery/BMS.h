@@ -30,6 +30,13 @@ inline constexpr uint16_t MIN_CELL_VOLTAGE = 25000; // 2.5 volts
 inline constexpr uint16_t BALANCING_THRESHOLD = 35700;// 3.57 volts
 inline constexpr uint16_t DIFFERENCE_THRESHOLD = 00300; // 30 milivolts
 
+// HASS 300-S current sensor constants (from datasheet)
+inline constexpr float HASS300_IPN            = 300.0f;                      // Nominal primary current (A)
+inline constexpr float HASS300_SENSITIVITY    = 0.625f / HASS300_IPN;        // V/A = ~0.002083 V/A
+inline constexpr float HASS300_VREF           = 2.5f;                        // Output voltage at zero current (V)
+inline constexpr float HASS300_ADC_REF        = 3.3f;                        // MCU ADC reference voltage (V)
+inline constexpr float MAX_PACK_CURRENT_AMPS  = 1000.0f;                     // Overcurrent fault threshold - tune later
+inline constexpr size_t CURRENT_FILTER_SAMPLES = 10;                         // Rolling average window size
 
 
 
@@ -47,8 +54,6 @@ class BMS{
     void controlFans();
     void checkShutdownCircuit();
     void checkIMDStatus();
-    void calibrateCurrentSensor();
-    float getPackCurrentAmps();
     void readPackCurrent();
 
     enum bms_state{
@@ -106,7 +111,5 @@ class BMS{
       OneWire TS1W = OneWire(PB_14); // look up more on 1 wire interface 
       // temperature sensor interface
       // dont know ids but will be implemented here 
-      float currentSensorOffsetVolts = 0.0f;
-      float packCurrentAmps = 0.0f;
-      bool currentSensorCalibrated = false;
+      float packCurrentAmps;
 };
