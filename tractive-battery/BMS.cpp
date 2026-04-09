@@ -92,9 +92,13 @@ void BMS::readCellVoltages(){
     // char msg3[] = "Reading Cell Voltages\n";
     // VCP_UART.write(msg3, sizeof(msg3));
     printf("Reading cell voltages...\n");
+    printf("elapsed time ... \n");
+    printf("%f\n", ltcTimeoutTimer.elapsed_time());
     //ltcBusInterface.WakeupBus();
     if(ltcTimeoutTimer.elapsed_time()>=100ms){
+        printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
         currentState=FAULT;
+        printf("fault thown in reading cell voltages\n");
         return;
     }
 
@@ -174,7 +178,6 @@ void BMS::readCellVoltages(){
 void BMS::readTemps(){
     // char msg6[] = "reading cell temps\n";
     // VCP_UART.write(msg6, sizeof(msg6));
-    printf("reading cell temps\n");
 
     for(uint8_t i  = 0; i < NUM_BATTERY_MODULES; i++){
         for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
@@ -389,18 +392,26 @@ void BMS::controlFans(){
 void BMS::controller(){
     printf("controller functions...\n");
     if(currentState != FAULT){
+
         chargingActions();
+        printf("charging actions completed okay...\n");
         turnOffCellBalancing();
+        printf("turn off cell balancing completed okay...\n");
         ThisThread::sleep_for(3ms);
         readCellVoltages();
-        readTemps();
-        readPackCurrent();
-        checkForFaults();
-        controlFans();
-        decideBalancing();
+        // printf("cellvoltages read okay\n");
+        // readTemps();
+        // printf("read temps went okay....\n");
+        // checkForFaults();
+
+        // controlFans();
+        // decideBalancing();
+        d266270a (testing updates)
         //checkShutdownCircuit(;
     }else{
+        printf("WE ARE IN FAULT");
         turnOffCellBalancing();
+        nBMS_Fault_3V3 = 0;
         //need to turn on indicator lights as well ..... 
         // precharge relay should be open in this case
         //fans turn off on fault

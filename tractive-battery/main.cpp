@@ -1,7 +1,28 @@
+#include "mbed.h"
+
+
+
+
+// int main(){
+// 	// ThisThread::sleep_for(1s);
+// 	BufferedSerial VCP_UART = BufferedSerial(PA_9, PA_10, 115200); // some configuration for this needs to be done at startup see mbedosce
+// 	// VCP_UART.set_baud(115200);
+
+// 	ThisThread::sleep_for(3s);
+// 	// char msg1[] = "Intialization complete\n";
+// 	// VCP_UART.write(msg1, sizeof(msg1));
+// 	while(1){
+// 		printf("aa\n");
+// 	}
+// 	printf("aa\n");
+// }
+
+
+
 // #include "BMSFaultDetection.h"
 #include "mbed.h"
 #include "BMS.h"
-#include "prechargeLogic.h"
+// #include "prechargeLogic.h"
 
 /*
 
@@ -23,15 +44,32 @@ cannot find info on the ids of the sensors, we can search for them however so...
 
 bool eMeterPresent = false;
 
-// EventQueue queue(5*EVENTS_EVENT_SIZE);
-
-
+EventQueue queue(5*EVENTS_EVENT_SIZE);
+BMS BMSInstance;
 int main(){ 
 
-	BMS BMSInstance;
-	//intializing the uart stuff
-	// this implementation is temporary
+	//printf("serial test\n");
+
+	// BMS BMSInstance;
+	// //intializing the uart stuff
+	// // this implementation is temporary
 	BMSInstance.VCP_UART.set_baud(115200);
+	// ThisThread::sleep_for(3s);
+
+
+	uint8_t i = 0;
+	while(i < 20){
+		printf("%d\n", i);
+		i++;	
+	}
+
+	printf("Beginning of main");
+	printf("\n\n\n\n\n\n\n\n\n\n");
+
+
+	for(uint i = 0; i < NUM_BATTERY_MODULES; i++){
+		BMSInstance.chips.push_back(LTC6810(BMSInstance.ltcBusInterface, i));
+	}
 
 
 	for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
@@ -42,6 +80,11 @@ int main(){
 			BMSInstance.sensors[i][j] = sens;
 		}
 			
+	}
+
+
+	for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
+		BMSInstance.trayTempSensors.push_back(DS18B20(BMSInstance.TS1W, TRAYTEMP_SENSOR_ADDRESSES[i]));
 	}
 
 	// One wire section....
@@ -63,13 +106,13 @@ int main(){
 	//TEMPORARY: searching for 1 wire sensors......
 
 	//should print out to serial the address of any one wire bus temp sensor is it the same as fs3? idk
-	debug_search_for_ds18b20_address(BMSInstance.TS1W);
+	//debug_search_for_ds18b20_address(BMSInstance.TS1W);
 
 
 
-	for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
-		BMSInstance.trayTempSensors.push_back(DS18B20(BMSInstance.TS1W, TRAYTEMP_SENSOR_ADDRESSES[i]));
-	}
+	// for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){
+	// 	BMSInstance.trayTempSensors.push_back(DS18B20(BMSInstance.TS1W, TRAYTEMP_SENSOR_ADDRESSES[i]));
+	// }
 
 
 	// char msg1[] = "Intialization complete\n";
@@ -78,13 +121,12 @@ int main(){
 	printf("Initialization complete\n");
 
 
-
+	
 	// BMSInstance.spiInterface.write(0xaa); //temporary debug 
-
-	// controller(ltcBusInterface, BMSInstance);
-	//period of this is temporary and arbitrary - ideally i would want this to run more often, the current period is for testing purposes 
-	// queue.call_every(2000ms, &BMSInstance, &BMS::controller);
-	// queue.dispatch_forever();
+	// BMSInstance.controller();
+	// BMSInstance.turnOffCellBalancing();
+	queue.call_every(2000ms, &BMSInstance, &BMS::controller);
+	queue.dispatch_forever();
 
 
 	return 0;

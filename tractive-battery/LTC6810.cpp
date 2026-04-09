@@ -176,7 +176,7 @@ float LTC6810::readTemperatureTMP1075(TMP1075_Handle_t *sensor) {
   auto stCmd = LTC681xBus::BuildAddressedBusCommand(StartComm(), m_id);
   m_bus.SendCommand(stCmd);
 
-  printf("lkJASDLKJASDLKj commData: %02X %02X %02X %02X %02X %02X\n", commData[0], commData[1], commData[2], commData[3], commData[4], commData[5]);
+  // printf("lkJASDLKJASDLKj commData: %02X %02X %02X %02X %02X %02X\n", commData[0], commData[1], commData[2], commData[3], commData[4], commData[5]);
 
 
   ThisThread::sleep_for(3ms);

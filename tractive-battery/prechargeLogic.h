@@ -2,7 +2,7 @@
 #define PRECHARGELOGIC_H
 
 #include "mbed.h"
-#include "BmsConfig.h"
+// #include "BMS.h"
 
 enum precharge_state {
     PRECHARGE_IDLE,

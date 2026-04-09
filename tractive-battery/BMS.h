@@ -15,7 +15,7 @@ inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 4;
 inline constexpr uint16_t TMP1075_ADDRESSES[NUM_TEMP_SENSORS_PER_MODULE] = {0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48,0x48, 0x48, 0x48, 0x48}; 
 
 //this is a temporary thing - i dont know the actual addresses - 64 bit unique address for each sensor 
-inline constexpr uint64_t TRAYTEMP_SENSOR_ADDRESSES[NUM_TRAY_TEMP_SENSORS] = {0x00000000,0x00000000,0x00000000,0x00000000};
+inline constexpr uint64_t TRAYTEMP_SENSOR_ADDRESSES[NUM_TRAY_TEMP_SENSORS] = {0x860000112ffda728,0x520000112fffdd28,0x7400001130aabd28,0x7400001130aabd28};
 
 
 //battery cell info for inr-18650-p30b - based on datasheet
@@ -46,7 +46,7 @@ class BMS{
 
     void chargingActions();
     void decideBalancing();
-    void turnOffCellBalancing();
+    // void turnOffCellBalancing();
     void readCellVoltages();
     void readTemps();
     void checkForFaults();
@@ -68,7 +68,7 @@ class BMS{
   public:
     BMS();
     void controller();
-
+    void turnOffCellBalancing();
     struct TMP1075_Handle_t{
       uint8_t i2c_address;
       uint8_t temp_reg;
@@ -105,7 +105,7 @@ class BMS{
       BufferedSerial VCP_UART = BufferedSerial(PA_9, PA_10); // some configuration for this needs to be done at startup see mbedosce
       CAN CAN_POWERTRAIN = CAN(PA_11, PA_12);
       DigitalOut nPrechargeControl = DigitalOut(PB_0);
-      SPI spiInterface = SPI(PB_5, PB_4, PB_10, PB_9, use_gpio_ssel);
+      SPI spiInterface = SPI(PB_5, PB_4, PB_3, PB_9, use_gpio_ssel);
       LTC681xParallelBus ltcBusInterface;
       DigitalOut TS1W_PU_Control = DigitalOut(PB_15);
       OneWire TS1W = OneWire(PB_14); // look up more on 1 wire interface 
