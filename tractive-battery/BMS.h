@@ -35,7 +35,7 @@ inline constexpr float HASS300_IPN            = 300.0f;                      // 
 inline constexpr float HASS300_SENSITIVITY    = 0.625f / HASS300_IPN;        // V/A = ~0.002083 V/A
 inline constexpr float HASS300_VREF           = 2.5f;                        // Output voltage at zero current (V)
 inline constexpr float HASS300_ADC_REF        = 3.3f;                        // MCU ADC reference voltage (V)
-inline constexpr float MAX_PACK_CURRENT_AMPS  = 1000.0f;                     // Overcurrent fault threshold - tune later
+inline constexpr float MAX_PACK_CURRENT_AMPS  = 100.0f;                     // Overcurrent fault threshold - tune later
 inline constexpr size_t CURRENT_FILTER_SAMPLES = 10;                         // Rolling average window size
 
 

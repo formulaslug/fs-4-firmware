@@ -279,13 +279,13 @@ void BMS::checkForFaults(){
     }
 
     //tray temp sensor checks
-    // for testing purposes i am going to use the cell temperature limits here, will be updated later
+    // for testing purposes i am going to use the cell temperature limits here, will be update later
     //telemetry stuff needs to be added but the logic is there. 
 
     for(uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++){ // keeping this here for now but its mainily a telemetrey
         uint8_t trayTemp = trayTemps[i];
         if(trayTemp >= CELL_MAX || trayTemp <= CELL_MIN){
-            //should not cause a fault just for data 4-4-26
+            //should not cause a fault just for data 4-4-26 - keeping it here for mow
             // currentState = FAULT;
             // nBMS_Fault_3V3 = 0;
         }

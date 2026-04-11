@@ -6,7 +6,6 @@
 
 /*
 I think some major rewrites are needed here, i dont think the logic fully holds up
-
 */
 
 bool precharging = false;
