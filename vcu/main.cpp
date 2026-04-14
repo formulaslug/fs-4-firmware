@@ -4,20 +4,25 @@
 #include "mbed.h"
 #include "etc_controller.h"
 
-EventQueue vcu_queue;
-Thread queue_thread;
+EventQueue etc_queue;
+EventQueue sme_queue;
+Thread etc_queue_thread;
+Thread sme_queue_thread;
 
 CAN can{PA_11, PA_12, 500000};
 ETCController etc(PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7);
 const ETCState &etc_state = etc.state;
 
-void send_CAN_message();
+void send_etc_CAN_messages();
+void send_sme_CAN_messages();
 
 int main() {
     printf("Hello World!!\n");
 
-    vcu_queue.call_every(50ms, &send_CAN_message);
-    queue_thread.start(callback(&vcu_queue, &EventQueue::dispatch_forever));
+    etc_queue.call_every(50ms, &send_etc_);
+    sme_queue.call_every(1ms, &send_CAN_message);
+    etc_queue_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
+    sme_queue_thread.start(callback(&sme_queue, &EventQueue::dispatch_forever));
 
     CANMessage rx;
     while (true) {
@@ -47,7 +52,7 @@ int main() {
     return 0;
 }
 
-void send_CAN_message() {
+void send_etc_CAN_messages() {
     uint8_t buf0[8];
     uint16_t APPS1_scaled_voltage = static_cast<uint16_t>(etc_state.APPS1_voltage * 1000);
     uint16_t APPS2_scaled_voltage = static_cast<uint16_t>(etc_state.APPS2_voltage * 1000);
@@ -76,6 +81,17 @@ void send_CAN_message() {
         (etc_state.implaus_brake_and_accel << 5) |
         (etc_state.can_regen << 6) |
         (etc_state.must_use_hydraulic_brakes << 7);
+
+    CANMessage msg0{393, buf0, 8};
+    CANMessage msg1{394, buf1, 6};
+    can.write(msg0);
+    can.write(msg1);
+}
+
+void send_sme_CAN_messages() {
+    uint8_t buf0[8];
+
+    uint8_t buf1[8];
 
     CANMessage msg0{393, buf0, 8};
     CANMessage msg1{394, buf1, 6};

@@ -51,6 +51,8 @@ bool ETCController::update_state() {
     if (rtd_button_rise && !state.rtd_button_pressed) {
         rtd_button_rise = false;
     }
+
+    state.mbb_alive = state.mbb_alive >= 15 ? 0 : state.mbb_alive + 1;
 }
 
 void ETCController::update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus) { 

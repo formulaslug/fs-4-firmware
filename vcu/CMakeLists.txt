@@ -19,13 +19,12 @@ include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 add_subdirectory(../mbed-os mbed-os)
 # add_subdirectory(../libraries/FilterUtils FilterUtils)
 
-add_subdirectory(../libraries/FilterUtils FilterUtils)
+add_subdirectory(../libraries/FilterUtils filter-utils)
 
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(${PROJECT_NAME} 
         main.cpp
-        ./etc/etc_controller.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ./etc)

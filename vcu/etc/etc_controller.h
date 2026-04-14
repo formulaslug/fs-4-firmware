@@ -8,6 +8,7 @@
 #include "mbed.h"
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
+#include <cstdint>
 
 struct ETCState {
     float APPS1_voltage = 0.0f;
@@ -19,6 +20,10 @@ struct ETCState {
     float BPPS_position = 0.0f; // 0 to 1
     float front_BSE_voltage = 0.0f;
     float rear_BSE_voltage = 0.0f;
+    int16_t MAX_SPEED = 7500;
+    uint16_t CHARGE_CURRENT_LIMIT = 150;
+    uint16_t DISCHARGE_CURRENT_LIMIT = 600;
+    uint8_t mbb_alive = 0;
     bool rtd_button_pressed = false;
     bool ready_to_drive = false;
     bool motor_enabled = false;
@@ -90,6 +95,8 @@ private:
     
     static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.1f;
     static constexpr float MAX_APPS_POSITION_DEVIATION = 0.10f;
+
+    static constexpr int16_t MAX_TORQUE = 30000;
 
     bool rtd_button_rise = false; // makes it so that update_rtd only occurs on every rise
 
