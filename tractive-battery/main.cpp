@@ -1,7 +1,7 @@
 
 #include "mbed.h"
-#include "BMS.h"
-// #include "prechargeLogic.h"
+// #include "BMS.h"
+#include "prechargeLogic.h"
 
 /* need to dos in terms of priority 4-9-26
 precharge get logic and implementation down 
@@ -28,6 +28,7 @@ bool eMeterPresent = false;
 
 EventQueue queue(5*EVENTS_EVENT_SIZE);
 BMS BMSInstance;
+// BMSInstance = BMS();
 int main(){ 
 
 	// there should also be the startup checks for the ADCS on all the LTC6810s here. not a priority but nice to havce 
@@ -78,8 +79,9 @@ int main(){
 
 	printf("Initialization complete\n");
 
-	queue.call_every(2000ms, &BMSInstance, &BMS::controller);
-	queue.dispatch_forever();
+
+	// queue.call_every(2ms, &BMSInstance, &BMS::controller);
+	// queue.dispatch_forever();
 
 
 	return 0;

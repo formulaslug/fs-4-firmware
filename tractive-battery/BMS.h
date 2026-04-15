@@ -1,3 +1,6 @@
+#ifndef BMS_H
+#define BMS_H
+
 #include "mbed.h"
 #include "LTC6810.h"
 #include "LTC681xBus.h"
@@ -30,6 +33,7 @@ inline constexpr uint16_t MIN_CELL_VOLTAGE = 25000; // 2.5 volts
 inline constexpr uint16_t BALANCING_THRESHOLD = 35700;// 3.57 volts
 inline constexpr uint16_t DIFFERENCE_THRESHOLD = 00300; // 30 milivolts
 
+//tune later lots of placeholder values
 // HASS 300-S current sensor constants (from datasheet)
 inline constexpr float HASS300_IPN            = 300.0f;                      // Nominal primary current (A)
 inline constexpr float HASS300_SENSITIVITY    = 0.625f / HASS300_IPN;        // V/A = ~0.002083 V/A
@@ -45,8 +49,13 @@ static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f; // first-pass est
 static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
 
 
+//for precharge ???
+inline constexpr float MIN_PACK_MV = 2.5; // this is just a placeholder
+
+
 
 class BMS{
+
   private:
 
     void chargingActions();
@@ -60,16 +69,11 @@ class BMS{
     void readPackCurrent();
     void turnOffCellBalancing();
 
-    enum bms_state{
-        ACTIVE = 0,
-        CHARGING = 1,
-        FAULT = 2,
-        PRECHARGING = 3
-    };
 
-    bms_state currentState;
+    // bms_state currentState;
 
   public:
+
     BMS();
 
     void controller();
@@ -78,10 +82,17 @@ class BMS{
       uint8_t i2c_address;
       uint8_t temp_reg;
     };
+    enum bms_state{
+        ACTIVE = 0,
+        CHARGING = 1,
+        FAULT = 2,
+        PRECHARGING = 3
+    };
 
     float currentSensorOffsetVolts;
     float packCurrentAmps;
     bool currentSensorCalibrated;
+    bms_state currentState;
 
     Timer ltcTimeoutTimer;
     CANMessage msg;
@@ -121,3 +132,6 @@ class BMS{
       // temperature sensor interface
       // dont know ids but will be implemented here 
 };
+
+// BMS BMSInstance;
+#endif

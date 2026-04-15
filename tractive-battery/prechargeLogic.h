@@ -2,7 +2,7 @@
 #define PRECHARGELOGIC_H
 
 #include "mbed.h"
-// #include "BMS.h"
+#include "BMS.h"
 
 enum precharge_state {
     PRECHARGE_IDLE,
@@ -15,6 +15,7 @@ extern bool prechargeDone;
 extern float dcBusVoltage;
 extern float packVoltage;
 extern precharge_state prechargeState;
+extern BMS BMSInstance;
 
 void updatePrecharge();
 bool preChargeAllowed();

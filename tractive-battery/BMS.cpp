@@ -359,7 +359,7 @@ void BMS::controlFans(){
 
 
 void BMS::controller(){
-    printf("controller functions...\n");
+
     if(currentState != FAULT){
 
         chargingActions();
