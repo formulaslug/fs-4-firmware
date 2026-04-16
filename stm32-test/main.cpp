@@ -9,7 +9,7 @@ VN::Sensor sensor{};
 
 inline void check_vn_error(VN::Error err) {
     if (err != VN::Error::None) {
-        printf("VN: Error %hu encountered at %s:%d!\n", static_cast<uint16_t>(err), __FILE_NAME__, __LINE__);
+        printf("VN: Error %hu encountered at %s:%d!\n", static_cast<uint16_t>(err), __FILE__, __LINE__);
     } else {
         printf("Binary output messages configured.\n");
     }
@@ -27,7 +27,7 @@ int main() {
     //     ThisThread::sleep_for(50ms);
     // }
 
-    VN::Error err = sensor.connect(PB_6, PA_10, VN::Registers::System::BaudRate::BaudRates::Baud115200);
+    VN::Error err = sensor.connect(PC_12, PD_2, VN::Registers::System::BaudRate::BaudRates::Baud115200);
     if (err != VN::Error::None) {
         printf("Error connecting to sensor! (%hu)\n", static_cast<uint16_t>(err));
     }
@@ -81,9 +81,9 @@ int main() {
     binary_out_3_reg.rateDivisor = 1; // 800Hz / 80 = 10Hz
     binary_out_3_reg.time.timeGps = true;
 
-    err = sensor.writeRegister(&binary_out_1_reg);
+    // err = sensor.writeRegister(&binary_out_1_reg);
     err = sensor.writeRegister(&binary_out_2_reg);
-    err = sensor.writeRegister(&binary_out_3_reg);
+    // err = sensor.writeRegister(&binary_out_3_reg);
     check_vn_error(err);
 
     VN::Sensor::CompositeDataQueueReturn compositeData = sensor.getMostRecentMeasurement();
