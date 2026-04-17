@@ -31,9 +31,9 @@ private:
     Timer timer;
 
     const uint8_t teeth_per_rev;
-
     uint32_t start_us;
+    //volatile bool temp = false;
     volatile uint8_t teeth_passed; // Sampled at 100hz, doubt that there would be more than 256 teeth passed in 0.1 seconds
-
+    //uint16_t total_teeth = 0;
     float rpm;
 };

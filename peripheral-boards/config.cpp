@@ -3,10 +3,10 @@
 
 // Read DIP switch which encodes which corner the board is on
 Corner readCorner() {
-    DigitalIn dip1(PIN_DIP_1, PullDown);
-    DigitalIn dip2(PIN_DIP_2, PullDown);
+    DigitalIn dip1(PIN_DIP_1, PullUp);
+    DigitalIn dip2(PIN_DIP_2, PullUp);
     // dip1 is first bit, dip2 is next bit
-    int val = (!dip2.read() << 1) | !dip1.read();
+    int val = (dip2.read() << 1) | dip1.read();
     switch (val) {
     case 0:
         return Corner::FR;

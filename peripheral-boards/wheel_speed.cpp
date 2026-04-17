@@ -15,6 +15,7 @@ void WheelSpeed::onRiseISR() {
     uint8_t teeth_passed_read = teeth_passed;
     teeth_passed_read++;
     teeth_passed = teeth_passed_read;
+    //temp = true;
 }
 
 float WheelSpeed::update() {
@@ -27,6 +28,11 @@ float WheelSpeed::update() {
         teeth_passed = 0;
         return 0.0;
     }
+    // if(temp)
+    // {
+    //     temp = false;
+    //     printf("Rising Edge detected\n");
+    // }
     uint32_t delta_us = now_us - start_us;
     start_us = now_us;
     // Is running and should be called every 100hz
@@ -35,10 +41,13 @@ float WheelSpeed::update() {
     uint8_t local_teeth_passed = teeth_passed;
     teeth_passed = 0;
     core_util_critical_section_exit();
+    // printf("Teeth Passed: %d\n", local_teeth_passed);
+    // printf("Total Teeth Passed: %d\n", total_teeth);
     if (local_teeth_passed == 0) {
         return 0.0;
     }
     // Calculates the frequency in seconds, then calculate rpm
+    //total_teeth += local_teeth_passed;
     float freq_s = (static_cast<float>(local_teeth_passed) / (delta_us)) * 1e6f;
     rpm = (freq_s / static_cast<float>(teeth_per_rev)) * 60.0f;
     return rpm;
