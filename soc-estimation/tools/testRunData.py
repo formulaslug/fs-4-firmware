@@ -108,9 +108,32 @@ for i in range(1, len(currentConverted)):
     prev_soc_pct = float(cmdOutput.stdout)
     coulombSOC[i] = prev_soc_pct / 100.0
 # ------------------ SOH COUNTING -------------------------
-SOH_FUNC = "../src/testRunSOH"
+SOH_FUNC = "../src/testRunSOH.exe"
 
+INIT_SOH = 1.00
 
+stateOfHealth = np.zeros(len(currentConverted))
+stateOfHealth[0] = INIT_SOH
+
+for i in range(1, len(currentConverted)):
+  prev_SOH = stateOfHealth[i-1] * 100
+  currentDraw = currentConverted[i] / MILLI
+  milliSinceCall = timeArray[i] - timeArray[i-1]
+  
+  cmd = [
+    SOH_FUNC,
+    str(prev_SOH),
+    str(currentDraw),
+    str(milliSinceCall)
+  ]
+
+  cmdOutput = subprocess.run(cmd, capture_output=True, text=True)
+
+  if int(cmdOutput.returncode) != 0:
+    print(cmdOutput.stderr)
+  else:
+    print(cmdOutput.stdout)
+    stateOfHealth[i] = float(cmdOutput.stdout) / 100.0
 '''
 # Plot data 
 if TIME_DATA_PROVIDED:
@@ -146,6 +169,7 @@ voltagePlot = host_subplot(211)
 voltagePlotParasite = voltagePlot.twinx()
 voltagePlot.plot(indexArray, voltageConverted, label="Voltage")
 voltagePlotParasite.plot(indexArray[emptyDischargeMask], estimatedSOC, color="k", label="Lookup SOC")
+voltagePlotParasite.plot(indexArray[emptyDischargeMask], stateOfHealth, color="r", label="SOH")
 voltagePlotParasite.plot(indexArray, coulombSOC, color="g", label="Coulomb SOC")
 voltagePlot.set_ylabel("Voltage (mV)")
 voltagePlotParasite.set_ylabel("SOC %")
@@ -156,6 +180,7 @@ currentPlot = host_subplot(212)
 currentPlotParasite = currentPlot.twinx()
 currentPlot.plot(indexArray, currentConverted, label="Current")
 currentPlotParasite.plot(indexArray[emptyDischargeMask], estimatedSOC, color="k", label="Lookup SOC")
+currentPlotParasite.plot(indexArray[emptyDischargeMask], stateOfHealth, color="r", label="SOH")
 currentPlotParasite.plot(indexArray, coulombSOC, color="g", label="Coulomb SOC")
 currentPlot.set_ylabel("Current (mA)")
 currentPlotParasite.set_ylabel("SOC %")

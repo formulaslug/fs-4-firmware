@@ -19,6 +19,6 @@ const float C1_SLOPE_EQUIVALENT = 0.025475; // slope of SOH vs. # of cycles at 1
 
 // sohEstimate()
 // call every so to keep SOH updated, returns SOH % as a decimal
-float sohEstimate(float lastSOH, float currentDraw, float milliSinceLastCall);
+float sohEstimate(float lastSOHPercent, float currentDraw, float milliSinceLastCall);
 
 #endif
