@@ -55,9 +55,7 @@ for i in range(len(voltageCurrentPairs)):
   milliVolts = int(voltageCurrentPairs[i][0])
   milliAmps = int(voltageCurrentPairs[i][1])
 
-  #cmd = C_TEST_FUNC+" "+str(milliVolts)+" "+str(milliAmps)
   cmd = [C_TEST_FUNC, str(milliVolts), str(milliAmps)]
-  #cmdOutput = subprocess.run(cmd, capture_output=True, text=True)
   cmdOutput = subprocess.run(cmd, capture_output=True, text=True)
   if int(cmdOutput.returncode) != 0:
     print(cmdOutput.stderr)
@@ -72,7 +70,7 @@ BATTERY_CAPACITY = 2600 # mAh
 estimatedSOC = 1-(estimatedDischargeCapacity[emptyDischargeMask]/BATTERY_CAPACITY)
 
 # -------------------- COULOMB COUNTING ADDED --------------------
-C_COULOMB_FUNC = "../src/testRunCoulombCountingRunner"
+C_COULOMB_FUNC = "../src/testRunCoulombCountingRunner.exe"
 
 COULOMB_INITIAL_SOC = 100.0
 COULOMB_CAPACITY_AH = 2.6
@@ -109,7 +107,10 @@ for i in range(1, len(currentConverted)):
   else:
     prev_soc_pct = float(cmdOutput.stdout)
     coulombSOC[i] = prev_soc_pct / 100.0
-# ------------------ END COULOMB COUNTING ADDED ------------------
+# ------------------ SOH COUNTING -------------------------
+SOH_FUNC = "../src/testRunSOH"
+
+
 '''
 # Plot data 
 if TIME_DATA_PROVIDED:
