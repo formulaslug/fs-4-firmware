@@ -76,8 +76,8 @@ CANMessage ACC_TPDO_SEG4_TEMPS(int8_t *temps) {
 
 CANMessage ACC_TPDO_SEG0_VOLTS(uint16_t *volts) {
     uint8_t data[NUM_VOLTAGES_PER_MODULE];
-    for (int i = 0; i < BMS.NUM_VOLTAGES_PER_MODULE; i++) {
-        data[i] = (uint8_t)(BMS.voltages[0][i] / 10 - 200);
+    for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
+        data[i] = (uint8_t)(BMSInstance.voltages[0][i] / 10 - 200);
     }
 
     return CANMessage{kACC_TPDO_SEG0_VOLTS, data, NUM_VOLTAGES_PER_MODULE};
