@@ -1,0 +1,4 @@
+void Telemetry::sendCellVoltages(){
+	
+
+}

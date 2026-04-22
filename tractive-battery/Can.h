@@ -7,6 +7,9 @@
 
 //BMS to Bus
 // Global pack status
+extern BMS BMSInstance;
+
+
 constexpr uint32_t kID_STATUS      = 0x188;
 
 // Power performance data
