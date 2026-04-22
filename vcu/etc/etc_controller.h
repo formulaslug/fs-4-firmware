@@ -35,6 +35,10 @@ struct ETCState {
     bool implaus_brake_and_accel = false;
     bool can_regen = false;
     bool must_use_hydraulic_brakes = false;
+    float wheel_speed_fl = 0.0f;
+    float wheel_speed_fr = 0.0f;
+    float wheel_speed_rl = 0.0f;
+    float wheel_speed_rr = 0.0f;
 };
 
 class ETCController {
