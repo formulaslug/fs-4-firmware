@@ -2,7 +2,7 @@
 #define TELEMETRY_H
 
 #include "mbed.h"
-
+#include "can.h"
 
 
 class Telemetry{

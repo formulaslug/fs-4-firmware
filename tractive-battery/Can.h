@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include "mbed.h"
-#include "BmsConfig.h"
+// #include "BmsConfig.h"
 
 //BMS to Bus
 // Global pack status

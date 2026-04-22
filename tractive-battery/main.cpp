@@ -1,6 +1,7 @@
 
 #include "mbed.h"
 // #include "BMS.h"
+#include "tempCan.h"
 #include "prechargeLogic.h"
 
 /* need to dos in terms of priority 4-9-26
@@ -28,6 +29,8 @@ bool eMeterPresent = false;
 
 EventQueue queue(5*EVENTS_EVENT_SIZE);
 BMS BMSInstance;
+CanGenerator cGen;
+
 // BMSInstance = BMS();
 int main(){ 
 
@@ -80,8 +83,9 @@ int main(){
 	printf("Initialization complete\n");
 
 
-	// queue.call_every(2ms, &BMSInstance, &BMS::controller);
-	// queue.dispatch_forever();
+	queue.call_every(2ms, &BMSInstance, &BMS::controller);
+	queue.call_every(1000ms, &cGen, &CanGenerator::BuildAndSendMessages);
+	queue.dispatch_forever();
 
 
 	return 0;
