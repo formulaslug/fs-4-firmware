@@ -26,48 +26,48 @@ CANMessage ACC_TPDO_STATUS(bool bmsFault, bool imdFault, bool shutdownState, boo
 // Accumulator Temperatures
 
 CANMessage ACC_TPDO_SEG0_TEMPS(int8_t *temps) {
-    char data[BMSInstance.NUM_TEMP_SENSORS_PER_MODULE];
-    for (int i = 0; i < BMS.NUM_TEMP_SENSORS_PER_MODULE; i++) {
-        data[i] = BMS.cellTemps[0][i];
+    char data[NUM_TEMP_SENSORS_PER_MODULE];
+    for (int i = 0; i < NUM_TEMP_SENSORS_PER_MODULE; i++) {
+        data[i] = BMSInstance.cellTemps[0][i];
     }
 
-    return CANMessage{kACC_TPDO_SEG0_TEMPS, data, BMS.NUM_TEMP_SENSORS_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG0_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
 CANMessage ACC_TPDO_SEG1_TEMPS(int8_t *temps) {
-    char data[BMS.NUM_VOLTAGES_PER_MODULE];
-    for (int i = 0; i < BMS.NUM_VOLTAGES_PER_MODULE; i++) {
-        data[i] = BMS.cellTemps[1][i];
+    char data[NUM_VOLTAGES_PER_MODULE];
+    for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
+        data[i] = BMSInstance.cellTemps[1][i];
     }
 
-    return CANMessage{kACC_TPDO_SEG1_TEMPS, data, BMS.NUM_TEMP_SENSORS_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG1_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
 CANMessage ACC_TPDO_SEG2_TEMPS(int8_t *temps) {
-    char data[BMS.NUM_VOLTAGES_PER_MODULE];
-    for (int i = 0; i < BMS.NUM_VOLTAGES_PER_MODULE; i++) {
-        data[i] = BMS.cellTemps[2][i];
+    char data[NUM_VOLTAGES_PER_MODULE];
+    for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
+        data[i] = BMSInstance.cellTemps[2][i];
     }
 
-    return CANMessage{kACC_TPDO_SEG2_TEMPS, data, BMS.NUM_TEMP_SENSORS_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG2_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
 CANMessage ACC_TPDO_SEG3_TEMPS(int8_t *temps) {
-    char data[BMS.NUM_VOLTAGES_PER_MODULE];
-    for (int i = 0; i < BMS.NUM_VOLTAGES_PER_MODULE; i++) {
-        data[i] = BMS.cellTemps[3][i];
+    char data[NUM_VOLTAGES_PER_MODULE];
+    for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
+        data[i] = BMSInstance.cellTemps[3][i];
     }
 
-    return CANMessage{kACC_TPDO_SEG3_TEMPS, data, BMS.NUM_TEMP_SENSORS_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG3_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
 CANMessage ACC_TPDO_SEG4_TEMPS(int8_t *temps) {
-    char data[BMS.NUM_VOLTAGES_PER_MODULE];
-    for (int i = 0; i < BMS.NUM_VOLTAGES_PER_MODULE; i++) {
-        data[i] = BMS.cellTemps[4][i];
+    char data[NUM_VOLTAGES_PER_MODULE];
+    for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
+        data[i] = BMSInstance.cellTemps[4][i];
     }
 
-    return CANMessage{kACC_TPDO_SEG4_TEMPS, data, BMS.NUM_TEMP_SENSORS_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG4_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
 
@@ -75,49 +75,49 @@ CANMessage ACC_TPDO_SEG4_TEMPS(int8_t *temps) {
 // Accumulator Voltages
 
 CANMessage ACC_TPDO_SEG0_VOLTS(uint16_t *volts) {
-    uint8_t data[BMS.NUM_VOLTAGES_PER_MODULE];
+    uint8_t data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < BMS.NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = (uint8_t)(BMS.voltages[0][i] / 10 - 200);
     }
 
-    return CANMessage{kACC_TPDO_SEG0_VOLTS, data, BMS.NUM_VOLTAGES_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG0_VOLTS, data, NUM_VOLTAGES_PER_MODULE};
 }
 
 // TODO: make sure that 200 is within the cast
 CANMessage ACC_TPDO_SEG1_VOLTS(uint16_t *volts) {
-    uint8_t data[BMS.NUM_VOLTAGES_PER_MODULE];
-    for (int i = 0; i < BMS.NUM_VOLTAGES_PER_MODULE; i++) {
-        data[i] = (uint8_t)(BMS.voltages[1][BMS.NUM_VOLTAGES_PER_MODULE] / 10 - 200);
+    uint8_t data[NUM_VOLTAGES_PER_MODULE];
+    for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
+        data[i] = (uint8_t)(BMSInstance.voltages[1][NUM_VOLTAGES_PER_MODULE] / 10 - 200);
     }
 
-    return CANMessage{kACC_TPDO_SEG1_VOLTS, data, BMS.NUM_VOLTAGES_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG1_VOLTS, data, NUM_VOLTAGES_PER_MODULE};
 }
 
 CANMessage ACC_TPDO_SEG2_VOLTS(uint16_t *volts) {
-    uint8_t data[BMS.NUM_VOLTAGES_PER_MODULE];
-    for (int i = 0; i < BMS.NUM_VOLTAGES_PER_MODULE; i++) {
-        data[i] = (uint8_t)(BMS.voltages[2][i] / 10 - 200);
+    uint8_t data[NUM_VOLTAGES_PER_MODULE];
+    for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
+        data[i] = (uint8_t)(BMSInstance.voltages[2][i] / 10 - 200);
     }
 
-    return CANMessage{kACC_TPDO_SEG2_VOLTS, data, BMS.NUM_VOLTAGES_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG2_VOLTS, data, NUM_VOLTAGES_PER_MODULE};
 }
 
 CANMessage ACC_TPDO_SEG3_VOLTS(uint16_t *volts) {
-    uint8_t data[BMS.NUM_VOLTAGES_PER_MODULE];
-    for (int i = 0; i < BMS.NUM_VOLTAGES_PER_MODULE; i++) {
-        data[i] = (uint8_t)(BMS.voltages[3][i] / 10 - 200);
+    uint8_t data[NUM_VOLTAGES_PER_MODULE];
+    for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
+        data[i] = (uint8_t)(BMSInstance.voltages[3][i] / 10 - 200);
     }
 
-    return CANMessage{kACC_TPDO_SEG3_VOLTS, data, BMS.NUM_VOLTAGES_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG3_VOLTS, data, NUM_VOLTAGES_PER_MODULE};
 }
 
 CANMessage ACC_TPDO_SEG4_VOLTS(uint16_t *volts) {
     uint8_t data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
-        data[i] = (uint8_t)(BMS.voltages[4][i] + i] / 10 - 200);
+        data[i] = (uint8_t)(BMSInstance.voltages[4][i] + i] / 10 - 200);
     }
 
-    return CANMessage{kACC_TPDO_SEG4_VOLTS, data, BMS.NUM_VOLTAGES_PER_MODULE};
+    return CANMessage{kACC_TPDO_SEG4_VOLTS, data, NUM_VOLTAGES_PER_MODULE};
 }
 //--------------------------------------------------------------------------------
 // ACC Power
