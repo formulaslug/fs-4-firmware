@@ -80,7 +80,7 @@ private:
         bool prechargeDone;
         bool chargeStat;
 
-        bool balnceStat;
+        bool balanceStat;
         bool cellTooLow;
         bool cellTooHigh;
         bool tempTooLow;

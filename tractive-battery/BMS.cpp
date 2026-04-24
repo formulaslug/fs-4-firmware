@@ -27,6 +27,12 @@ BMS::BMS()
     } else {
         currentState = ACTIVE;
     }
+
+
+    //intialize data -
+
+    Data = {false, false, false, true, true, true, false, false, false, false, false, false, false, false, 0,0,0,0,0};
+    
 }
 
 /*
