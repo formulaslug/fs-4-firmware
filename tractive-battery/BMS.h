@@ -99,9 +99,7 @@ public:
     LTC6810::TMP1075_Handle_t sensors[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
     uint16_t voltages[NUM_BATTERY_MODULES][NUM_VOLTAGES_PER_MODULE];
 
-    std::vector<DS18B20> trayTempSensors;
-
-    uint8_t trayTemps[NUM_TRAY_TEMP_SENSORS];
+    
     // pin definitions
     // current sensors need to be implemented
     AnalogIn V_Out_Positive = AnalogIn(PC_0);

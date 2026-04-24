@@ -180,13 +180,6 @@ void BMS::readTemps() {
         }
     }
     maxCellTemp = maxTemp;
-
-    for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) {
-        trayTempSensors[i].start_conversion(true); // assume no e meter here CHANGE LATER
-        ThisThread::sleep_for(3ms);
-        uint8_t trayTemp = trayTempSensors[i].retrieve_conversion();
-        trayTemps[i] = trayTemp;
-    }
 }
 
 // balancing should be done while charging and most cells are most of the way charged, or when idle

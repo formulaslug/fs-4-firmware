@@ -20,6 +20,10 @@ EventQueue queue(5 * EVENTS_EVENT_SIZE);
 BMS BMSInstance;
 CanGenerator cGen(&BMSInstance);
 
+std::vector<DS18B20> trayTempSensors;
+
+uint8_t trayTemps[NUM_TRAY_TEMP_SENSORS];
+
 // BMSInstance = BMS();
 int main() {
 
@@ -43,10 +47,11 @@ int main() {
         }
     }
 
-    for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) { // initalizing the tray temp sensors
-        BMSInstance.trayTempSensors.push_back(
-            DS18B20(BMSInstance.TS1W, TRAYTEMP_SENSOR_ADDRESSES[i])
-        );
+    for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) {
+        trayTempSensors[i].start_conversion(true); // assume no e meter here CHANGE LATER
+        ThisThread::sleep_for(3ms);
+        uint8_t trayTemp = trayTempSensors[i].retrieve_conversion();
+        trayTemps[i] = trayTemp;
     }
 
     // One wire section....

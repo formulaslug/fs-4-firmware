@@ -36,6 +36,9 @@ constexpr uint32_t BATT_TPDO_MOD3_TEMPSB = 0x298;
 constexpr uint32_t BATT_TPDO_MOD4_TEMPSA = 0x299;
 constexpr uint32_t BATT_TPDO_MOD4_TEMPSB = 0x29A;
 
+// tray temp message ids
+constexpr uint32_t BATT_TPDO_TRAY_TEMPS = 0x388;
+
 class CanGenerator {
 
 private:
@@ -67,6 +70,8 @@ public:
     CANMessage BuildVoltageMessage(uint8_t modNum);
     CANMessage BuildStatusMessage(); // i think this one is likely to be a pain, will probably
                                      // require some changes to the BMS Class.
+
+    CANMessage BuildTrayTempMessage(uint8_t traytempsensors[5]);
     void BuildAndSendMessages();
 };
 

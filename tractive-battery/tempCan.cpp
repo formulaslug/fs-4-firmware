@@ -41,6 +41,16 @@ CANMessage CanGenerator::BuildStatusMessage() {
 
 }
 
+CANMessage CanGenerator::BuildTrayTempMessage(uint8_t traytempsensors[5]) {
+    char data[5];
+    for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) {
+        data[i] = (uint8_t)(traytempsensors[i]);
+    }
+
+    return CANMessage{BATT_TPDO_TRAY_TEMPS, data, NUM_TRAY_TEMP_SENSORS};
+}
+
+
 void CanGenerator::BuildAndSendMessages() {
     CANMessage gmsg;
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
