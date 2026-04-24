@@ -1,14 +1,10 @@
 #ifndef PRECHARGELOGIC_H
 #define PRECHARGELOGIC_H
 
-#include "mbed.h"
 #include "BMS.h"
+#include "mbed.h"
 
-enum precharge_state {
-    PRECHARGE_IDLE,
-    PRECHARGE_ACTIVE,
-    PRECHARGE_FAULT
-};
+enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT };
 
 extern bool precharging;
 extern bool prechargeDone;

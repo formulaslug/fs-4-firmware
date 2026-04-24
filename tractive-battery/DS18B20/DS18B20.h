@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "mbed.h"
 #include "OneWire.h"
+#include "mbed.h"
 
 // For debugging only: search for onewire device addresses on the bus
 // (useful for setup process)

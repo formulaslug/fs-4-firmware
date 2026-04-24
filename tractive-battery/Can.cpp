@@ -2,30 +2,53 @@
 #include "BMS.h"
 #include <cstdint>
 #include <cstdio>
-//this was built for the old version of the BMS needs major updates + needs some other messages too as far as i know.
+// this was built for the old version of the BMS needs major updates + needs some other messages too
+// as far as i know.
 //--------------------------------------------------------------------------------
-//General Data Showing State Of Accumulator
-// TODO: add the proper casts to uint8_t for everything that is not that
-CANMessage ACC_TPDO_STATUS(bool bmsFault, bool imdFault, bool shutdownState, bool prechargeDone,
-                         bool precharging, bool charging, bool isBalancing, bool cell_too_low, bool cell_too_high, bool temp_too_low,
-                         bool temp_too_high, bool temp_too_high_charging, uint16_t glv_voltage, uint32_t cell_fault_index) {
-  uint8_t data[8];
-  data[0] = bmsFault + (imdFault << 1) + (shutdownState << 2) +
-            (prechargeDone << 3) + (precharging << 4) + (charging << 5) ;
-  data[1] = cell_too_low + (cell_too_high << 1) + (temp_too_low << 2) + (temp_too_high << 3) + (temp_too_high_charging << 4) + (isBalancing << 5);
-  data[2] = (uint8_t)glv_voltage;
-  data[3] = (uint8_t)(glv_voltage >> 8);
-  data[4] = (uint8_t)cell_fault_index;
-  data[5] = (uint8_t)(cell_fault_index >> 8);
-  data[6] = (uint8_t)(cell_fault_index >> 16);
-  data[7] = (uint8_t)(cell_fault_index >> 24);
-  return CANMessage{kACC_TPDO_STATUS, data};
+// General Data Showing State Of Accumulator
+//  TODO: add the proper casts to uint8_t for everything that is not that
+CANMessage ACC_TPDO_STATUS(
+    bool bmsFault,
+    bool imdFault,
+    bool shutdownState,
+    bool prechargeDone,
+    bool precharging,
+    bool charging,
+    bool isBalancing,
+    bool cell_too_low,
+    bool cell_too_high,
+    bool temp_too_low,
+    bool temp_too_high,
+    bool temp_too_high_charging,
+    uint16_t glv_voltage,
+    uint32_t cell_fault_index
+) {
+    uint8_t data[8];
+    data[0] = bmsFault
+              + (imdFault << 1)
+              + (shutdownState << 2)
+              + (prechargeDone << 3)
+              + (precharging << 4)
+              + (charging << 5);
+    data[1] = cell_too_low
+              + (cell_too_high << 1)
+              + (temp_too_low << 2)
+              + (temp_too_high << 3)
+              + (temp_too_high_charging << 4)
+              + (isBalancing << 5);
+    data[2] = (uint8_t)glv_voltage;
+    data[3] = (uint8_t)(glv_voltage >> 8);
+    data[4] = (uint8_t)cell_fault_index;
+    data[5] = (uint8_t)(cell_fault_index >> 8);
+    data[6] = (uint8_t)(cell_fault_index >> 16);
+    data[7] = (uint8_t)(cell_fault_index >> 24);
+    return CANMessage{kACC_TPDO_STATUS, data};
 }
 
 //--------------------------------------------------------------------------------
 // Accumulator Temperatures
 
-CANMessage ACC_TPDO_SEG0_TEMPS(int8_t *temps) {
+CANMessage ACC_TPDO_SEG0_TEMPS(int8_t* temps) {
     char data[NUM_TEMP_SENSORS_PER_MODULE];
     for (int i = 0; i < NUM_TEMP_SENSORS_PER_MODULE; i++) {
         data[i] = BMSInstance.cellTemps[0][i];
@@ -34,7 +57,7 @@ CANMessage ACC_TPDO_SEG0_TEMPS(int8_t *temps) {
     return CANMessage{kACC_TPDO_SEG0_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
-CANMessage ACC_TPDO_SEG1_TEMPS(int8_t *temps) {
+CANMessage ACC_TPDO_SEG1_TEMPS(int8_t* temps) {
     char data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = BMSInstance.cellTemps[1][i];
@@ -43,7 +66,7 @@ CANMessage ACC_TPDO_SEG1_TEMPS(int8_t *temps) {
     return CANMessage{kACC_TPDO_SEG1_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
-CANMessage ACC_TPDO_SEG2_TEMPS(int8_t *temps) {
+CANMessage ACC_TPDO_SEG2_TEMPS(int8_t* temps) {
     char data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = BMSInstance.cellTemps[2][i];
@@ -52,7 +75,7 @@ CANMessage ACC_TPDO_SEG2_TEMPS(int8_t *temps) {
     return CANMessage{kACC_TPDO_SEG2_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
-CANMessage ACC_TPDO_SEG3_TEMPS(int8_t *temps) {
+CANMessage ACC_TPDO_SEG3_TEMPS(int8_t* temps) {
     char data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = BMSInstance.cellTemps[3][i];
@@ -61,7 +84,7 @@ CANMessage ACC_TPDO_SEG3_TEMPS(int8_t *temps) {
     return CANMessage{kACC_TPDO_SEG3_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
-CANMessage ACC_TPDO_SEG4_TEMPS(int8_t *temps) {
+CANMessage ACC_TPDO_SEG4_TEMPS(int8_t* temps) {
     char data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = BMSInstance.cellTemps[4][i];
@@ -70,11 +93,10 @@ CANMessage ACC_TPDO_SEG4_TEMPS(int8_t *temps) {
     return CANMessage{kACC_TPDO_SEG4_TEMPS, data, NUM_TEMP_SENSORS_PER_MODULE};
 }
 
-
 //--------------------------------------------------------------------------------
 // Accumulator Voltages
 
-CANMessage ACC_TPDO_SEG0_VOLTS(uint16_t *volts) {
+CANMessage ACC_TPDO_SEG0_VOLTS(uint16_t* volts) {
     uint8_t data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = (uint8_t)(BMSInstace.voltages[0][i] / 10 - 200);
@@ -84,7 +106,7 @@ CANMessage ACC_TPDO_SEG0_VOLTS(uint16_t *volts) {
 }
 
 // TODO: make sure that 200 is within the cast
-CANMessage ACC_TPDO_SEG1_VOLTS(uint16_t *volts) {
+CANMessage ACC_TPDO_SEG1_VOLTS(uint16_t* volts) {
     uint8_t data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = (uint8_t)(BMSInstance.voltages[1][NUM_VOLTAGES_PER_MODULE] / 10 - 200);
@@ -93,7 +115,7 @@ CANMessage ACC_TPDO_SEG1_VOLTS(uint16_t *volts) {
     return CANMessage{kACC_TPDO_SEG1_VOLTS, data, NUM_VOLTAGES_PER_MODULE};
 }
 
-CANMessage ACC_TPDO_SEG2_VOLTS(uint16_t *volts) {
+CANMessage ACC_TPDO_SEG2_VOLTS(uint16_t* volts) {
     uint8_t data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = (uint8_t)(BMSInstance.voltages[2][i] / 10 - 200);
@@ -102,7 +124,7 @@ CANMessage ACC_TPDO_SEG2_VOLTS(uint16_t *volts) {
     return CANMessage{kACC_TPDO_SEG2_VOLTS, data, NUM_VOLTAGES_PER_MODULE};
 }
 
-CANMessage ACC_TPDO_SEG3_VOLTS(uint16_t *volts) {
+CANMessage ACC_TPDO_SEG3_VOLTS(uint16_t* volts) {
     uint8_t data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = (uint8_t)(BMSInstance.voltages[3][i] / 10 - 200);
@@ -111,7 +133,7 @@ CANMessage ACC_TPDO_SEG3_VOLTS(uint16_t *volts) {
     return CANMessage{kACC_TPDO_SEG3_VOLTS, data, NUM_VOLTAGES_PER_MODULE};
 }
 
-CANMessage ACC_TPDO_SEG4_VOLTS(uint16_t *volts) {
+CANMessage ACC_TPDO_SEG4_VOLTS(uint16_t* volts) {
     uint8_t data[NUM_VOLTAGES_PER_MODULE];
     for (int i = 0; i < NUM_VOLTAGES_PER_MODULE; i++) {
         data[i] = (uint8_t)(BMSInstance.voltages[4][i] + i] / 10 - 200);
@@ -123,7 +145,9 @@ CANMessage ACC_TPDO_SEG4_VOLTS(uint16_t *volts) {
 // ACC Power
 
 // TODO: CAST THESE PROPERLY!! cast the signed stuff to char ... this is so cooked
-CANMessage ACC_TPDO_POWER(uint16_t packVoltage, uint8_t state_of_charge, int16_t current, uint8_t fan_pwm_duty_cycle) {
+CANMessage ACC_TPDO_POWER(
+    uint16_t packVoltage, uint8_t state_of_charge, int16_t current, uint8_t fan_pwm_duty_cycle
+) {
     char data[8];
     data[0] = packVoltage;
     data[1] = packVoltage >> 8;
@@ -152,8 +176,16 @@ CANMessage ACC_TPDO_TRAY_TEMPS(tray_temps_msg* tray_temps_message) {
 
 // FULL CAN send message, sends all the possible can messages for the ACC in one go
 // status is precalled for this to work
-void canSend(status_msg* status_message, tray_temps_msg* tray_temps_message, uint16_t packVolt, uint8_t soc, int16_t curr, uint8_t fan_pwm_duty_cycle, uint16_t* allVoltages,
-            int8_t* allTemps) {
+void canSend(
+    status_msg* status_message,
+    tray_temps_msg* tray_temps_message,
+    uint16_t packVolt,
+    uint8_t soc,
+    int16_t curr,
+    uint8_t fan_pwm_duty_cycle,
+    uint16_t* allVoltages,
+    int8_t* allTemps
+) {
 
     // status
     canBus->write(ACC_TPDO_STATUS(
@@ -174,11 +206,11 @@ void canSend(status_msg* status_message, tray_temps_msg* tray_temps_message, uin
     ));
     ThisThread::sleep_for(1ms);
 
-    //power
+    // power
     canBus->write(ACC_TPDO_POWER(packVolt, soc, curr, fan_pwm_duty_cycle));
     ThisThread::sleep_for(1ms);
 
-    //tray temps
+    // tray temps
     canBus->write(ACC_TPDO_TRAY_TEMPS(tray_temps_message));
     ThisThread::sleep_for(1ms);
 

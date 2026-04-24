@@ -11,21 +11,17 @@ public:
         // States with no pull up (inputs)
         kPullDown = 0,
         kPassive = 1
-      };
-    struct TMP1075_Handle_t{
+    };
+    struct TMP1075_Handle_t {
         uint8_t i2c_address;
         uint8_t temp_reg;
     };
-    enum class ReferencePowerOff : uint8_t {
-        kAfterConversions = 0,
-        kWatchdogTimeout = 1
-      };
+    enum class ReferencePowerOff : uint8_t { kAfterConversions = 0, kWatchdogTimeout = 1 };
     enum class DischargeTimerEnable : uint8_t { kDisabled = 0, kEnabled = 1 };
     enum class AdcModeOption : uint8_t { kDefault = 0, kLowSpeed = 1 };
     union DischargeState {
         struct {
-            uint8_t cell6 : 1, cell5 : 1, cell4 : 1, cell3 : 1, cell2 : 1,
-                cell1 : 1;
+            uint8_t cell6 : 1, cell5 : 1, cell4 : 1, cell3 : 1, cell2 : 1, cell1 : 1;
         };
         uint16_t value;
     };
@@ -47,7 +43,7 @@ public:
         k75,
         k90,
         k120
-      };
+    };
 
     class Configuration {
     public:
@@ -66,19 +62,20 @@ public:
         DischargeTimeoutValue dischargeTimeout;
     };
 
-    LTC6810(LTC681xBus &bus, uint8_t id);
-    Configuration &getConfig();
+    LTC6810(LTC681xBus& bus, uint8_t id);
+    Configuration& getConfig();
     void updateConfig();
 
-    uint16_t *getVoltages();
-    uint16_t *getGpio();
-    uint16_t *getGpioPin(GpioSelection pin);
+    uint16_t* getVoltages();
+    uint16_t* getGpio();
+    uint16_t* getGpioPin(GpioSelection pin);
 
-    void buildCOMMBytes(uint8_t icom, uint8_t fcom, uint8_t data, uint8_t *commBytes);
-    float readTemperatureTMP1075(TMP1075_Handle_t *sensor);
-    bool verifyI2CStatus(uint8_t *rxData);
+    void buildCOMMBytes(uint8_t icom, uint8_t fcom, uint8_t data, uint8_t* commBytes);
+    float readTemperatureTMP1075(TMP1075_Handle_t* sensor);
+    bool verifyI2CStatus(uint8_t* rxData);
+
 private:
-    LTC681xBus &m_bus;
+    LTC681xBus& m_bus;
     uint8_t m_id;
     Configuration m_config;
 };

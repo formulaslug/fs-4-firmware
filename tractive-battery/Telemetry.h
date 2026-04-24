@@ -1,17 +1,15 @@
 #ifndef TELEMETRY_H
 #define TELEMETRY_H
 
-#include "mbed.h"
 #include "can.h"
+#include "mbed.h"
 
+class Telemetry {
 
-class Telemetry{
-	
-
-  public:
+public:
     void sendCellVoltages();
 
-  	struct status_msg { // this struct needs to be updated to match what were actually sending - 
+    struct status_msg { // this struct needs to be updated to match what were actually sending -
         bool bmsFault;
         bool imdFault;
         bool shutdownFinal;
@@ -30,29 +28,26 @@ class Telemetry{
         int8_t fault_index;
         int8_t module_fault_index;
         int8_t temp_sensor_fault_index;
-      };
+    };
 
-
-
-      struct tray_temps_msg { // this one too needs to be updated - look into 1 wire bus
+    struct tray_temps_msg { // this one too needs to be updated - look into 1 wire bus
         uint8_t temp_busbar;
         uint8_t temp_pack_fuse;
         uint8_t temp_bolted_connection;
-      };
+    };
 
-
-      struct powerPerformanceData{
+    struct powerPerformanceData {
         uint16_t packVoltage;
         uint16_t packCurrent;
         uint8_t Soc;
         uint8_t fanPWM;
         uint32_t instantPwr;
-      };
+    };
 
-
-      struct ThermalStats{ 
-      // not totally sure how to implement this it involves sensor data the BMS doesnt have access to
-      // given we have a seperate cell temperature message maybe we dont have to? ill keep this here for now
+    struct ThermalStats {
+        // not totally sure how to implement this it involves sensor data the BMS doesnt have access
+        // to given we have a seperate cell temperature message maybe we dont have to? ill keep this
+        // here for now
         int8_t maxCellTemp;
         int8_t minCellTemp;
         int8_t avgCellTemp;
@@ -61,17 +56,17 @@ class Telemetry{
         int8_t packFuseTemp;
         int8_t intake_air_temp;
         int8_t cowling_exhaustTemp;
-      };
+    };
 
-      struct cellVoltages{ // i dont know exactly how to pack this
+    struct cellVoltages { // i dont know exactly how to pack this
         uint16_t module1Volts;
         uint16_t module2Volts;
         uint16_t module3Volts;
         uint16_t module4Volts;
         uint16_t module5Volts;
-      };
+    };
 
-      struct cellTemperatures{
+    struct cellTemperatures {
         int8_t modlule1TempsA;
         int8_t modlule1TempsB;
         int8_t molduelATempsB;
@@ -82,9 +77,9 @@ class Telemetry{
         int8_t molduel4TempsB;
         int8_t modlule5TempsA;
         int8_t molduel5TempsB;
-      };
+    };
 
-      cellVoltages voltages;
+    cellVoltages voltages;
 };
 
 #endif
