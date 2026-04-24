@@ -103,35 +103,34 @@ public:
 
     uint8_t trayTemps[NUM_TRAY_TEMP_SENSORS];
     // pin definitions
-    AnalogIn V_Out_Positive = AnalogIn(PC_0); // current sensors need to be implemented
+    // current sensors need to be implemented
+    AnalogIn V_Out_Positive = AnalogIn(PC_0);
     AnalogIn V_Out_Negative = AnalogIn(PC_1);
-    DigitalIn Charge_State_Filtered = DigitalIn(PC_2); // assume 1 for charging 0 for not charging
+    // assume 1 for charging 0 for not charging
+    DigitalIn Charge_State_Filtered = DigitalIn(PC_2);
     DigitalIn IMD_Fault_3V3 = DigitalIn(PC_4);
     DigitalOut nBMS_Fault_3V3 = DigitalOut(PC_5);
     PwmOut Fan_PWM = PwmOut(PC_8);
-    DigitalOut TS_READY =
-        DigitalOut(PC_9); // look more into this one (i think its a precharge indicator )
-    DigitalIn Shutdown_In_3V3_Filtered =
-        DigitalIn(PA_0); // status of the shutdown circuit before bms
-    DigitalIn Shutdown_Out_3V3_Filtered =
-        DigitalIn(PA_1); // status of the shutdown circuit after bms
+    // look more into this one (i think its a precharge indicator )
+    DigitalOut TS_READY = DigitalOut(PC_9);
+    // status of the shutdown circuit before bms
+    DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
+    // status of the shutdown circuit after bms
+    DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
     DigitalIn SH_RESET_3V3 = DigitalIn(PA_2);
     DigitalIn Shutdown_Measure = DigitalIn(PA_6);
     AnalogIn GLV_Voltage = AnalogIn(PA_7);
-    BufferedSerial VCP_UART = BufferedSerial(
-        PA_9, PA_10
-    ); // some configuration for this needs to be done at startup see mbedosce
+    // some configuration for this needs to be done at startup see mbedosce
+    BufferedSerial VCP_UART = BufferedSerial(PA_9, PA_10);
     CAN CAN_POWERTRAIN = CAN(PA_11, PA_12);
     DigitalOut nPrechargeControl = DigitalOut(PB_0);
-    SPI spiInterface = SPI(
-        PB_5, PB_4, PB_3, PB_9, use_gpio_ssel
-    ); // tenmporary pin assingment for bodge job on board
+    // tenmporary pin assingment for bodge job on board
+    SPI spiInterface = SPI(PB_5, PB_4, PB_3, PB_9, use_gpio_ssel);
     LTC681xParallelBus ltcBusInterface;
     DigitalOut TS1W_PU_Control = DigitalOut(PB_15);
-    OneWire TS1W = OneWire(PB_14); // look up more on 1 wire interface
-                                   // temperature sensor interface
-                                   // dont know ids but will be implemented here
+    // look up more on 1 wire interface temperature sensor interface dont know ids but will be
+    // implemented here
+    OneWire TS1W = OneWire(PB_14);
 };
 
-// BMS BMSInstance;
 #endif
