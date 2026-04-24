@@ -68,6 +68,7 @@ private:
     void checkShutdownCircuit();
     void readPackCurrent();
     void turnOffCellBalancing();
+    void telemetryPins();
 
     // bms_state currentState;
     typedef struct{
@@ -113,7 +114,7 @@ public:
 
 
 
-    
+
 
     float currentSensorOffsetVolts;
     float packCurrentAmps;

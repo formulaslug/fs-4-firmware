@@ -17,6 +17,7 @@ BMS::BMS()
     CANMessage msg;        // can message object
     nBMS_Fault_3V3 = 1;    // assume no fault at startup
     nPrechargeControl = 1; // no precharge during startup
+    Data = {false, false, false, true, true, true, false, false, false, false, false, false, false, false, 0,0,0,0,0};
 
     currentSensorOffsetVolts = 0.0f;
     packCurrentAmps = 0.0f;
@@ -24,14 +25,16 @@ BMS::BMS()
 
     if (Charge_State_Filtered.read()) {
         currentState = CHARGING;
+        Data.chargeStat = 1;
     } else {
         currentState = ACTIVE;
+        Data.chargeStat = 0;
     }
 
 
     //intialize data - assume everything is good at startup 
 
-    Data = {false, false, false, true, true, true, false, false, false, false, false, false, false, false, 0,0,0,0,0};
+    // Data = {false, false, false, true, true, true, false, false, false, false, false, false, false, false, 0,0,0,0,0};
 
     
 }
@@ -73,7 +76,6 @@ void BMS::chargingActions() {
         switch (id) {
         case 0x190: // charge status from charger, 180 + node ID (10)
             canData = (data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24)) / 100;
-            currentState = CHARGING;
         default:
             break;
         }
@@ -305,11 +307,6 @@ void BMS::checkForFaults() {
     //  faults on high reading i think - double check
     //  i believe this opens the shutdown cirtui
 
-    if (IMD_Fault_3V3.read() == 0) {
-        printf("IMD FAULT READ ... \n");
-        Data.imdStatus = 1;
-        // this will open the shutdown circuit on its own so i think its mostly a telemetry thing
-    }
     if(currentState == FAULT){
         Data.bmsFaultStatus = 1;
     }
@@ -327,20 +324,23 @@ void BMS::checkForFaults() {
 
 */
 
-// void BMS::checkShutdownCircuit(){
-//     if(Shutdown_In_3V3_Filtered.read()==0 || Shutdown_Out_3V3_Filtered.read()==0){
-//         // shutdown circuit open before the bms
-//         turnOffCellBalancing();
-//         //precharge should also be turned off but thats in a different task
-//         if(Shutdown_Out_3V3_Filtered.read()==0){
-//             //shutdown circuit opened after the bms
-//             turnOffCellBalancing();
-//         }
-//         if(Shutdown_In_3V3_Filtered.read()==0){
-//             turnOffCellBalancing();
-//         }
-//     }
-// }
+void BMS::telemetryPins(){
+    if(Shutdown_In_3V3_Filtered.read()==0){
+        Data.shutDownIn = 0;
+    }else{
+        Data.shutDownIn = 1;
+    }
+    if(Shutdown_Out_3V3_Filtered.read()==0){
+        Data.shutDownOut = 0;
+    }else{
+        Data.shutDownOut = 1;
+    }
+    if (IMD_Fault_3V3.read() == 0) {
+        Data.imdStatus = 1;
+    }else{
+        Data.imdStatus = 0;
+    }
+}
 
 void BMS::controlFans() {
     int8_t maxTemp = maxCellTemp;
