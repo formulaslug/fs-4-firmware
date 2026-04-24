@@ -70,6 +70,29 @@ private:
     void turnOffCellBalancing();
 
     // bms_state currentState;
+    typedef struct{
+        bool bmsFaultStatus;
+        bool imdStatus;
+        bool shutDownCircuitReading;
+        bool shutDownIn;
+        bool shutDownOut;
+        bool preChargeActive;
+        bool prechargeDone;
+        bool chargeStat;
+
+        bool balnceStat;
+        bool cellTooLow;
+        bool cellTooHigh;
+        bool tempTooLow;
+        bool tempTooHigh;
+        bool tempTooHighCRG;
+        uint8_t faultModIndex;
+        uint8_t faultSenseIndex;
+        uint8_t battStatFaultIndex; // this is the cell fault num
+        uint16_t glvVoltage;
+        uint8_t pwmFanstat;
+
+    }TelemetryInfo;
 
 public:
     BMS();
@@ -86,6 +109,8 @@ public:
     float packCurrentAmps;
     bool currentSensorCalibrated;
     bms_state currentState;
+
+    TelemetryInfo Data;
 
     Timer ltcTimeoutTimer;
     CANMessage msg;
