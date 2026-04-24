@@ -29,9 +29,10 @@ BMS::BMS()
     }
 
 
-    //intialize data -
+    //intialize data - assume everything is good at startup 
 
     Data = {false, false, false, true, true, true, false, false, false, false, false, false, false, false, 0,0,0,0,0};
+
     
 }
 
@@ -72,6 +73,7 @@ void BMS::chargingActions() {
         switch (id) {
         case 0x190: // charge status from charger, 180 + node ID (10)
             canData = (data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24)) / 100;
+            currentState = CHARGING;
         default:
             break;
         }
@@ -85,6 +87,7 @@ void BMS::turnOffCellBalancing() {
         chips[i].updateConfig();
     }
     printf("Cell balancing deactivated....\n");
+    Data.balanceStat = 0;
 }
 
 void BMS::readCellVoltages() {
@@ -221,6 +224,7 @@ void BMS::decideBalancing() {
                 chips[i].updateConfig();
             }
         }
+        Data.balanceStat = 1;
     }
 }
 
@@ -244,6 +248,13 @@ void BMS::checkForFaults() {
             if (voltVal >= MAX_CELL_VOLTAGE || voltVal <= MIN_CELL_VOLTAGE) {
                 currentState = FAULT;
                 nBMS_Fault_3V3 = 0;
+                Data.faultModIndex = i;
+                Data.faultSenseIndex = j;
+                if(voltVal>=MAX_CELL_VOLTAGE){
+                    Data.cellTooHigh = 1;
+                }else{
+                    Data.cellTooLow = 1;
+                }
             }
         }
 
@@ -251,12 +262,16 @@ void BMS::checkForFaults() {
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
             int8_t tempReading = cellTemps[i][j];
             if (currentState == CHARGING) {
-                if (tempReading >= CHARGING_CELL_MAX) {
+                if (tempReading >= CHARGING_CELL_MAX || tempReading <= CHARGING_CELL_MIN) {
                     currentState = FAULT;
                     nBMS_Fault_3V3 = 0;
-                } else if (tempReading <= CHARGING_CELL_MIN) {
-                    currentState = FAULT;
-                    nBMS_Fault_3V3 = 0;
+                    Data.faultModIndex = i;
+                    Data.faultSenseIndex = j;
+                    if(tempReading>=CHARGING_CELL_MIN){
+                        Data.cellTooLow = 1;
+                    }else{
+                        Data.cellTooHigh = 1;
+                    }
                 }
             }
         }
@@ -267,15 +282,17 @@ void BMS::checkForFaults() {
     //  later
     // telemetry stuff needs to be added but the logic is there.
 
-    for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS;
-         i++) { // keeping this here for now but its mainily a telemetrey
-        uint8_t trayTemp = trayTemps[i];
-        if (trayTemp >= CELL_MAX || trayTemp <= CELL_MIN) {
-            // should not cause a fault just for data 4-4-26 - keeping it here for mow
-            //  currentState = FAULT;
-            //  nBMS_Fault_3V3 = 0;
-        }
-    }
+
+    //Rip tray temp sensing in bms class
+    // for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS;
+    //      i++) { // keeping this here for now but its mainily a telemetrey
+    //     uint8_t trayTemp = trayTemp[i];
+    //     if (trayTemp >= CELL_MAX || trayTemp <= CELL_MIN) {
+    //         // should not cause a fault just for data 4-4-26 - keeping it here for mow
+    //         //  currentState = FAULT;
+    //         //  nBMS_Fault_3V3 = 0;
+    //     }
+    // }
 
     // to watch pack current
     if (std::fabs(packCurrentAmps) > MAX_PACK_CURRENT_AMPS) {
@@ -290,7 +307,11 @@ void BMS::checkForFaults() {
 
     if (IMD_Fault_3V3.read() == 0) {
         printf("IMD FAULT READ ... \n");
+        Data.imdStatus = 1;
         // this will open the shutdown circuit on its own so i think its mostly a telemetry thing
+    }
+    if(currentState == FAULT){
+        Data.bmsFaultStatus = 1;
     }
 }
 
@@ -330,9 +351,11 @@ void BMS::controlFans() {
         int raw_percent = (int)((2.6667f * maxTemp) - 33.3333f);
         uint8_t fan_percent = (uint8_t)std::clamp(raw_percent, 20, 100);
         Fan_PWM.write(fan_percent / 100.0f); // PWM expects 0.0 - 1.0
+        Data.pwmFanstat = fan_percent/100.0f;
     } else {
         // Keep fans off until precharge is complete
         Fan_PWM.write(0.0f);
+        Data.pwmFanstat = 0;
     }
 }
 

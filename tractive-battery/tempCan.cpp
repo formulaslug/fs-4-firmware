@@ -38,30 +38,22 @@ CANMessage CanGenerator::BuildTempMessage(uint8_t modNum, bool AorB) {
 
 CANMessage CanGenerator::BuildStatusMessage() {
 	//data in order according to the dbc
-	bool bmsFaultStatus;
-	bool imdStatus;
-	bool shutDownCircuitReading;
-	bool shutDownIn;
-	bool shutDownOut;
-	bool preChargeActive;
-	bool prechargeDone;
-	bool chargeStat;
 
-	bool balnceStat;
-	bool cellTooLow;
-	bool cellTooHigh;
-	bool tempTooLow;
-	bool tempTooHigh;
-	bool tempTooHighCRG;
-	uint8_t faultModIndex;
-	uint8_t faultSenseIndex;
-	uint8_t battStatFaultIndex; // this is the cell fault num
-	uint16_t glvVoltage;
-	uint8_t pwmFanstat;
+	uint8_t data[8] = {0};
 
-
-	uint8_t data[8];
+    data[0] = (BMSInstance->Data.bmsFaultStatus) + (BMSInstance->Data.imdStatus<<1) + (BMSInstance->Data.shutDownCircuitReading<<2) + (BMSInstance->Data.shutDownIn << 3)+ (BMSInstance->Data.shutDownOut<<4)+(BMSInstance->Data.preChargeActive << 5) + (BMSInstance->Data.prechargeDone << 6) + (BMSInstance->Data.chargeStat << 7);  
 	
+
+    data[1] = BMSInstance->Data.balanceStat + (BMSInstance->Data.cellTooLow << 1) + (BMSInstance->Data.cellTooHigh << 2) + (BMSInstance->Data.tempTooLow<<3)+
+    (BMSInstance->Data.tempTooHigh << 4) + (BMSInstance->Data.tempTooHighCRG << 5);
+
+    data[2] = BMSInstance->Data.faultModIndex;
+    data[3] = BMSInstance->Data.faultSenseIndex;
+    data[4] = BMSInstance->Data.battStatFaultIndex;
+    data[5] = (uint8_t)(BMSInstance->Data.glvVoltage >> 8);
+    data[6] = (uint8_t)(BMSInstance->Data.glvVoltage);
+    data[7] = BMSInstance->Data.pwmFanstat;
+    return CANMessage{BATT_TPDO_STATUS, data, 8};
 
 }
 

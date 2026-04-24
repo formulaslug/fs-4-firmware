@@ -95,6 +95,10 @@ private:
     }TelemetryInfo;
 
 public:
+
+
+
+
     BMS();
 
     void controller();
@@ -104,6 +108,12 @@ public:
         uint8_t temp_reg;
     };
     enum bms_state { ACTIVE = 0, CHARGING = 1, FAULT = 2, PRECHARGING = 3 };
+
+
+
+
+
+    
 
     float currentSensorOffsetVolts;
     float packCurrentAmps;
