@@ -18,7 +18,7 @@ bool eMeterPresent = false;
 
 EventQueue queue(5 * EVENTS_EVENT_SIZE);
 BMS BMSInstance;
-CanGenerator cGen;
+CanGenerator cGen(&BMSInstance);
 
 // BMSInstance = BMS();
 int main() {

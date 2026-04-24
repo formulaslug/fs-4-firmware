@@ -8,7 +8,6 @@
 
 // BMS to Bus
 //  Global pack status
-extern BMS BMSInstance;
 
 // new can message ids....
 
@@ -39,6 +38,9 @@ constexpr uint32_t BATT_TPDO_MOD4_TEMPSB = 0x29A;
 
 class CanGenerator {
 
+private:
+    BMS* BMSInstance;
+
 public:
     uint32_t voltageMessageIds[5] = {
         BATT_TPDO_MOD0_VOLTS,
@@ -60,6 +62,7 @@ public:
         BATT_TPDO_MOD4_TEMPSB
     };
 
+    CanGenerator(BMS*);
     CANMessage BuildTempMessage(uint8_t modNum, bool AorB);
     CANMessage BuildVoltageMessage(uint8_t modNum);
     CANMessage BuildStatusMessage(); // i think this one is likely to be a pain, will probably
