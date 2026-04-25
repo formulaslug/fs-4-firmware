@@ -3,14 +3,18 @@
 //
 
 #include "etc_controller.h"
-#include <sys/stat.h>
 
 ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin) :
-    APPS1_input(AnalogIn(APPS1_pin), 60),
-    APPS2_input(AnalogIn(APPS2_pin), 60),
-    BPPS_input(AnalogIn(BPPS_pin), 60),
-    front_BSE_input(AnalogIn(front_BSE_pin), 60),
-    rear_BSE_input(AnalogIn(rear_BSE_pin), 60),
+    unfiltered_APPS1_input(APPS1_pin),
+    APPS1_input(unfiltered_APPS1_input, 60),
+    unfiltered_APPS2_input(APPS2_pin),
+    APPS2_input(unfiltered_APPS2_input, 60),
+    unfiltered_BPPS_input(BPPS_pin),
+    BPPS_input(unfiltered_BPPS_input, 60),
+    unfiltered_front_BSE_input(front_BSE_pin),
+    front_BSE_input(unfiltered_front_BSE_input, 60),
+    unfiltered_rear_BSE_input(rear_BSE_pin),
+    rear_BSE_input(unfiltered_rear_BSE_input, 60),
     unfiltered_rtd_button(rtd_button_pin),
     rtd_button(unfiltered_rtd_button, 2),
     rtd_light(rtd_light_pin),
