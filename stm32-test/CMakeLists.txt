@@ -22,6 +22,6 @@ add_subdirectory(../libraries/vectornav-sdk-1-2-0-mbed vectornav-sdk)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} main.cpp vectornav_imu.cpp)
 target_link_libraries(${PROJECT_NAME} mbed-os oVnSensor)
 mbed_set_post_build(${PROJECT_NAME})
