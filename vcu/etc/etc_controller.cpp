@@ -3,19 +3,25 @@
 //
 
 #include "etc_controller.h"
+#include <sys/stat.h>
 
-ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin) :
+ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin) :
     APPS1_input(AnalogIn(APPS1_pin), 60),
     APPS2_input(AnalogIn(APPS2_pin), 60),
     BPPS_input(AnalogIn(BPPS_pin), 60),
     front_BSE_input(AnalogIn(front_BSE_pin), 60),
     rear_BSE_input(AnalogIn(rear_BSE_pin), 60),
-    rtd_button(DigitalIn(rtd_button_pin), 2),
+    unfiltered_rtd_button(rtd_button_pin),
+    rtd_button(unfiltered_rtd_button, 2),
     rtd_light(rtd_light_pin),
-    rtd_buzzer(rtd_buzzer_pin)
+    rtd_buzzer(rtd_buzzer_pin),
+    solenoid(solenoid_pin),
+    brakelight(brakelight_pin)
 {
-    rtd_buzzer.write(0);
     rtd_light.write(0);
+    rtd_buzzer.write(0);
+    solenoid.write(0);
+    brakelight.write(0);
 }
 
 float ETCController::clamp(float value) {
@@ -39,8 +45,13 @@ bool ETCController::update_state() {
     state.APPS1_position = clamp((state.APPS1_voltage - APPS1_MIN_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE));
     state.APPS2_position = clamp((state.APPS2_voltage - APPS2_MIN_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE));
     state.BPPS_position = clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
-
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
+
+    state.motor_torque = state.is_regening ? state.regen_torque : static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
+    state.brakelight_enabled = state.is_regening || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT && !state.solenoid_open);
+    
+    brakelight.write(state.brakelight_enabled);
+    solenoid.write(state.solenoid_open);
 
     update_implaus();
 
@@ -110,7 +121,7 @@ void ETCController::update_implaus() {
 }
 
 void ETCController::update_rtd() {
-    state.ts_active = GLV_ok && shutdown_closed; // send BSPD_fault over CAN seperatiely and read Shutdown from BMS CAN
+    state.ts_active = battery_precharged && shutdown_closed; // send BSPD_fault over CAN seperatiely and read Shutdown from BMS CAN
 
     if (!state.ready_to_drive && state.ts_active && (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT)) {
         toggle_rtd(true);
@@ -121,9 +132,20 @@ void ETCController::update_rtd() {
     }
 }
 
-void ETCController::update_regen(float speed) {
+void ETCController::update_regen_state(float speed) {
     state.can_regen = !in_range(speed, 0.0f, 5.0f);
     state.must_use_hydraulic_brakes = state.BPPS_position > BPPS_MAX_NON_REGEN_BRAKING;
+}
+
+void ETCController::set_regen_torque(bool is_regening, bool solenoid_open, int16_t regen_torque) {
+    state.is_regening = is_regening;
+    state.solenoid_open = solenoid_open;
+    state.regen_torque = is_regening ? regen_torque : 0.0f;
+}
+
+void ETCController::update_mbb_alive() {
+    state.mbb_alive++;
+    state.mbb_alive %= 16;
 }
 
 void ETCController::toggle_rtd(bool rtd_state) {
