@@ -5,6 +5,8 @@
 #ifndef ETC_CONTROLLER_H
 #define ETC_CONTROLLER_H
 
+#include "DigitalOut.h"
+#include "PinNames.h"
 #include "mbed.h"
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
@@ -20,6 +22,8 @@ struct ETCState {
     float BPPS_position = 0.0f; // 0 to 1
     float front_BSE_voltage = 0.0f;
     float rear_BSE_voltage = 0.0f;
+    int16_t regen_torque = 0.0f;
+    int16_t motor_torque = 0.0f;
     int16_t MAX_SPEED = 7500;
     uint16_t CHARGE_CURRENT_LIMIT = 150;
     uint16_t DISCHARGE_CURRENT_LIMIT = 600;
@@ -34,22 +38,31 @@ struct ETCState {
     bool implaus_BSE_range = false;
     bool implaus_brake_and_accel = false;
     bool can_regen = false;
+    bool is_regening = false;
+    bool solenoid_open = false; // false means the solenoid will be closed (default state) and lets hydraulic brake pressure pass, but true means the solenoid will open and NOT let hydraulic brake pressure through
     bool must_use_hydraulic_brakes = false;
+    bool reversing = false; // CURRENTLY ISN'T IMPLEMENTED
+    bool brakelight_enabled = false;
 };
 
 class ETCController {
 public:
     ETCState state;
-    bool GLV_ok = false;
+    bool battery_precharged = false;
     bool shutdown_closed = false;
 
-    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin);
+    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin);
 
     bool update_state();
 
     void update_rtd();
 
-    void update_regen(float speed);
+    void update_regen_state(float speed);
+
+    void set_regen_torque(bool is_regening, bool solenoid_open, int16_t regen_torque);
+
+    void update_mbb_alive();
+
 private:
     FilteredAnalogIn APPS1_input;
     FilteredAnalogIn APPS2_input;
@@ -57,18 +70,13 @@ private:
     FilteredAnalogIn front_BSE_input;
     FilteredAnalogIn rear_BSE_input;
 
+    DigitalIn unfiltered_rtd_button;
     DebouncedDigitalIn rtd_button;
-
-    // AnalogIn APPS1_input;
-    // AnalogIn APPS2_input;
-    // AnalogIn BPPS_input;
-    // AnalogIn front_BSE_input;
-    // AnalogIn rear_BSE_input;
-    //
-    // DigitalIn rtd_button;
 
     DigitalOut rtd_light;
     DigitalOut rtd_buzzer;
+    DigitalOut solenoid;
+    DigitalOut brakelight;
 
     Timeout rtd_buzzer_timeout;
 
