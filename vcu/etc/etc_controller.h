@@ -5,12 +5,9 @@
 #ifndef ETC_CONTROLLER_H
 #define ETC_CONTROLLER_H
 
-#include "DigitalOut.h"
-#include "PinNames.h"
 #include "mbed.h"
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
-#include <cstdint>
 
 struct ETCState {
     float APPS1_voltage = 0.0f;
@@ -64,10 +61,15 @@ public:
     void update_mbb_alive();
 
 private:
+    AnalogIn unfiltered_APPS1_input;
     FilteredAnalogIn APPS1_input;
+    AnalogIn unfiltered_APPS2_input;
     FilteredAnalogIn APPS2_input;
+    AnalogIn unfiltered_BPPS_input;
     FilteredAnalogIn BPPS_input;
+    AnalogIn unfiltered_front_BSE_input;
     FilteredAnalogIn front_BSE_input;
+    AnalogIn unfiltered_rear_BSE_input;
     FilteredAnalogIn rear_BSE_input;
 
     DigitalIn unfiltered_rtd_button;
