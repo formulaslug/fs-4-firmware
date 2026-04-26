@@ -1,5 +1,4 @@
-#ifndef BMS_H
-#define BMS_H
+#pragma once
 
 #include "DS18B20.h"
 #include "LTC6810.h"
@@ -12,7 +11,7 @@
 inline constexpr uint8_t NUM_BATTERY_MODULES = 5;
 inline constexpr uint8_t NUM_VOLTAGES_PER_MODULE = 6;
 inline constexpr uint8_t NUM_TEMP_SENSORS_PER_MODULE = 12;
-inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 4;
+inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 5;
 // okay so ive looked at the kicad and these have not been wired differently so 11/12 sensors have
 // the address of 0x48 (based on the data sheet) based on how they are wired
 //  i assume this is a wip and will be updated later
@@ -65,13 +64,12 @@ private:
     void checkForFaults();
     void generateStatusMessage();
     void controlFans();
-    void checkShutdownCircuit();
     void readPackCurrent();
     void turnOffCellBalancing();
     void telemetryPins();
 
     // bms_state currentState;
-    typedef struct{
+    struct TelemetryInfo {
         bool bmsFaultStatus;
         bool imdStatus;
         bool shutDownCircuitReading;
@@ -93,13 +91,9 @@ private:
         uint16_t glvVoltage;
         uint8_t pwmFanstat;
 
-    }TelemetryInfo;
+    };
 
 public:
-
-
-
-
     BMS();
 
     void controller();
@@ -109,12 +103,6 @@ public:
         uint8_t temp_reg;
     };
     enum bms_state { ACTIVE = 0, CHARGING = 1, FAULT = 2, PRECHARGING = 3 };
-
-
-
-
-
-
 
     float currentSensorOffsetVolts;
     float packCurrentAmps;
@@ -126,16 +114,15 @@ public:
     Timer ltcTimeoutTimer;
     CANMessage msg;
 
-    int8_t cellTemps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
+    int8_t temps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
+    uint16_t voltages[NUM_BATTERY_MODULES][NUM_VOLTAGES_PER_MODULE];
     uint16_t minVoltage;
     uint16_t maxVoltage;
     uint16_t maxCellTemp;
 
     std::vector<LTC6810> chips;
-    LTC6810::TMP1075_Handle_t sensors[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
-    uint16_t voltages[NUM_BATTERY_MODULES][NUM_VOLTAGES_PER_MODULE];
+    LTC6810::TMP1075_Handle_t tempSensors[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
 
-    
     // pin definitions
     // current sensors need to be implemented
     AnalogIn V_Out_Positive = AnalogIn(PC_0);
@@ -155,16 +142,8 @@ public:
     DigitalIn Shutdown_Measure = DigitalIn(PA_6);
     AnalogIn GLV_Voltage = AnalogIn(PA_7);
     // some configuration for this needs to be done at startup see mbedosce
-    BufferedSerial VCP_UART = BufferedSerial(PA_9, PA_10);
-    CAN CAN_POWERTRAIN = CAN(PA_11, PA_12);
+    CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
     DigitalOut nPrechargeControl = DigitalOut(PB_0);
-    // tenmporary pin assingment for bodge job on board
-    SPI spiInterface = SPI(PB_5, PB_4, PB_3, PB_9, use_gpio_ssel);
+    SPI spiInterface = SPI(PB_5, PB_4, PA_5, PA_4);
     LTC681xParallelBus ltcBusInterface;
-    DigitalOut TS1W_PU_Control = DigitalOut(PB_15);
-    // look up more on 1 wire interface temperature sensor interface dont know ids but will be
-    // implemented here
-    OneWire TS1W = OneWire(PB_14);
 };
-
-#endif

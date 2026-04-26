@@ -64,13 +64,9 @@ void turnOffCellBalancing(BMS& BMSInstance) {
         BMSInstance.chips[i].updateConfig();
     }
     printf("Cell balancing deactivated....\n");
-    // char msg2[] = "cell balancing deactivated\n";
-    // BMSInstance.VCP_UART.write(msg2, sizeof(msg2));
 }
 
 void readCellVoltages(LTC681xParallelBus& ltcBusInterface, BMS& BMSInstance) {
-    // char msg3[] = "Reading Cell Voltages\n";
-    // BMSInstance.VCP_UART.write(msg3, sizeof(msg3));
     printf("Reading cell voltages...\n");
     // ltcBusInterface.WakeupBus();
     if (BMSInstance.ltcTimeoutTimer.elapsed_time() >= 100ms) {
@@ -96,8 +92,6 @@ void readCellVoltages(LTC681xParallelBus& ltcBusInterface, BMS& BMSInstance) {
             voltsConverted = false;
             BMSInstance.ltcTimeoutTimer.start();
             printf("poll timeout occured...\n");
-            // char msg4[] = "poll timeout occured\n";
-            // BMSInstance.VCP_UART.write(msg4, sizeof(msg4));
             // the rules require that we need to ensure we are getting data and that all sensors are
             // working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
             // that time period is a little arbitrary and probably should be adjusted
@@ -130,8 +124,6 @@ void readCellVoltages(LTC681xParallelBus& ltcBusInterface, BMS& BMSInstance) {
             // 6 bytes per cell group reading (2 bytes per cell) ... transmitted in little endian
             // casted so that its easier to read
         }
-        // char msg5[] = "successfully read voltages\n";
-        // BMSInstance.VCP_UART.write(msg5, sizeof(msg5));
         printf("read voltages...\n");
         BMSInstance.minVoltage = BMSInstance.voltages[0][0];
         BMSInstance.maxVoltage = BMSInstance.voltages[0][0];
@@ -150,8 +142,6 @@ void readCellVoltages(LTC681xParallelBus& ltcBusInterface, BMS& BMSInstance) {
 }
 
 void readTemps(BMS& BMSInstance) {
-    // char msg6[] = "reading cell temps\n";
-    // BMSInstance.VCP_UART.write(msg6, sizeof(msg6));
     printf("reading cell temps\n");
 
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
@@ -187,8 +177,6 @@ void readTemps(BMS& BMSInstance) {
 // and most cells are mostly charged our balancing threshold is at 85% of maximum charges
 void decideBalancing(BMS& BMSInstance) {
     // turns on balancing for chips
-    //  char msg7[] = "deciding balancing\n";
-    //  BMSInstance.VCP_UART.write(msg7, sizeof(msg7));
     printf("deciding balancing......");
     if (BMSInstance.currentState != BMSInstance.FAULT) {
         // do we balance based on the whole battery or per module? - need to ask
@@ -242,8 +230,6 @@ void checkForFaults(BMS& BMSInstance) {
 
     // remember to set the data in the BMSInstance
 
-    // char msg8[] = "reading cell temps\n";
-    // BMSInstance.VCP_UART.write(msg8, sizeof(msg8));
     printf("reading cell temps ");
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         // cell voltage based faults...
@@ -305,8 +291,6 @@ void checkForFaults(BMS& BMSInstance) {
     //  later
     // telemetry stuff needs to be added but the logic is there.
     //
-    //  char msg9[] = "reading tray temp sensors\n";
-    //  BMSInstance.VCP_UART.write(msg9, sizeof(msg9));
     for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) {
         uint8_t trayTemp = BMSInstance.trayTemps[i];
         if (trayTemp >= CELL_MAX || trayTemp <= CELL_MIN) {

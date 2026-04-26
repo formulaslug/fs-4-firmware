@@ -10,14 +10,49 @@
 //  static constexpr float MAX_PACK_CURRENT_AMPS = 1000.0f; // adjust later
 
 BMS::BMS()
-    : ltcBusInterface(&spiInterface) // not a huge fan of this but i think its required
-{
+    : ltcBusInterface(&spiInterface) {
+
+    chips.reserve(NUM_BATTERY_MODULES);
+    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+        chips.emplace_back(ltcBusInterface, i);
+    }
+
+    // there should also be the startup checks for the ADCS on all the LTC6810s here. not a priority
+    // but nice to havce
+
+    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) { // initlaize the tmp1075 handlers
+        for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
+            tempSensors[i][j] =
+                LTC6810::TMP1075_Handle_t{static_cast<uint8_t>(TMP1075_ADDRESSES[j]), 0x00};
+        }
+    }
+
     currentState = ACTIVE; // assume everything is okay at startup
     Timer ltcTimeoutTimer; // timer for ltc6810 timeout
     CANMessage msg;        // can message object
     nBMS_Fault_3V3 = 1;    // assume no fault at startup
     nPrechargeControl = 1; // no precharge during startup
-    Data = {false, false, false, true, true, true, false, false, false, false, false, false, false, false, 0,0,0,0,0};
+    Data = {
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        0,
+        0,
+        0,
+        0,
+        0
+    };
 
     currentSensorOffsetVolts = 0.0f;
     packCurrentAmps = 0.0f;
@@ -31,12 +66,10 @@ BMS::BMS()
         Data.chargeStat = 0;
     }
 
+    // intialize data - assume everything is good at startup
 
-    //intialize data - assume everything is good at startup 
-
-    // Data = {false, false, false, true, true, true, false, false, false, false, false, false, false, false, 0,0,0,0,0};
-
-    
+    // Data = {false, false, false, true, true, true, false, false, false, false, false, false,
+    // false, false, 0,0,0,0,0};
 }
 
 /*
@@ -94,7 +127,6 @@ void BMS::turnOffCellBalancing() {
 
 void BMS::readCellVoltages() {
     // char msg3[] = "Reading Cell Voltages\n";
-    // VCP_UART.write(msg3, sizeof(msg3));
     printf("Reading cell voltages...\n");
     printf("elapsed time ... \n");
     printf("%f\n", ltcTimeoutTimer.elapsed_time());
@@ -176,7 +208,7 @@ void BMS::readTemps() {
 
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-            cellTemps[i][j] = chips[i].readTemperatureTMP1075(&sensors[i][j]);
+            temps[i][j] = chips[i].readTemperatureTMP1075(&tempSensors[i][j]);
         }
     }
 
@@ -185,8 +217,8 @@ void BMS::readTemps() {
     // Find the hottest cell across all modules and sensors
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-            if (cellTemps[i][j] > maxTemp) {
-                maxTemp = cellTemps[i][j];
+            if (temps[i][j] > maxTemp) {
+                maxTemp = temps[i][j];
             }
         }
     }
@@ -216,11 +248,8 @@ void BMS::decideBalancing() {
                     if ((maxModuleVolt - minVoltage) >= DIFFERENCE_THRESHOLD) {
                         dischargeValue |= (0x1 << j); // we balance based on the whole battery
                     }
-                    /*
-                        logic is find lowest voltage cell - go through each module and balance that
-                       module based on that cell reading so the whole battery is balanced
-
-                    */
+                    // Logic is find lowest voltage cell - go through each module and balance that
+                    // module based on that cell reading so the whole battery is balanced
                 }
                 config.dischargeState.value = dischargeValue;
                 chips[i].updateConfig();
@@ -252,9 +281,9 @@ void BMS::checkForFaults() {
                 nBMS_Fault_3V3 = 0;
                 Data.faultModIndex = i;
                 Data.faultSenseIndex = j;
-                if(voltVal>=MAX_CELL_VOLTAGE){
+                if (voltVal >= MAX_CELL_VOLTAGE) {
                     Data.cellTooHigh = 1;
-                }else{
+                } else {
                     Data.cellTooLow = 1;
                 }
             }
@@ -262,39 +291,22 @@ void BMS::checkForFaults() {
 
         // cell temp based faults...
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-            int8_t tempReading = cellTemps[i][j];
+            int8_t tempReading = temps[i][j];
             if (currentState == CHARGING) {
                 if (tempReading >= CHARGING_CELL_MAX || tempReading <= CHARGING_CELL_MIN) {
                     currentState = FAULT;
                     nBMS_Fault_3V3 = 0;
                     Data.faultModIndex = i;
                     Data.faultSenseIndex = j;
-                    if(tempReading>=CHARGING_CELL_MIN){
+                    if (tempReading >= CHARGING_CELL_MIN) {
                         Data.cellTooLow = 1;
-                    }else{
+                    } else {
                         Data.cellTooHigh = 1;
                     }
                 }
             }
         }
     }
-
-    // tray temp sensor checks
-    //  for testing purposes i am going to use the cell temperature limits here, will be update
-    //  later
-    // telemetry stuff needs to be added but the logic is there.
-
-
-    //Rip tray temp sensing in bms class
-    // for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS;
-    //      i++) { // keeping this here for now but its mainily a telemetrey
-    //     uint8_t trayTemp = trayTemp[i];
-    //     if (trayTemp >= CELL_MAX || trayTemp <= CELL_MIN) {
-    //         // should not cause a fault just for data 4-4-26 - keeping it here for mow
-    //         //  currentState = FAULT;
-    //         //  nBMS_Fault_3V3 = 0;
-    //     }
-    // }
 
     // to watch pack current
     if (std::fabs(packCurrentAmps) > MAX_PACK_CURRENT_AMPS) {
@@ -307,7 +319,7 @@ void BMS::checkForFaults() {
     //  faults on high reading i think - double check
     //  i believe this opens the shutdown cirtui
 
-    if(currentState == FAULT){
+    if (currentState == FAULT) {
         Data.bmsFaultStatus = 1;
     }
 }
@@ -324,20 +336,20 @@ void BMS::checkForFaults() {
 
 */
 
-void BMS::telemetryPins(){
-    if(Shutdown_In_3V3_Filtered.read()==0){
+void BMS::telemetryPins() {
+    if (Shutdown_In_3V3_Filtered.read() == 0) {
         Data.shutDownIn = 0;
-    }else{
+    } else {
         Data.shutDownIn = 1;
     }
-    if(Shutdown_Out_3V3_Filtered.read()==0){
+    if (Shutdown_Out_3V3_Filtered.read() == 0) {
         Data.shutDownOut = 0;
-    }else{
+    } else {
         Data.shutDownOut = 1;
     }
     if (IMD_Fault_3V3.read() == 0) {
         Data.imdStatus = 1;
-    }else{
+    } else {
         Data.imdStatus = 0;
     }
 }
@@ -351,7 +363,7 @@ void BMS::controlFans() {
         int raw_percent = (int)((2.6667f * maxTemp) - 33.3333f);
         uint8_t fan_percent = (uint8_t)std::clamp(raw_percent, 20, 100);
         Fan_PWM.write(fan_percent / 100.0f); // PWM expects 0.0 - 1.0
-        Data.pwmFanstat = fan_percent/100.0f;
+        Data.pwmFanstat = fan_percent / 100.0f;
     } else {
         // Keep fans off until precharge is complete
         Fan_PWM.write(0.0f);
@@ -379,7 +391,7 @@ void BMS::controller() {
         decideBalancing();
         printf("battery balancing set....");
         // d266270a (testing updates)
-        // checkShutdownCircuit(;
+        // checkShutdownCircuit();
     } else {
         printf("WE ARE IN FAULT");
         turnOffCellBalancing();

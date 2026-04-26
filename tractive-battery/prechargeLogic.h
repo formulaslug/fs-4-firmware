@@ -1,5 +1,4 @@
-#ifndef PRECHARGELOGIC_H
-#define PRECHARGELOGIC_H
+#pragma once
 
 #include "BMS.h"
 #include "mbed.h"
@@ -18,5 +17,3 @@ bool preChargeAllowed();
 bool prechargeComplete();
 bool glvOk();
 bool isBmsFaultActive();
-
-#endif
