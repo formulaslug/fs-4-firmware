@@ -1,16 +1,11 @@
 #include "mbed.h"
 #include "light_strip.h"
 
-LightStrip<8> light_strip{
+LightStrip<3> light_strip{
     {
+        0, 0, 255,
         255, 255, 255,
-        255, 255, 255,
-        255, 255, 255,
-        255, 255, 255,
-        255, 255, 255,
-        255, 255, 255,
-        255, 255, 255,
-        255, 255, 255
+        0, 255, 0
     }
 };
 // LightStrip<8> light_strip{
@@ -42,7 +37,7 @@ int main() {
         // }
         light_strip.update_LEDs();
         // wait_us(500 + light_strip.get_LED_update_time());
-        ThisThread::sleep_for(50ms);
+        ThisThread::sleep_for(1s);
     }
 
     return 0;
