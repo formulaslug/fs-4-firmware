@@ -68,6 +68,12 @@
 #include "BNO080Constants.h"
 #include <cinttypes>
 #include <algorithm>
+#include <cstring>
+#include <cmath>
+#include <cstdarg>
+#include <cstdio>
+
+using namespace std::chrono_literals;
 
 /// Set to 1 to enable debug printouts.  Should be very useful if the chip is giving you trouble.
 /// When debugging, it is recommended to use the highest possible serial baudrate so as not to interrupt the timing of operations.
@@ -91,6 +97,25 @@ BNO080Base::BNO080Base(Stream *debugPort, PinName user_INTPin, PinName user_RSTP
 	memset(sequenceNumber, 0, sizeof(sequenceNumber));
 }
 
+void BNO080Base::debugPrintf(const char *format, ...)
+{
+	char buffer[160];
+
+	va_list args;
+	va_start(args, format);
+	vsnprintf(buffer, sizeof(buffer), format, args);
+	va_end(args);
+
+	if(_debugPort != nullptr)
+	{
+		_debugPort->printf("%s", buffer);
+	}
+	else
+	{
+		printf("%s", buffer);
+	}
+}
+
 bool BNO080Base::begin()
 {
 	//Configure the BNO080
@@ -110,7 +135,7 @@ bool BNO080Base::begin()
 	{
 		if(timeoutTimer.elapsed_time() > BNO080_RESET_TIMEOUT)
 		{
-			_debugPort->printf("Error: BNO080 reset timed out, chip not detected.\n");
+			debugPrintf("Error: BNO080 reset timed out, chip not detected.\n");
 			return false;
 		}
 
@@ -137,7 +162,7 @@ bool BNO080Base::begin()
 	}
 
 #if BNO_DEBUG
-	_debugPort->printf("BNO080 detected!\r\n");
+	debugPrintf("BNO080 detected!\r\n");
 #endif
 
 	// At system startup, the hub must send its full advertisement message (see SHTP 5.2 and 5.3) to the
@@ -148,13 +173,13 @@ bool BNO080Base::begin()
 	// now, after startup, the BNO will send an Unsolicited Initialize response (SH-2 section 6.4.5.2), and an Executable Reset command
 	if(!waitForPacket(CHANNEL_EXECUTABLE, EXECUTABLE_REPORTID_RESET))
 	{
-		_debugPort->printf("No initialization report from BNO080.\n");
+		debugPrintf("No initialization report from BNO080.\n");
 		return false;
 	}
 	else
 	{
 #if BNO_DEBUG
-		_debugPort->printf("BNO080 reports initialization successful!\n");
+		debugPrintf("BNO080 reports initialization successful!\n");
 #endif
 	}
 
@@ -175,7 +200,7 @@ bool BNO080Base::begin()
 		buildNumber = (rxShtpData[11] << 24) | (rxShtpData[10] << 16) | (rxShtpData[9] << 8) | rxShtpData[8];
 
 #if BNO_DEBUG
-		_debugPort->printf("BNO080 reports as SW version %hhu.%hhu.%hu, build %lu, part no. %lu\n",
+		debugPrintf("BNO080 reports as SW version %hhu.%hhu.%hu, build %lu, part no. %lu\n",
 						   majorSoftwareVersion, minorSoftwareVersion, patchSoftwareVersion,
 						   buildNumber, partNumber);
 #endif
@@ -183,7 +208,7 @@ bool BNO080Base::begin()
 	}
 	else
 	{
-		_debugPort->printf("Bad response from product ID command.\n");
+		debugPrintf("Bad response from product ID command.\n");
 		return false;
 	}
 
@@ -232,7 +257,7 @@ bool BNO080Base::enableCalibration(bool calibrateAccel, bool calibrateGyro, bool
 	if(!waitForPacket(CHANNEL_CONTROL, SHTP_REPORT_COMMAND_RESPONSE))
 	{
 #if BNO_DEBUG
-		_debugPort->printf("Timeout waiting for calibration response!\n");
+		debugPrintf("Timeout waiting for calibration response!\n");
 #endif
 		return false;
 	}
@@ -240,7 +265,7 @@ bool BNO080Base::enableCalibration(bool calibrateAccel, bool calibrateGyro, bool
 	if(rxShtpData[2] != COMMAND_ME_CALIBRATE)
 	{
 #if BNO_DEBUG
-		_debugPort->printf("Received wrong response to calibration command!\n");
+		debugPrintf("Received wrong response to calibration command!\n");
 #endif
 		return false;
 	}
@@ -248,7 +273,7 @@ bool BNO080Base::enableCalibration(bool calibrateAccel, bool calibrateGyro, bool
 	if(rxShtpData[5] != 0)
 	{
 #if BNO_DEBUG
-		_debugPort->printf("IMU reports calibrate command failed!\n");
+		debugPrintf("IMU reports calibrate command failed!\n");
 #endif
 		return false;
 	}
@@ -268,7 +293,7 @@ bool BNO080Base::saveCalibration()
 	if(!waitForPacket(CHANNEL_CONTROL, SHTP_REPORT_COMMAND_RESPONSE))
 	{
 #if BNO_DEBUG
-		_debugPort->printf("Timeout waiting for calibration response!\n");
+		debugPrintf("Timeout waiting for calibration response!\n");
 #endif
 		return false;
 	}
@@ -276,7 +301,7 @@ bool BNO080Base::saveCalibration()
 	if(rxShtpData[2] != COMMAND_SAVE_DCD)
 	{
 #if BNO_DEBUG
-		_debugPort->printf("Received wrong response to calibration command!\n");
+		debugPrintf("Received wrong response to calibration command!\n");
 #endif
 		return false;
 	}
@@ -284,7 +309,7 @@ bool BNO080Base::saveCalibration()
 	if(rxShtpData[5] != 0)
 	{
 #if BNO_DEBUG
-		_debugPort->printf("IMU reports calibrate command failed!\n");
+		debugPrintf("IMU reports calibrate command failed!\n");
 #endif
 		return false;
 	}
@@ -414,7 +439,7 @@ void BNO080Base::enableReport(Report report, uint16_t timeBetweenReports)
 
 	if(periodSeconds < getMinPeriod(report))
 	{
-		_debugPort->printf("Error: attempt made to set report 0x%02hhx to period of %.06f s, which is smaller than its min period of %.06f s.\r\n",
+		debugPrintf("Error: attempt made to set report 0x%02hhx to period of %.06f s, which is smaller than its min period of %.06f s.\r\n",
 						   static_cast<uint8_t>(report), periodSeconds, getMinPeriod(report));
 		return;
 	}
@@ -492,16 +517,16 @@ void BNO080Base::printMetadataSummary(Report report)
 #if BNO_DEBUG
 	if(!loadReportMetadata(report))
 	{
-		_debugPort->printf("Failed to load report metadata!\n");
+		debugPrintf("Failed to load report metadata!\n");
 	}
 
-	_debugPort->printf("======= Metadata for report 0x%02hhx =======\n", static_cast<uint8_t>(report));
+	debugPrintf("======= Metadata for report 0x%02hhx =======\n", static_cast<uint8_t>(report));
 
-	_debugPort->printf("Range: +- %.04f units\n", getRange(report));
-	_debugPort->printf("Resolution: %.04f units\n", getResolution(report));
-	_debugPort->printf("Power Used: %.03f mA\n", getPower(report));
-	_debugPort->printf("Min Period: %.06f s\n", getMinPeriod(report));
-	_debugPort->printf("Max Period: %.06f s\n\n", getMaxPeriod(report));
+	debugPrintf("Range: +- %.04f units\n", getRange(report));
+	debugPrintf("Resolution: %.04f units\n", getResolution(report));
+	debugPrintf("Power Used: %.03f mA\n", getPower(report));
+	debugPrintf("Min Period: %.06f s\n", getMinPeriod(report));
+	debugPrintf("Max Period: %.06f s\n\n", getMaxPeriod(report));
 
 #endif
 }
@@ -785,13 +810,13 @@ void BNO080Base::parseSensorDataPacket()
 				break;
 				
 			default:
-				_debugPort->printf("Error: unrecognized report ID in sensor report: %hhx.  Byte %u, length %hu\n", rxShtpData[currReportOffset], currReportOffset, rxPacketLength);
+				debugPrintf("Error: unrecognized report ID in sensor report: %hhx.  Byte %u, length %hu\n", rxShtpData[currReportOffset], currReportOffset, rxPacketLength);
 				return;
 		}
 
 		if(currReportOffset >= SHTP_RX_PACKET_SIZE)
 		{
-			_debugPort->printf("Error: sensor report longer than packet buffer! Some data was not read! Increase buffer size or decrease number of reports!\r\n");
+			debugPrintf("Error: sensor report longer than packet buffer! Some data was not read! Increase buffer size or decrease number of reports!\r\n");
 			return;
 		}
 	}
@@ -825,7 +850,7 @@ bool BNO080Base::waitForPacket(int channel, uint8_t reportID, std::chrono::milli
 		}
 	}
 
-	_debugPort->printf("Packet wait timeout.\n");
+	debugPrintf("Packet wait timeout.\n");
 	return false;
 }
 
@@ -938,7 +963,7 @@ bool BNO080Base::readFRSRecord(uint16_t recordID, uint32_t* readBuffer, uint16_t
 		if(!waitForPacket(CHANNEL_CONTROL, SHTP_REPORT_FRS_READ_RESPONSE, 300ms))
 		{
 #if BNO_DEBUG
-			_debugPort->printf("Error: did not receive FRS read response after sending read request!\n");
+			debugPrintf("Error: did not receive FRS read response after sending read request!\n");
 #endif
 			return false;
 		}
@@ -950,35 +975,35 @@ bool BNO080Base::readFRSRecord(uint16_t recordID, uint32_t* readBuffer, uint16_t
 		if(status == 1)
 		{
 #if BNO_DEBUG
-			_debugPort->printf("Error: FRS reports invalid record ID!\n");
+			debugPrintf("Error: FRS reports invalid record ID!\n");
 #endif
 			return false;
 		}
 		else if(status == 2)
 		{
 #if BNO_DEBUG
-			_debugPort->printf("Error: FRS is busy!\n");
+			debugPrintf("Error: FRS is busy!\n");
 #endif
 			return false;
 		}
 		else if(status == 4)
 		{
 #if BNO_DEBUG
-			_debugPort->printf("Error: FRS reports offset is out of range!\n");
+			debugPrintf("Error: FRS reports offset is out of range!\n");
 #endif
 			return false;
 		}
 		else if(status == 5)
 		{
 #if BNO_DEBUG
-			_debugPort->printf("Error: FRS reports record %hx is empty!\n", recordID);
+			debugPrintf("Error: FRS reports record %hx is empty!\n", recordID);
 #endif
 			return false;
 		}
 		else if(status == 8)
 		{
 #if BNO_DEBUG
-			_debugPort->printf("Error: FRS reports flash memory device unavailable!\n");
+			debugPrintf("Error: FRS reports flash memory device unavailable!\n");
 #endif
 			return false;
 		}
@@ -987,7 +1012,7 @@ bool BNO080Base::readFRSRecord(uint16_t recordID, uint32_t* readBuffer, uint16_t
 		if(dataLength == 0)
 		{
 #if BNO_DEBUG
-			_debugPort->printf("Error: Received FRS packet with 0 data length!\n");
+			debugPrintf("Error: Received FRS packet with 0 data length!\n");
 #endif
 			return false;
 		}
@@ -996,7 +1021,7 @@ bool BNO080Base::readFRSRecord(uint16_t recordID, uint32_t* readBuffer, uint16_t
 			if(readOffset + 1 != readLength)
 			{
 #if BNO_DEBUG
-				_debugPort->printf("Error: Received 1 length packet but more than 1 byte remains to be be read!\n");
+				debugPrintf("Error: Received 1 length packet but more than 1 byte remains to be be read!\n");
 #endif
 				return false;
 			}
@@ -1040,7 +1065,7 @@ bool BNO080Base::writeFRSRecord(uint16_t recordID, uint32_t* buffer, uint16_t le
 	if(!waitForPacket(CHANNEL_CONTROL, SHTP_REPORT_FRS_WRITE_RESPONSE, 300ms))
 	{
 #if BNO_DEBUG
-		_debugPort->printf("Error: did not receive FRS write ready response after sending write request!\r\n");
+		debugPrintf("Error: did not receive FRS write ready response after sending write request!\r\n");
 #endif
 		return false;
 	}
@@ -1048,7 +1073,7 @@ bool BNO080Base::writeFRSRecord(uint16_t recordID, uint32_t* buffer, uint16_t le
 	if(rxShtpData[1] != 4)
 	{
 #if BNO_DEBUG
-		_debugPort->printf("Error: FRS reports error initiating write operation: %hhu!\r\n", rxShtpData[1]);
+		debugPrintf("Error: FRS reports error initiating write operation: %hhu!\r\n", rxShtpData[1]);
 #endif
 		return false;
 	}
@@ -1079,7 +1104,7 @@ bool BNO080Base::writeFRSRecord(uint16_t recordID, uint32_t* buffer, uint16_t le
 		if(!waitForPacket(CHANNEL_CONTROL, SHTP_REPORT_FRS_WRITE_RESPONSE, 300ms))
 		{
 #if BNO_DEBUG
-			_debugPort->printf("Error: did not receive FRS write response after sending write data!\r\n");
+			debugPrintf("Error: did not receive FRS write response after sending write data!\r\n");
 #endif
 			return false;
 		}
@@ -1096,7 +1121,7 @@ bool BNO080Base::writeFRSRecord(uint16_t recordID, uint32_t* buffer, uint16_t le
 				else
 				{
 #if BNO_DEBUG
-					_debugPort->printf("Error: FRS reports write in progress when it should be complete!\r\n");
+					debugPrintf("Error: FRS reports write in progress when it should be complete!\r\n");
 #endif
 					return false;
 				}
@@ -1110,56 +1135,56 @@ bool BNO080Base::writeFRSRecord(uint16_t recordID, uint32_t* buffer, uint16_t le
 				else
 				{
 #if BNO_DEBUG
-					_debugPort->printf("Error: FRS reports write complete when it should be still going!\n");
+					debugPrintf("Error: FRS reports write complete when it should be still going!\n");
 #endif
 					return false;
 				}
 				break;
 			case 1:
 #if BNO_DEBUG
-				_debugPort->printf("Error: FRS reports invalid record ID!\n");
+				debugPrintf("Error: FRS reports invalid record ID!\n");
 #endif
 				return false;
 			case 2:
 #if BNO_DEBUG
-				_debugPort->printf("Error: FRS is busy!\n");
+				debugPrintf("Error: FRS is busy!\n");
 #endif
 				return false;
 			case 5:
 #if BNO_DEBUG
-				_debugPort->printf("Error: FRS reports write failed!\n");
+				debugPrintf("Error: FRS reports write failed!\n");
 #endif
 				return false;
 			case 6:
 #if BNO_DEBUG
-				_debugPort->printf("Error: FRS reports data received while not in write mode!\n");
+				debugPrintf("Error: FRS reports data received while not in write mode!\n");
 #endif
 				return false;
 			case 7:
 #if BNO_DEBUG
-				_debugPort->printf("Error: FRS reports invalid length!\n");
+				debugPrintf("Error: FRS reports invalid length!\n");
 #endif
 				return false;
 			case 9:
 #if BNO_DEBUG
-				_debugPort->printf("Error: FRS reports invalid data for this record!\n");
+				debugPrintf("Error: FRS reports invalid data for this record!\n");
 #endif
 				return false;
 
 			case 10:
 #if BNO_DEBUG
-				_debugPort->printf("Error: FRS reports flash device unavailable!\n");
+				debugPrintf("Error: FRS reports flash device unavailable!\n");
 #endif
 				return false;
 
 			case 11:
 #if BNO_DEBUG
-				_debugPort->printf("Error: FRS reports record is read-only!\n");
+				debugPrintf("Error: FRS reports record is read-only!\n");
 #endif
 				return false;
 			default:
 #if BNO_DEBUG
-				_debugPort->printf("Error: FRS reports unknown result code %hhu!\n", status);
+				debugPrintf("Error: FRS reports unknown result code %hhu!\n", status);
 #endif
 				break;
 
@@ -1175,11 +1200,11 @@ void BNO080Base::printPacket(uint8_t * buffer)
 {
 #if BNO_DEBUG
 	//Print the four byte header
-	_debugPort->printf("Header:");
+	debugPrintf("Header:");
 	for (uint8_t x = 0 ; x < 4 ; x++)
 	{
-		_debugPort->printf(" ");
-		_debugPort->printf("%02hhx", buffer[x]);
+		debugPrintf(" ");
+		debugPrintf("%02hhx", buffer[x]);
 	}
 
 	//Calculate the number of data bytes in this packet
@@ -1189,27 +1214,27 @@ void BNO080Base::printPacket(uint8_t * buffer)
 
 	uint16_t printLength = std::min(packetLength, static_cast<uint16_t>(40)); //Artificial limit. We don't want the phone book.
 
-	_debugPort->printf(" Body:");
+	debugPrintf(" Body:");
 	for (uint16_t x = 0 ; x < printLength ; x++)
 	{
-		_debugPort->printf(" ");
-		_debugPort->printf("%02hhx", buffer[x + SHTP_HEADER_SIZE]);
+		debugPrintf(" ");
+		debugPrintf("%02hhx", buffer[x + SHTP_HEADER_SIZE]);
 	}
 
-	_debugPort->printf(", Length:");
-	_debugPort->printf("%d", packetLength + SHTP_HEADER_SIZE);
-	_debugPort->printf(", SeqNum: %hhu", buffer[3]);
+	debugPrintf(", Length:");
+	debugPrintf("%d", packetLength + SHTP_HEADER_SIZE);
+	debugPrintf(", SeqNum: %hhu", buffer[3]);
 
-	_debugPort->printf(", Channel:");
-	if (buffer[2] == 0) _debugPort->printf("Command");
-	else if (buffer[2] == 1) _debugPort->printf("Executable");
-	else if (buffer[2] == 2) _debugPort->printf("Control");
-	else if (buffer[2] == 3) _debugPort->printf("Sensor-report");
-	else if (buffer[2] == 4) _debugPort->printf("Wake-report");
-	else if (buffer[2] == 5) _debugPort->printf("Gyro-vector");
-	else _debugPort->printf("%hhu", buffer[2]);
+	debugPrintf(", Channel:");
+	if (buffer[2] == 0) debugPrintf("Command");
+	else if (buffer[2] == 1) debugPrintf("Executable");
+	else if (buffer[2] == 2) debugPrintf("Control");
+	else if (buffer[2] == 3) debugPrintf("Sensor-report");
+	else if (buffer[2] == 4) debugPrintf("Wake-report");
+	else if (buffer[2] == 5) debugPrintf("Gyro-vector");
+	else debugPrintf("%hhu", buffer[2]);
 
-	_debugPort->printf("\n");
+	debugPrintf("\n");
 #endif
 }
 
@@ -1324,7 +1349,7 @@ bool BNO080I2C::sendPacket(uint8_t channelNumber, uint8_t dataLength)
 	txShtpHeader[3] = sequenceNumber[channelNumber];
 
 #if BNO_DEBUG
-	_debugPort->printf("Transmitting packet: ----------------\n");
+	debugPrintf("Transmitting packet: ----------------\n");
 	printPacket(txPacketBuffer);
 #endif
 
@@ -1333,9 +1358,11 @@ bool BNO080I2C::sendPacket(uint8_t channelNumber, uint8_t dataLength)
 
 	if(writeResult != 0)
 	{
-		_debugPort->printf("BNO I2C write failed!\n");
+		debugPrintf("BNO I2C write failed!\n");
 		return false;
 	}
+
+	sequenceNumber[channelNumber]++;
 	return true;
 }
 
@@ -1350,7 +1377,7 @@ bool BNO080I2C::receivePacket(std::chrono::milliseconds timeout)
 	{
 		if(waitStartTime.elapsed_time() > timeout)
 		{
-			_debugPort->printf("BNO I2C header wait timeout\n");
+			debugPrintf("BNO I2C header wait timeout\n");
 			return false;
 		}
 
@@ -1364,7 +1391,7 @@ bool BNO080I2C::receivePacket(std::chrono::milliseconds timeout)
 
 	if(writeResult != 1)
 	{
-		_debugPort->printf("BNO I2C read failed!\n");
+		debugPrintf("BNO I2C read failed!\n");
 		return false;
 	}
 
@@ -1385,7 +1412,7 @@ bool BNO080I2C::receivePacket(std::chrono::milliseconds timeout)
 		// invalid according to BNO080 datasheet section 1.4.1
 
 #if BNO_DEBUG
-		_debugPort->printf("Recieved 0xFFFF packet length, protocol error!\n");
+		debugPrintf("Recieved 0xFFFF packet length, protocol error!\n");
 #endif
 		return false;
 	}
@@ -1426,7 +1453,7 @@ bool BNO080I2C::receivePacket(std::chrono::milliseconds timeout)
 	i2cResult = _i2cPort.read(_i2cAddress << 1, reinterpret_cast<char*>(packetBuffer), SHTP_HEADER_SIZE, false);
 	if(i2cResult != 0)
 	{
-		_debugPort->printf("BNO I2C length read failed!\n");
+		debugPrintf("BNO I2C length read failed!\n");
 		return false;
 	}
 
@@ -1434,7 +1461,7 @@ bool BNO080I2C::receivePacket(std::chrono::milliseconds timeout)
 	{
 		// invalid according to BNO080 datasheet section 1.4.1
 #if BNO_DEBUG
-		_debugPort->printf("Recieved 0xFFFF packet length, protocol error!\n");
+		debugPrintf("Recieved 0xFFFF packet length, protocol error!\n");
 #endif
 		return false;
 	}
@@ -1468,24 +1495,24 @@ bool BNO080I2C::receivePacket(std::chrono::milliseconds timeout)
 	{
 		if(waitStartTime.elapsed_time() > timeout)
 		{
-			_debugPort->printf("BNO I2C wait timeout\n");
+			debugPrintf("BNO I2C wait timeout\n");
 			return false;
 		}
 
 	}
 
 	//Read the actual packet bytes
-	_debugPort->printf("Attempting to read %" PRIu16 " bytes\n", totalLength);
+	debugPrintf("Attempting to read %" PRIu16 " bytes\n", totalLength);
 	i2cResult = _i2cPort.read(_i2cAddress << 1, reinterpret_cast<char*>(packetBuffer), totalLength);
 	if(i2cResult != 0)
 	{
-		_debugPort->printf("BNO I2C read failed!\n");
+		debugPrintf("BNO I2C read failed!\n");
 		return false;
 	}
 	*/
 
 #if BNO_DEBUG
-	_debugPort->printf("Recieved packet: ----------------\n");
+	debugPrintf("Recieved packet: ----------------\n");
 	printPacket(rxPacketBuffer); // note: add 4 for the header length
 #endif
 
@@ -1504,8 +1531,22 @@ _spiSpeed(spiSpeed)
 	_spiPort.set_default_write_value(0x0);
 }
 
+static bool bnoHasReceivedSPIHeader(const uint8_t *header)
+{
+	const uint16_t totalLength = (static_cast<uint16_t>(header[1]) << 8) | header[0];
+
+	if(totalLength == 0 || totalLength == 0xFFFF)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 bool BNO080SPI::sendPacket(uint8_t channelNumber, uint8_t dataLength)
 {
+	bool wakeAsserted = false;
+
 	if(_int.read() == 0)
 	{
 		// The BNO is already awake because it has a packet it wants to send to us
@@ -1514,21 +1555,21 @@ bool BNO080SPI::sendPacket(uint8_t channelNumber, uint8_t dataLength)
 	{
 		// assert WAKE to tell the BNO to prepare for a transfer
 		_wakePin = 0;
+		wakeAsserted = true;
 
 		Timer waitStartTime;
 		waitStartTime.start();
-		const std::chrono::milliseconds timeout = 10ms;
+		const std::chrono::milliseconds timeout = 125ms;
 
 		while(_int.read() != 0)
 		{
 			if(waitStartTime.elapsed_time() > timeout)
 			{
-				_debugPort->printf("BNO SPI wake wait timeout\n");
+				debugPrintf("BNO SPI wake wait timeout\n");
 				_wakePin = 1;
 				return false;
 			}
 		}
-		_wakePin = 1;
 	}
 
 	uint16_t totalLength = dataLength + 4; //Add four bytes for the header
@@ -1539,7 +1580,7 @@ bool BNO080SPI::sendPacket(uint8_t channelNumber, uint8_t dataLength)
 	txShtpHeader[3] = sequenceNumber[channelNumber];
 
 #if BNO_DEBUG
-	_debugPort->printf("Transmitting packet: ----------------\n");
+	debugPrintf("Transmitting packet: ----------------\n");
 	printPacket(txPacketBuffer);
 #endif
 
@@ -1548,11 +1589,19 @@ bool BNO080SPI::sendPacket(uint8_t channelNumber, uint8_t dataLength)
 
 	// send packet to IMU.
 	// This also might receive the first part of another packet, which there is no way to avoid.
+	_spiPort.select();
 	spiTransferAndWait(txPacketBuffer, totalLength, rxPacketBuffer, totalLength);
 
-	if(rxShtpHeader[0] == 0 && rxShtpHeader[0] == 0)
+	sequenceNumber[channelNumber]++;
+
+	if(!bnoHasReceivedSPIHeader(rxShtpHeader))
 	{
 		// no header data so no packet received
+		_spiPort.deselect();
+		if(wakeAsserted)
+		{
+			_wakePin = 1;
+		}
 		return true;
 	}
 	else
@@ -1560,12 +1609,23 @@ bool BNO080SPI::sendPacket(uint8_t channelNumber, uint8_t dataLength)
 		// received first part of data packet while writing
 		if(receiveCompletePacket(totalLength))
 		{
+			_spiPort.deselect();
+			if(wakeAsserted)
+			{
+				_wakePin = 1;
+			}
+
 			// received data packet, send to proper channels
 			processPacket();
 			return true;
 		}
 
 		// receive failed
+		_spiPort.deselect();
+		if(wakeAsserted)
+		{
+			_wakePin = 1;
+		}
 		return false;
 	}
 }
@@ -1581,21 +1641,27 @@ bool BNO080SPI::receivePacket(std::chrono::milliseconds timeout)
 	{
 		if (waitStartTime.elapsed_time() > timeout)
 		{
-			_debugPort->printf("BNO SPI header wait timeout\n");
+			debugPrintf("BNO SPI header wait timeout\n");
 			return false;
 		}
 
 	}
 
 	// read the header bytes first.
+	_spiPort.select();
 	spiTransferAndWait(nullptr, 0, rxPacketBuffer, SHTP_HEADER_SIZE);
 
 	// now read the data
-	return receiveCompletePacket(SHTP_HEADER_SIZE, timeout);
+	bool success = receiveCompletePacket(SHTP_HEADER_SIZE, timeout);
+	_spiPort.deselect();
+
+	return success;
 }
 
 bool BNO080SPI::receiveCompletePacket(size_t bytesRead, std::chrono::milliseconds timeout)
 {
+	(void)timeout;
+
 	// Process header bytes
 	// ------------------------------------------------------------------------
 	if (rxShtpHeader[0] == 0xFF && rxShtpHeader[1] == 0xFF)
@@ -1603,7 +1669,7 @@ bool BNO080SPI::receiveCompletePacket(size_t bytesRead, std::chrono::millisecond
 		// invalid according to BNO080 datasheet section 1.4.1
 
 #if BNO_DEBUG
-		_debugPort->printf("Recieved 0xFFFF packet length, protocol error!\n");
+		debugPrintf("Recieved 0xFFFF packet length, protocol error!\n");
 #endif
 		return false;
 	}
@@ -1622,6 +1688,13 @@ bool BNO080SPI::receiveCompletePacket(size_t bytesRead, std::chrono::millisecond
 
 	rxPacketLength = totalLength - SHTP_HEADER_SIZE;
 
+	if(rxPacketLength > SHTP_RX_PACKET_SIZE)
+	{
+		debugPrintf("Packet too long (%" PRIu16 " bytes), increase SHTP_RX_PACKET_SIZE\n", rxPacketLength);
+		debugPrintf("Packet dropped, expect subsequent driver errors.\n");
+		return false;
+	}
+
 	if(totalLength <= bytesRead)
 	{
 		// the original transaction already read the completed packet!  We're done.
@@ -1630,47 +1703,10 @@ bool BNO080SPI::receiveCompletePacket(size_t bytesRead, std::chrono::millisecond
 
 	// Receive data
 	// ------------------------------------------------------------------------
-
-	// Wait for it to be ready to talk to us again.
-	// Note: in my testing this takes about 200ms
-	Timer waitStartTime;
-	waitStartTime.start();
-	while (_int.read() != 0)
-	{
-		if (waitStartTime.elapsed_time() > timeout)
-		{
-			_debugPort->printf("BNO SPI continued packet header wait timeout\n");
-			return false;
-		}
-
-	}
-
-	if(rxPacketLength > SHTP_RX_PACKET_SIZE)
-	{
-		_debugPort->printf("Packet too long (%" PRIu16 " bytes), increase SHTP_RX_PACKET_SIZE\n", rxPacketLength);
-		_debugPort->printf("Packet dropped, expect subsequent driver errors.\n");
-		return false;
-	}
-
-	if(bytesRead == SHTP_HEADER_SIZE)
-	{
-		// just read the entire packet into the buffer
-		spiTransferAndWait(nullptr, 0, rxPacketBuffer, totalLength);
-	}
-	else
-	{
-		// we want to receive a new header, plus the remaining data bytes that haven't been read.
-		size_t receiveLength = SHTP_HEADER_SIZE + (totalLength - bytesRead);
-
-		// read remaining bytes into the data buffer starting at the next byte
-		spiTransferAndWait(nullptr, 0, rxPacketBuffer + bytesRead, receiveLength);
-
-		// erase the new header we just read, leaving only the data as a contiguous block
-		std::memmove(rxPacketBuffer + bytesRead, rxPacketBuffer + bytesRead + SHTP_HEADER_SIZE, receiveLength - SHTP_HEADER_SIZE);
-	}
+	spiTransferAndWait(nullptr, 0, rxPacketBuffer + bytesRead, totalLength - bytesRead);
 
 #if BNO_DEBUG
-	_debugPort->printf("Recieved packet: ----------------\n");
+	debugPrintf("Recieved packet: ----------------\n");
 	printPacket(rxPacketBuffer);
 #endif
 
@@ -1692,7 +1728,7 @@ void BNO080SPI::spiTransferAndWait(const uint8_t *tx_buffer, int tx_length, uint
 	if(!(waitResult & SPI_EVENT_COMPLETE))
 	{
 		// at least let the user know the error happened...
-		_debugPort->printf("BNO Async SPI Error %" PRIu32 "\n", waitResult);
+		debugPrintf("BNO Async SPI Error %" PRIu32 "\n", waitResult);
 	}
 
 }

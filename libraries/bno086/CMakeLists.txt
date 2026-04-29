@@ -9,12 +9,13 @@ add_definitions(
         -DDEVICE_ANALOGIN=1
 )
 
-add_subdirectory(../../mbed-os mbed-os)
+# add_subdirectory(../../mbed-os mbed-os)
 
 add_library(bno086 STATIC
-        BNO086.cpp
+        BNO080.cpp
+        BNO080Async.cpp
 )
 
-target_include_directories(filter_utils PUBLIC include)
+target_include_directories(bno086 PUBLIC include)
 
-target_link_libraries(filter_utils PUBLIC mbed-core-flags)
+target_link_libraries(bno086 PUBLIC mbed-core-flags)

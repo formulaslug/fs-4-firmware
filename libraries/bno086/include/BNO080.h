@@ -13,17 +13,21 @@
  * is quite complex, and it took me quite a while to wrap my head around it.  If you need to modify or debug
  * this driver, look at the CPP file for an overview of the chip's communication protocol.
  *
- * Note: this driver only supports I2C.  I attempted to create an SPI version, but as far as I can tell,
- * the BNO's SPI interface has a bug that causes you to be unable to wake the chip from sleep in some conditions.
- * Until this is fixed, SPI on it is virtually unusable.
+ * This driver supports the BNO080/BNO085/BNO086 family over I2C or SPI.
  */
 
 #ifndef HAMSTER_BNO080_H
 #define HAMSTER_BNO080_H
 
-#include <mbed.h>
-#include <Stream.h>
-#include <quaternion.h>
+#include "mbed.h"
+
+#if __has_include("platform/Stream.h")
+#include "platform/Stream.h"
+#elif __has_include("Stream.h")
+#include "Stream.h"
+#endif
+
+#include "quaternion.h"
 
 #include "BNO080Constants.h"
 
@@ -53,6 +57,8 @@ protected:
 	 * Serial stream to print debug info to.  Used for errors, and debugging output if debugging is enabled.
 	 */
 	Stream * _debugPort;
+
+	void debugPrintf(const char *format, ...);
 
 	/// Interrupt pin -- signals to the host that the IMU has data to send
 	// Note: only ever used as a digital input by BNO080.
@@ -396,7 +402,7 @@ public:
 	 * NOTE: while some schematics tell you to connect the BOOTN pin to the processor, this driver does not use or require it.
 	 * Just tie it to VCC per the datasheet.
 	 *
-	 * @param debugPort Serial port to write output to.  Cannot be nullptr.
+	 * @param debugPort Serial port to write output to.  If nullptr, global printf() is used.
 	 */
 	BNO080Base(Stream *debugPort, PinName user_INTPin, PinName user_RSTPin);
 
@@ -659,7 +665,7 @@ protected:
 	 * @param timeout how long to wait for the packet
 	 * @return true if the packet has been received, false if it timed out
 	 */
-	virtual bool waitForPacket(int channel, uint8_t reportID, std::chrono::milliseconds timeout = 125ms);
+	virtual bool waitForPacket(int channel, uint8_t reportID, std::chrono::milliseconds timeout = std::chrono::milliseconds(125));
 
 	/**
 	 * Given a Q value, converts fixed point floating to regular floating point number.
@@ -750,7 +756,7 @@ protected:
 	 *
 	 * @return whether a packet was recieved.
 	 */
-	virtual bool receivePacket(std::chrono::milliseconds timeout=200ms) = 0;
+	virtual bool receivePacket(std::chrono::milliseconds timeout=std::chrono::milliseconds(200)) = 0;
 
 	/**
 	 * Sends the current shtpData contents to the BNO.  It's a good idea to disable interrupts before you call this.
@@ -807,7 +813,7 @@ public:
 	 * NOTE: while some schematics tell you to connect the BOOTN pin to the processor, this driver does not use or require it.
 	 * Just tie it to VCC per the datasheet.
 	 *
-	 * @param debugPort Serial port to write output to.  Cannot be nullptr.
+	 * @param debugPort Serial port to write output to.  If nullptr, global printf() is used.
 	 * @param user_SDApin Hardware I2C SDA pin connected to the IMU
 	 * @param user_SCLpin Hardware I2C SCL pin connected to the IMU
 	 * @param user_INTPin Input pin connected to HINTN
@@ -819,13 +825,15 @@ public:
 
 private:
 
-	bool receivePacket(std::chrono::milliseconds timeout=200ms) override;
+	bool receivePacket(std::chrono::milliseconds timeout=std::chrono::milliseconds(200)) override;
 
 	bool sendPacket(uint8_t channelNumber, uint8_t dataLength) override;
 };
 
 // typedef for compatibility with old version of driver where there was no SPI
 typedef BNO080I2C BNO080;
+typedef BNO080I2C BNO08xI2C;
+typedef BNO080I2C BNO086I2C;
 
 /**
  * Version of the BNO080 driver which uses the SPI interface.
@@ -867,7 +875,7 @@ public:
 	 * NOTE: while some schematics tell you to connect the BOOTN pin to the processor, this driver does not use or require it.
 	 * Just tie it to VCC per the datasheet.
 	 *
-	 * @param debugPort Serial port to write output to.  Cannot be nullptr.
+	 * @param debugPort Serial port to write output to.  If nullptr, global printf() is used.
 	 * @param rstPin Hardware reset pin, resets the IMU
 	 * @param intPin Hardware interrupt pin, this is used for the IMU to signal the host that it has a message to send
 	 * @param wakePin Hardware wake pin, this is used by the processor to signal the BNO to wake up and receive a message
@@ -881,7 +889,7 @@ public:
 
 protected:
 
-	bool receivePacket(std::chrono::milliseconds timeout=200ms) override;
+	bool receivePacket(std::chrono::milliseconds timeout=std::chrono::milliseconds(200)) override;
 
 	bool sendPacket(uint8_t channelNumber, uint8_t dataLength) override;
 
@@ -890,7 +898,7 @@ protected:
 	 * @param bytesRead The number of bytes (including the header) of the packet that have already been read.
 	 * @return
 	 */
-	bool receiveCompletePacket(size_t bytesRead, std::chrono::milliseconds timeout=200ms);
+	bool receiveCompletePacket(size_t bytesRead, std::chrono::milliseconds timeout=std::chrono::milliseconds(200));
 
 #if USE_ASYNC_SPI
 
@@ -924,5 +932,8 @@ protected:
 	}
 #endif
 };
+
+typedef BNO080SPI BNO08xSPI;
+typedef BNO080SPI BNO086SPI;
 
 #endif //HAMSTER_BNO080_H

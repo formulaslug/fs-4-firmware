@@ -9,7 +9,7 @@ set(CUSTOM_UPLOAD_CFG_PATH ../custom_targets/UploadMethods.cmake)
 
 add_subdirectory(../custom_targets custom_targets)
 
-set(MBED_TARGET STM32_TEST_BOARD_V1)
+set(MBED_TARGET VEHICLE_CONTROL_UNIT)
 
 include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
 project(stm32-test
@@ -18,8 +18,11 @@ include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 
 add_subdirectory(../mbed-os mbed-os)
 
+add_subdirectory(../libraries/bno086 bno086)
+
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} mbed-os)
+target_include_directories(${PROJECT_NAME} PUBLIC)
+target_link_libraries(${PROJECT_NAME} mbed-os bno086)
 mbed_set_post_build(${PROJECT_NAME})
