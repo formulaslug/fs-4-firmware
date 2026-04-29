@@ -6,7 +6,7 @@
 // #include "strain_gauge_235sl.h" // TODO: Uncomment when StrainGuage PR is merged
 
 CAN can{PIN_CAN1_RX, PIN_CAN1_TX, CAN_FREQUENCY};
-WheelSpeed wheelsensor{PIN_WHEEL_SENSOR, TEETH_PER_REV};
+WheelSpeed wheelSensor{PIN_WHEEL_SENSOR, TEETH_PER_REV};
 DigitalIn wheelPin{PIN_WHEEL_SENSOR};
 AnalogIn sus{PIN_SUSPENSION};
 I2C i2c{PIN_I2C2_SDA, PIN_I2C2_SCL};
@@ -25,7 +25,6 @@ int main() {
     printf("main()\n");
     wheelPin.mode(PullUp);
     cfg = getCornerConfig(readCorner());
-    //printf("readCorner(): %d\n", static_cast<int>(readCorner()));
     d6t8.setup();
     d6t1.setup();
 
@@ -41,27 +40,40 @@ int main() {
     canMsgTimer.start();
     queue.call_every(10ms, &sendCANtpdo);
     queue.call_every(10ms, &sendCANtemp);
+    queue.call_every(10ms, &sendLastMessageTicks);
     queue.dispatch_forever();
     
     return 0;
 }
+void sendLastMessageTicks(){
+    uint64_t last_temp = canMsgTimer.elapsed_time().count() - last_sent_temp;
+    uint64_t last_tpdo = canMsgTimer.elapsed_time().count() - last_sent_tpdo;
+    //convert microsecond difference to ticks
+    //8 bits 0-256
+    //Can probably be a 1 byte message
+    //microseconds to 100hz
+    temp_ticks = (last_temp/10000 > 15) ? 15 : last_temp/10000;
+    tpdo_ticks = (last_tpdo/10000 > 15) ? 15 : last_tpdo/10000;
+    //Not sure how I would want to keep track of the ticks since last message
+    //Right now it's in the same queue loop as everything else and I wonder if this is fine
+    //Write and send this CAN Message
+    //NOT FINISHED YET
+}
 
 void sendCANtemp() {
     uint8_t pixels8lh[d6t8.N_PIXEL] = {0};
-    // Temp sensor readings for 8 pixel thermal  sensor
+    // Temp sensor readings for 8 pixel thermal sensor
     if (ok8 && d6t8.read()) {
         const double* px8 = d6t8.pixels_c();
         for (int i = 0; i < d6t8.N_PIXEL; i++) {
-            pixels8lh[i] = (uint8_t)(px8[i]); // Not sure if I can cast like this
+            pixels8lh[i] = (uint8_t)(px8[i]);
         }
     }
 
     // Tire temperature message
     CANMessage tpdo_tiretemp_msg(cfg.tpdo_tiretemp_id, pixels8lh, 8);
     can.write(tpdo_tiretemp_msg);
-    uint64_t current_time = canMsgTimer.elapsed_time().count();
-    printf("Time since last temp: %d", current_time - last_sent_temp);
-    last_sent_temp = current_time;
+    last_sent_temp = canMsgTimer.elapsed_time().count();
 }
 
 void sendCANtpdo() {
@@ -69,15 +81,14 @@ void sendCANtpdo() {
     uint16_t sus_travel_raw = 0;
     uint8_t px0 = 0;
 
-    // Side temp readings (I'm also not sure if I need to clamp any of these readings)
+    // Side temp readings 
     if (ok1 && d6t1.read()) {
         // 1 pixel temp sensor, DATA_SIDE_TIRE_TEMP
         px0 = (uint8_t)d6t1.pixel_c(); // pixel temp
     }
 
     // Wheel Speed Readings
-    wheel_speed_raw = (int16_t)(wheelsensor.update() * 10); // scaled according to CAN.dbc values
-    //printf("WheelSpeed(CAN): %d \n", wheel_speed_raw);
+    wheel_speed_raw = (int16_t)(wheelSensor.update() * 10); // scaled according to CAN.dbc values
 
     // Suspension Travel Readings
     sus_travel_raw = ((1.0 - sus.read()) * 5000);
@@ -99,13 +110,10 @@ void sendCANtpdo() {
         0x00,
         // strain_raw & 0xFF,
         // (strain_raw & 0xFF00) >> 8,
-
         px0,
     };
 
     CANMessage tpdo_msg(cfg.tpdo_data_id, tpdo_data, 7);
     can.write(tpdo_msg);
-    uint64_t current_time = canMsgTimer.elapsed_time().count();
-    printf("Time since last temp: %d", current_time - last_sent_tpdo);
-    last_sent_tpdo = current_time;
+    last_sent_tpdo = canMsgTimer.elapsed_time().count();
 }

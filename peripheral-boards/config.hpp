@@ -45,8 +45,8 @@ Generates and writes the CAN message for speed, suspension, strain, and temp
 void sendCANtpdo();
 
 constexpr PinName PIN_STRAIN = PB_0;
-constexpr PinName PIN_DIP_1 = PA_0; // Still not entirely sure where the dip switches are
-constexpr PinName PIN_DIP_2 = PA_1; // These are the pins to the only switch I see
+constexpr PinName PIN_DIP_1 = PA_0;
+constexpr PinName PIN_DIP_2 = PA_1;
 constexpr PinName PIN_WHEEL_SENSOR = PA_5;
 constexpr PinName PIN_SUSPENSION = PA_7;
 constexpr PinName PIN_I2C2_SDA = PA_8;
