@@ -158,6 +158,64 @@ currentPlot.set_ylabel("Current (mA)")
 currentPlotParasite.set_ylabel("SOC %")
 plt.legend()
 '''
+# -------------------- KALMAN FILTER ----------------------
+ 
+C_KALMAN_FUNC = "../src/testRunKalmanFilter.exe"
+ 
+KALMAN_INITIAL_SOC        = 100.0   
+KALMAN_CAPACITY_AH        = 2.6
+KALMAN_ETA_CHARGE         = 1.0
+KALMAN_ETA_DISCHARGE      = 1.0
+KALMAN_P0                 = 0.02    
+KALMAN_Q                  = 0.001   
+KALMAN_R                  = 0.01   
+KALMAN_VOLTAGE_INTERVAL_S = 5.0     
+ 
+kalmanSOC         = np.zeros(len(currentConverted))
+kalmanUncertainty = np.zeros(len(currentConverted))
+ 
+if len(currentConverted) > 0:
+  kalmanSOC[0]         = KALMAN_INITIAL_SOC / 100.0
+  kalmanUncertainty[0] = KALMAN_P0
+ 
+prev_kalman_soc_pct = KALMAN_INITIAL_SOC
+prev_kalman_P       = KALMAN_P0   
+ 
+for i in range(1, len(currentConverted)):
+  prev_current_A = currentConverted[i-1] / 1000.0  
+  current_A      = currentConverted[i]   / 1000.0
+  voltage_V      = voltageConverted[i]   / 1000.0   
+  dt_s           = (timeArray[i] - timeArray[i-1]) / 1000.0  
+
+  cmd = [
+    C_KALMAN_FUNC,
+    str(prev_kalman_soc_pct),
+    str(KALMAN_CAPACITY_AH),
+    str(KALMAN_ETA_CHARGE),
+    str(KALMAN_ETA_DISCHARGE),
+    str(dt_s),
+    str(prev_current_A),
+    str(current_A),
+    str(voltage_V),
+    str(prev_kalman_P),       # pass current P in so covariance is continuous
+    str(KALMAN_Q),
+    str(KALMAN_R),
+    str(KALMAN_VOLTAGE_INTERVAL_S)
+  ]
+ 
+  cmdOutput = subprocess.run(cmd, capture_output=True, text=True)
+ 
+  if int(cmdOutput.returncode) != 0:
+    print(cmdOutput.stderr)
+    kalmanSOC[i]         = kalmanSOC[i-1]
+    kalmanUncertainty[i] = kalmanUncertainty[i-1]
+  else:
+    parts = cmdOutput.stdout.strip().split(",")
+    prev_kalman_soc_pct  = float(parts[0])
+    prev_kalman_P        = float(parts[1]) if len(parts) > 1 else prev_kalman_P
+    kalmanSOC[i]         = prev_kalman_soc_pct / 100.0
+    kalmanUncertainty[i] = prev_kalman_P
+ 
 # Plot data
 if TIME_DATA_PROVIDED:
   indexArray = timeArray 
@@ -171,6 +229,7 @@ voltagePlot.plot(indexArray, voltageConverted, label="Voltage")
 voltagePlotParasite.plot(indexArray[emptyDischargeMask], estimatedSOC, color="k", label="Lookup SOC")
 voltagePlotParasite.plot(indexArray[emptyDischargeMask], stateOfHealth, color="r", label="SOH")
 voltagePlotParasite.plot(indexArray, coulombSOC, color="g", label="Coulomb SOC")
+voltagePlotParasite.plot(indexArray, kalmanSOC,                          color="b", label="Kalman SOC")
 voltagePlot.set_ylabel("Voltage (mV)")
 voltagePlotParasite.set_ylabel("SOC %")
 voltagePlot.legend(loc="upper left")
@@ -182,9 +241,17 @@ currentPlot.plot(indexArray, currentConverted, label="Current")
 currentPlotParasite.plot(indexArray[emptyDischargeMask], estimatedSOC, color="k", label="Lookup SOC")
 currentPlotParasite.plot(indexArray[emptyDischargeMask], stateOfHealth, color="r", label="SOH")
 currentPlotParasite.plot(indexArray, coulombSOC, color="g", label="Coulomb SOC")
+currentPlotParasite.plot(indexArray, kalmanSOC,color="b", label="Kalman SOC")
 currentPlot.set_ylabel("Current (mA)")
 currentPlotParasite.set_ylabel("SOC %")
 currentPlot.legend(loc="upper left")
 currentPlotParasite.legend(loc="upper right")
+
+uncertaintyPlot = host_subplot(313)
+uncertaintyPlot.plot(indexArray, kalmanUncertainty, color="b", label="Kalman P (uncertainty)")
+uncertaintyPlot.set_ylabel("Covariance P")
+uncertaintyPlot.set_xlabel("Time (ms)")
+uncertaintyPlot.legend(loc="upper right")
+plt.tight_layout()
 
 plt.show()
