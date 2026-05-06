@@ -5,9 +5,9 @@
 
 class prechargeLogic {
 public:
- enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT };
+ enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHAGE_COMPLETE };
 
- prechargeLogic(BMS& BMSinstance);
+ prechargeLogic(BMS* currentInstance);
  
 float readDcBusVoltage();
 float readPackVoltage();
@@ -18,20 +18,22 @@ bool isBmsFaultActive();
 bool preChargeAllowed();
 bool prechargeComplete(float packVoltage);
 void updatePrecharge(); 
+void updatePackVoltage();
 
 private:
-    BMS& BMSinstance;
+    const float PRECHARGE_TIMEOUT = 3.0f;
+
+    BMS* BMSInstance;
 
     Timer prechargeTimer;
 
-    float dcBusVoltage = 0.0f;
-    float packVoltage = 400.0f;
+    float dcBusVoltage;
+    float packVoltage;   
     bool precharging = false;
     bool prechargeDone = false;
 
     precharge_state prechargeState = PRECHARGE_IDLE;
 
-    const float PRECHARGE_TIMEOUT = 3.0f;
 
 };
    

@@ -163,6 +163,7 @@ void BMS::readCellVoltages() {
     ThisThread::sleep_for(3ms);
 
     if (voltsConverted) {
+        float tempVoltageSum = 0;
         ltcTimeoutTimer.stop();
         ltcTimeoutTimer.reset();
         // reset timer after successful adc conversions...
@@ -181,11 +182,14 @@ void BMS::readCellVoltages() {
                 printf("%d\n", castVoltages[j]); // printing the cell voltages for testing purposes
 
                 voltages[i][j] = castVoltages[j];
+                tempVoltageSum += castVoltages[j];
             }
             printf("\n");
             // 6 bytes per cell group reading (2 bytes per cell) ... transmitted in little endian
             // casted so that its easier to read
         }
+
+        currentBatteryVoltage = tempVoltageSum;
 
         printf("read voltages...\n");
         minVoltage = voltages[0][0];

@@ -108,6 +108,7 @@ public:
     float packCurrentAmps;
     bool currentSensorCalibrated;
     bms_state currentState;
+    float currentBatteryVoltage = 0;
 
     TelemetryInfo Data;
 
@@ -144,6 +145,6 @@ public:
     // some configuration for this needs to be done at startup see mbedosce
     CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
     DigitalOut nPrechargeControl = DigitalOut(PB_0);
-    SPI spiInterface = SPI(PB_5, PB_4, PA_5, PA_4);
+    SPI spiInterface = SPI(PB_5, PB_4, PA_5, PA_4, use_gpio_ssel);
     LTC681xParallelBus ltcBusInterface;
 };
