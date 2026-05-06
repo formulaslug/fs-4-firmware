@@ -22,13 +22,13 @@ class TractionController {
 
   private:
     // TUNING VARIABLES
-    static constexpr float KP = 1.0f;                 // strength of proportional component
-    static constexpr float KI = 0.0f;                 // strength of integral component
-    static constexpr float KD = 0.0f;                 // strength of derivative component
-    static constexpr float TARGET_WHEEL_SLIP = 0.09f; // 
-    static constexpr float ACTIVATION_RPM = 100.0f;   // min speed in wheel rpm
-    static constexpr float MIN_OUTPUT = 0.2f;         // min reduction factor
-    static constexpr float MAX_OUTPUT = 1.0f;         // max reduction factor (DO NOT INCREASE)
+    static constexpr float KP = 1.0f;                                // strength of proportional component
+    static constexpr float KI = 0.0f;                                // strength of integral component
+    static constexpr float MAX_INTEGRATOR_REDUCTION_FACTOR = 0.5f    // maximum strength of integral component ALONE
+    static constexpr float TARGET_WHEEL_SLIP = 0.09f;                // 
+    static constexpr float ACTIVATION_RPM = 100.0f;                  // min speed in wheel rpm
+    static constexpr float MIN_OUTPUT = 0.2f;                        // min reduction factor
+    static constexpr float MAX_OUTPUT = 1.0f;                        // max reduction factor (DO NOT INCREASE)
   
     float slip;
     float integral;  
