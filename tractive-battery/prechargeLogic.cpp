@@ -7,18 +7,16 @@
 I think some major rewrites are needed here, i dont think the logic fully holds up
 */
 
-bool precharging = false;
-bool prechargeDone = false;
 
-float dcBusVoltage = 0.0;
-float packVoltage = 400.0; // shouldnt be set just here....
 
-precharge_state prechargeState = PRECHARGE_IDLE;
-Timer prechargeTimer;
-const float PRECHARGE_TIMEOUT = 3.0f; // placeholder timeout value in seconds
+prechargeLogic::prechargeLogic(BMS& BMSinstance)  
+ :BMSinstance(BMSinstance) {    
+}
+    
 
 // BMS BMSInstance;
-float readDcBusVoltage() {
+float prechargeLogic::readDcBusVoltage() {
+    //fs3 implentation 
     BMSInstance.CAN_POWERTRAIN.read(BMSInstance.msg);
     uint32_t id = BMSInstance.msg.id;
     unsigned char* data = BMSInstance.msg.data;
@@ -31,11 +29,10 @@ float readDcBusVoltage() {
             break;
         }
     }
-    return dcBusVoltage; // this is not correct has to be read from can, but we can use fs3
-                         // implementation for now
+    return dcBusVoltage; 
 }
 
-bool glvOk() {
+bool prechargeLogic::glvOk() {
     float glvVoltage = (uint16_t)(BMSInstance.GLV_Voltage.read() * 3.3 * 21.9 / 3.9 * 1000);
     // CurrentBMSStatus.glv_voltage = (uint16_t)(glv * 1000);
     //  BMSInstance.bms_stat_message.glv_voltage = glvVoltage;
@@ -44,32 +41,32 @@ bool glvOk() {
     ); // place holder for 11 to 15 volts? we should find out the limit
 }
 
-bool isBmsFaultActive() { return BMSInstance.currentState; }
+bool prechargeLogic::isBmsFaultActive() { return BMSInstance.currentState; }
 
-bool shutdownClosed() {
-    return BMSInstance.Shutdown_Measure.read();
-    // we also need to add safety checks here to make sure we dont precharge when the shutdown
-    // circuit is open anywhere else
+bool prechargeLogic::shutdownClosed() {
+        return BMSInstance.nBMS_Fault_3V3.read() 
+        && BMSInstance.Shutdown_Measure.read() 
+        && BMSInstance.Shutdown_In_3V3_Filtered.read() 
+        && BMSInstance.Shutdown_Out_3V3_Filtered.read();
 }
 
-bool imdOk() {
-    // return imdFaultPin.read();
-    // i think this should probably be in BMSFaultDetection, but for now
+bool prechargeLogic::imdOk() {
     return BMSInstance.IMD_Fault_3V3.read();
 }
 
-bool preChargeAllowed() {
+bool prechargeLogic::preChargeAllowed() {
     return shutdownClosed()
            && imdOk()
            && !isBmsFaultActive()
            && glvOk()
            && dcBusVoltage < 0.9f * packVoltage;
 }
-bool prechargeComplete(float packVoltage) {
+bool prechargeLogic::prechargeComplete(float packVoltage) {
     return dcBusVoltage >= 0.9f * packVoltage; // i think this is good i wanna double check tho
 }
 
-void updatePrecharge() {
+void prechargeLogic::updatePrecharge() {
+    readDcBusVoltage(); // calling it here to make sure we have the most recent value for dcBusVoltage
     switch (prechargeState) {
     case PRECHARGE_IDLE:
         precharging = false;
@@ -92,7 +89,7 @@ void updatePrecharge() {
                 prechargeTimer.start();
                 prechargeState = PRECHARGE_ACTIVE;
             }
-            break;
+        break;
         }
 
     case PRECHARGE_ACTIVE:
@@ -102,10 +99,14 @@ void updatePrecharge() {
             precharging = false;
             prechargeDone = false;
             // might need to add some telemetry for precharge aborted??
+            prechargeTimer.stop();
+            prechargeTimer.reset();
+            BMSInstance.currentState = BMSInstance.FAULT;
+            prechargeState = PRECHARGE_FAULT;
+
 
             // CurrentBMSStatus.precharging = false;
             // CurrentBMSStatus.prechargeDone = false;
-            prechargeState = PRECHARGE_FAULT;
         } else if (prechargeComplete(packVoltage)) {
             BMSInstance.nPrechargeControl = 1;
             // prechargeRelay = 0;
@@ -117,11 +118,14 @@ void updatePrecharge() {
             // CurrentBMSStatus.prechargeDone = true;
             prechargeTimer.stop();
             prechargeState = PRECHARGE_IDLE;
+
         } else if (prechargeTimer.read() > PRECHARGE_TIMEOUT) {
             BMSInstance.nPrechargeControl = 1;
             // prechargeRelay = 0;
             precharging = false;
             prechargeDone = false;
+            prechargeTimer.stop();
+            prechargeTimer.reset();
 
             // also adding bms should fault in this case
             BMSInstance.currentState = BMSInstance.FAULT;
