@@ -60,29 +60,31 @@ BO_ 646 SME_RPDO_Max_Currents: 8 VCU
    SG_ SME_CURRLIM_ChargeCurrentLim : 0|16@1+ (1,0) [0|65535] "A" Vector__XXX
    SG_ SME_CURRLIM_DischargeCurrentLim : 16|16@1+ (1,0) [0|65535] "A" Vector__XXX
 
-BO_ 393 VCU_TPDO_ETC_STATUS_1: 8 VCU
-   SG_ VCU_ETC_APPS1_HE : 0|16@1+ (1,0) [0|65535] "mV" Vector__XXX
-   SG_ VCU_ETC_APPS2_HE : 16|16@1+ (1,0) [0|65535] "mV" Vector__XXX
-   SG_ VCU_ETC_BPPS_HE : 32|16@1+ (1,0) [0|65535] "mV" Vector__XXX
-   SG_ VCU_ETC_ACCEL_PEDAL_TRAVEL : 48|8@1+ (1,0) [0|100] "%" Vector__XXX
-   SG_ VCU_ETC_BRAKE_PEDAL_TRAVEL : 56|8@1+ (1,0) [0|100] "%" Vector__XXX
+BO_ 393 VCU_TPDO_PEDAL_TRAVEL: 8 VCU
+   SG_ VCU_APPS1_HE : 0|16@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ VCU_APPS2_HE : 16|16@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ VCU_BPPS_HE : 32|16@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ VCU_ACCEL_PEDAL_TRAVEL : 48|8@1+ (1,0) [0|100] "%" Vector__XXX
+   SG_ VCU_BRAKE_PEDAL_TRAVEL : 56|8@1+ (1,0) [0|100] "%" Vector__XXX
 
-BO_ 394 VCU_TPDO_ETC_STATUS_2: 6 VCU
-   SG_ VCU_ETC_BRAKE_PRESSSURE_FRONT : 0|16@1+ (1,0) [0|65535] "psi" Vector__XXX
-   SG_ VCU_ETC_BRAKE_PRESSSURE_REAR : 16|16@1+ (1,0) [0|65535] "psi" Vector__XXX
-   SG_ VCU_ETC_READY_TO_DRIVE : 32|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_MOTOR_ENABLED : 33|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_RTD_BUTTON_PRESSED : 34|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_BATT_PRECHARGE_DONE : 35|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUSIBILITY_APPS_OUT_OF_RANGE : 36|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUSIBILITY_BPPS_OUT_OF_RANGE : 37|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUSIBILITY_APPS_DEVIATION : 38|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUSIBILITY_BSE_OUT_OF_RANGE : 39|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUSIBILITY_BRAKE_AND_ACCEL : 40|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_REVERSE : 41|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_BRAKELIGHT : 42|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_CAN_REGEN : 43|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_MUST_USE_HYDRAULIC_BRAKES : 44|1@1+ (1,0) [0|1] "" Vector__XXX
+BO_ 394 VCU_TPDO_ETC_BSPD: 6 VCU
+   SG_ VCU_ETC_READY_TO_DRIVE : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_MOTOR_ENABLED : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_RTD_BUTTON_PRESSED : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_BATT_PRECHARGE_DONE : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_APPS_OUT_OF_RANGE : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_BPPS_OUT_OF_RANGE : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_APPS_DEVIATION : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_BSE_OUT_OF_RANGE : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_BRAKE_AND_ACCEL : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_REVERSE : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_BRAKELIGHT : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_CAN_REGEN : 11|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_MUST_USE_HYDRAULIC_BRAKES : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_BSPD_FAULT : 14|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_BSPD_SHUTDOWN_OUT : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_BRAKE_PRESSSURE_FRONT : 16|16@1+ (1,0) [0|65535] "psi" Vector__XXX
+   SG_ VCU_BRAKE_PRESSSURE_REAR : 32|16@1+ (1,0) [0|65535] "psi" Vector__XXX
 
 BO_ 1154 SME_TPDO_Torque_speed: 8 SME
    SG_ SME_TRQSPD_SOC_Low_Traction : 32|1@1+ (1,0) [0|1] "" Vector__XXX
