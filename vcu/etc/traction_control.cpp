@@ -1,17 +1,23 @@
 #include "traction_control.h"
+#include <numbers>
 
 TractionController::TractionController()
 {
   // set all values to default state
   this->slip = 0.0f;
-  this->prev_error = 0.0f;
-  this->prev_error_stale = true;
+  this->prev_slip = 0.0f;
+  this->prev_slip_stale = true;
   this->integral = 0.0f;
+  this->smoothed_derivative = 0.0f;
+  this->filter_init = false;
   this->loop_time = 0.0f;
   this->last_output = 1.0f;
   this->saturated = false;
   // start timer
   this->loop_timer.start();
+  // set filter time constant 
+  this->filter_time_constant = 1.0f / (2.0f * M_PI * this->FILTER_CUTOFF_FREQ);
+  this->max_integral = KI > 0.0f ? MAX_INTEGRATOR_REDUCTION_FACTOR / KI : 0.0f;
 }
 
 float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws_rr)
@@ -35,9 +41,6 @@ float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws
   if (slip < 0.0f) slip = 0.0f;
   if (slip > 1.0f) slip = 1.0f;
 
-  // compute error 
-  float error = slip - this->TARGET_WHEEL_SLIP;
-
   // read & restart timer
   this->loop_timer.stop();
   std::chrono::microseconds loop_time_micro = this->loop_timer.elapsed_time();  // microseconds
@@ -45,8 +48,37 @@ float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws
   this->loop_timer.reset();
   this->loop_timer.start();
 
+  // compute error
+  const float error = this->slip - TARGET_WHEEL_SLIP;
+
+  // compute derivative of slip
+  float raw_derivative = 0.0f;
+  if (!prev_slip_stale && loop_time > 0.0f)
+  {
+    raw_derivative = (slip - prev_slip) / loop_time;
+    if (!filter_init) 
+    {
+      this->smoothed_derivative = raw_derivative;
+      filter_init = true;
+    } 
+    else
+    {
+      const float exponent = -1.0f * loop_time / this->filter_time_constant;
+      const float filter_coefficient = exp(exponent);
+      this->smoothed_derivative = (1 - filter_coefficient) * raw_derivative + filter_coefficient * this->smoothed_derivative;
+    }
+  }
+
   // compute & clamp output
-  float unclamped = 1 - (KP * error + KI * integral);
+  float unclamped = 0.0f;
+  if (!prev_slip_stale)
+  {
+    unclamped = 1 - (KP * error + KI * integral + KD * smoothed_derivative);
+  } 
+  else
+  {
+    unclamped = 1 - (KP * error + KI * integral);
+  }
   float output = unclamped;
   if (output > this->MAX_OUTPUT) output = this->MAX_OUTPUT;
   if (output < this->MIN_OUTPUT) output = this->MIN_OUTPUT;
@@ -56,17 +88,17 @@ float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws
   // we only care about the positive error case because negative windup
   // is solved by the integral clamp below
   this->saturated = (unclamped <= this->MIN_OUTPUT) && (error > 0);
-  if (!this->saturated && !this->prev_error_stale) 
+  if (!this->saturated && !this->prev_slip_stale) 
   {
     this->integral += error * loop_time;
     // clamp integral [0, MAX_INTEGRATOR_REDUCTION_FACTOR / KI]
-    if (integral > MAX_INTEGRATOR_REDUCTION_FACTOR / KI) integral = MAX_INTEGRATOR_REDUCTION_FACTOR / KI;
+    if (integral > max_integral) integral = max_integral;
     if (integral < 0.0f) integral = 0.0f; 
   }
 
   // update prev_error, last_output
-  this->prev_error = error;
-  this->prev_error_stale = false;
+  this->prev_slip = slip;
+  this->prev_slip_stale = false;
   this->last_output = output;
 
   return output;
@@ -74,12 +106,21 @@ float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws
 
 void TractionController::reset()
 {
-  // reset prev_error
-  this->prev_error       = 0.0f;
-  this->prev_error_stale = true;
+  // reset slip
+  this->slip = 0.0f;
+  this->prev_slip = 0.0f;
+  this->prev_slip_stale = true;
 
   // reset integral
   this->integral = 0.0f;
+
+  // reset derivative & filter
+  this->smoothed_derivative = 0.0f;
+  this->filter_init = false;
+
+  // reset output & saturated
+  this->last_output = 1.0f;
+  this->saturated = false;
 
   // restart timer
   this->loop_timer.stop();
@@ -87,27 +128,32 @@ void TractionController::reset()
   this->loop_timer.start();
 }
 
-float TractionController::get_last_error() const
+float TractionController::get_smoothed_derivative() const
 {
-  return this->prev_error;
+  return this->smoothed_derivative;
 }
 
-float TractionController::get_last_loop_time() const
+float TractionController::get_integral() const
+{
+  return this->integral;
+}
+
+float TractionController::get_loop_time() const
 {
   return this->loop_time;
 }
 
-float TractionController::get_last_slip() const 
+float TractionController::get_slip() const 
 {
   return this->slip;
 }
 
-float TractionController::get_last_output() const
+float TractionController::get_output() const
 {
   return this->last_output;
 }
 
-bool TractionController::get_last_saturated() const
+bool TractionController::get_saturated() const
 {
   return this->saturated;
 }
