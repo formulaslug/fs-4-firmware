@@ -50,7 +50,7 @@ public:
 
     ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin);
 
-    bool update_state();
+    void update_state();
 
     void update_rtd();
 
