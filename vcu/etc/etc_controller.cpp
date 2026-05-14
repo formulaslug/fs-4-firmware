@@ -38,7 +38,7 @@ bool ETCController::in_range(float value, float low, float high) {
     return (value >= low) && (value <= high);
 }
 
-bool ETCController::update_state() {
+void ETCController::update_state() {
     state.APPS1_voltage = APPS1_input.read_voltage();
     state.APPS2_voltage = APPS2_input.read_voltage();
     state.BPPS_voltage = BPPS_input.read_voltage();

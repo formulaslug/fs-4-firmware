@@ -8,7 +8,7 @@ Thread sme_queue_thread;
 
 CAN can1{PB_8, PB_9, 500000};
 CAN can2{PB_5, PB_6, 500000}; // using both by sending the messages in parallel, but not sure if this is correct usage
-ETCController etc(PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4);
+ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4};
 const ETCState &etc_state = etc.state;
 
 void send_etc_CAN_messages();
@@ -80,7 +80,7 @@ void send_etc_CAN_messages() {
         (etc_state.implaus_APPS_deviation << 6) |
         (etc_state.implaus_BSE_range << 7);
     buf1[5] = etc_state.implaus_brake_and_accel |
-        (0b0 << 1) | // NEED REVERSE
+        (etc_state.reversing << 1) | // NEED REVERSE
         (etc_state.brakelight_enabled << 2) |
         (etc_state.can_regen << 3) |
         (etc_state.must_use_hydraulic_brakes << 4);
