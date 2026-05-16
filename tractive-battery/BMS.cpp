@@ -264,12 +264,17 @@ void BMS::decideBalancing() {
 }
 
 void BMS::readPackCurrent() {
-    float vout = V_Out_Positive.read() * HASS300_ADC_REF;
-
+    float voutPos = V_Out_Positive.read() * HASS300_ADC_REF; //idk about this one 
+    float voutNeg = V_out_Negative.read() * HASS300_ADC_REF;
     // HASS 300-S: I = (Vout - Vref) * IPN / 0.625
-    packCurrentAmps = (vout - HASS300_VREF) / HASS300_SENSITIVITY;
+    packCurrentAmpsOutput = (voutPos - HASS300_VREF) / HASS300_SENSITIVITY; 
+    packCurrentAmpsInput = (voutNeg - HASS300_VREF) / HASS300_SENSITIVITY;
+    //not sure about the above putting this in here...
+    // packCurrentAmpsOutput = 
 
-    printf("Current sense Vout: %.3f V  =>  Pack current: %.2f A\n", vout, packCurrentAmps);
+    printf("Current sense Vout Positive: %.3f V  =>  Pack current (out of battery): %.2f \n", voutPos, packCurrentAmpsOutput);
+    printf("Current sense vout Negative: %.3f V => pack current (into battery) %.2f\n", voutNeg, packCurrentAmpsInput);
+
 }
 
 void BMS::checkForFaults() {
