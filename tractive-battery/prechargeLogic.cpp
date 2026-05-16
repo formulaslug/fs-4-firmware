@@ -7,7 +7,7 @@
 prechargeLogic::prechargeLogic(BMS* currentInstance){
     BMSInstance = currentInstance;
     dcBusVoltage = readDcBusVoltage();
-    packVoltage = updatePackVoltage();
+    updatePackVoltage();
 }  
 
 
@@ -44,7 +44,7 @@ bool prechargeLogic::glvOk() {
 bool prechargeLogic::isBmsFaultActive() { return BMSInstance->currentState; }
 
 bool prechargeLogic::shutdownClosed() {
-        return BMSInstance->Shutdown_Measure.read() 
+        return BMSInstance->Shutdown_Measure.read(); 
 }
 
 bool prechargeLogic::imdOk() {
@@ -57,7 +57,7 @@ bool prechargeLogic::preChargeAllowed() {
            && glvOk()
            && dcBusVoltage < 0.9f * packVoltage;
 }
-bool prechargeLogic::prechargeComplete(float packVoltage) {
+bool prechargeLogic::prechargeComplete() {
     return dcBusVoltage >= 0.9f * packVoltage; // i think this is good i wanna double check tho
 }
 
@@ -96,7 +96,7 @@ void prechargeLogic::updatePrecharge() {
 
             // CurrentBMSStatus.precharging = false;
             // CurrentBMSStatus.prechargeDone = false;
-        } else if (prechargeComplete(packVoltage)) {
+        } else if (prechargeComplete()) {
             BMSInstance->nPrechargeControl = 1;
             // prechargeRelay = 0;
 
@@ -146,6 +146,6 @@ void prechargeLogic::updatePrecharge() {
         }
         break;
 
-    default break;
+    default: break;
     }
 }

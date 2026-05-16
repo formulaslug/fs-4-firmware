@@ -105,7 +105,7 @@ public:
     enum bms_state { ACTIVE = 0, CHARGING = 1, FAULT = 2, PRECHARGING = 3 };
 
     float currentSensorOffsetVolts;
-    float packCurrentAmpsOuput;
+    float packCurrentAmpsOutput;
     float packCurrentAmpsInput;
     bool currentSensorCalibrated;
     bms_state currentState;

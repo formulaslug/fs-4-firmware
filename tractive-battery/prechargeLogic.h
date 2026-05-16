@@ -5,7 +5,7 @@
 
 class prechargeLogic {
 public:
- enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHAGE_COMPLETE };
+ enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHARGE_COMPLETE };
 
  prechargeLogic(BMS* currentInstance);
  
@@ -16,7 +16,7 @@ bool imdOk();
 bool glvOk();
 bool isBmsFaultActive();
 bool preChargeAllowed();
-bool prechargeComplete(float packVoltage);
+bool prechargeComplete();
 void updatePrecharge(); 
 void updatePackVoltage();
 

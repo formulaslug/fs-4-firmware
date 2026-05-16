@@ -55,7 +55,8 @@ BMS::BMS()
     };
 
     currentSensorOffsetVolts = 0.0f;
-    packCurrentAmps = 0.0f;
+    packCurrentAmpsOutput = 0.0f;
+    packCurrentAmpsInput = 0.0f;
     currentSensorCalibrated = false;
 
     if (Charge_State_Filtered.read()) {
@@ -265,7 +266,7 @@ void BMS::decideBalancing() {
 
 void BMS::readPackCurrent() {
     float voutPos = V_Out_Positive.read() * HASS300_ADC_REF; //idk about this one 
-    float voutNeg = V_out_Negative.read() * HASS300_ADC_REF;
+    float voutNeg = V_Out_Negative.read() * HASS300_ADC_REF;
     // HASS 300-S: I = (Vout - Vref) * IPN / 0.625
     packCurrentAmpsOutput = (voutPos - HASS300_VREF) / HASS300_SENSITIVITY; 
     packCurrentAmpsInput = (voutNeg - HASS300_VREF) / HASS300_SENSITIVITY;
@@ -317,11 +318,11 @@ void BMS::checkForFaults() {
         }
     }
 
-    // to watch pack current
-    if (std::fabs(packCurrentAmps) > MAX_PACK_CURRENT_AMPS) {
+    // to watch pack current // need to add negative here as well
+    if (std::fabs(packCurrentAmpsOutput) > MAX_PACK_CURRENT_AMPS) {
         currentState = FAULT;
         nBMS_Fault_3V3 = 0;
-        printf("FAULT: overcurrent detected: %.2f A\n", packCurrentAmps);
+        printf("FAULT: overcurrent detected: %.2f A\n", packCurrentAmpsOutput);
     }
 
     // to check IMDStatus.....
