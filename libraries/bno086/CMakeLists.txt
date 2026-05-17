@@ -11,9 +11,9 @@ add_definitions(
 
 # add_subdirectory(../../mbed-os mbed-os)
 
+
 add_library(bno086 STATIC
-        BNO080.cpp
-        BNO080Async.cpp
+        7Semi_BNO08x.cpp
 )
 
 target_include_directories(bno086 PUBLIC include)
