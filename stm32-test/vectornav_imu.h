@@ -6,6 +6,7 @@
 #include <vectornav/HAL/Thread.hpp>
 #include <vectornav/Interface/Sensor.hpp>
 
+// Macro for checking/tracing errors
 inline void check_vn_error(const char* file, int line, VN::Error err) {
     if (err != VN::Error::None) {
         printf("VN: Error %hu encountered at %s:%d!\n", static_cast<uint16_t>(err), file, line);
@@ -18,24 +19,54 @@ class VectorNavIMU {
     public:
     VectorNavIMU(PinName tx, PinName rx, VN::Registers::System::BaudRate::BaudRates baudRate);
     VN::Error connect();
-    VN::Error setRegisters();
-    VN::Vec3f getData();
+    void disconnect();
+
+    // Register Management
+    void initRegisters();
+
+    void enableRawImu(bool enabled, uint16_t rateDivisor = 1);
+    void enableAttitude(bool enabled, uint16_t rateDivisor = 8);
+    void enableNavigation(bool enabled, uint16_t rateDivisor = 8);
+    void enableGpsTime(bool enabled, uint16_t rateDivisor = 80);
+    void enableUncertainty(bool enabled);
+    void enableStatus(bool enabled);
+
+    void disableAll();
+
+    VN::Error applyRegisters();
+
+    void refreshData();
+
+    // Getters
+    std::optional<VN::Vec3f> getAccel() const;
+    std::optional<VN::Vec3f> getAngularRate() const;
+    std::optional<VN::Vec3f> getMag() const;
+    std::optional<VN::Ypr> getYawPitchRoll() const;
+    std::optional<VN::Lla> getPosition() const;
+    std::optional<VN::Vec3f> getVelocityBody() const;
+
+
+    // Util
     std::optional<VN::AsyncError> getAsyncError();
     const char* getModel();
     uint32_t getConnectedBaudRate();
-    void disconnect();
 
     private:
+    // Connection Config
     VN::Registers::System::BaudRate::BaudRates baudRate;
     const PinName tx;
     const PinName rx;
+
+    // Sensor and latest data
     VN::Sensor sensor{};
-    VN::Sensor::CompositeDataQueueReturn compositeData;
+    std::optional<VN::CompositeData> lastRawImuData;
+    std::optional<VN::CompositeData> lastNavData;
+    std::optional<VN::CompositeData> lastTimeData;
 
-    VN::Registers::System::BinaryOutput1 binary_out_1_reg;
-    VN::Registers::System::BinaryOutput2 binary_out_2_reg;
-    VN::Registers::System::BinaryOutput3 binary_out_3_reg;
-
+    // Registers
+    VN::Registers::System::BinaryOutput1 raw_imu_reg;
+    VN::Registers::System::BinaryOutput2 nav_reg;
+    VN::Registers::System::BinaryOutput3 time_reg;
 };
 
 #endif

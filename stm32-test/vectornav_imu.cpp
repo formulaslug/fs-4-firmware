@@ -4,70 +4,190 @@ VectorNavIMU::VectorNavIMU(PinName tx, PinName rx, VN::Registers::System::BaudRa
     : baudRate(baudRate), tx(tx), rx(rx) {}
 
 VN::Error VectorNavIMU::connect() {
-    VN::Error err = this->sensor.connect(
-        this->tx, this->rx, VN::Registers::System::BaudRate::BaudRates::Baud115200
+    VN::Error err = sensor.connect(
+        tx, rx, VN::Registers::System::BaudRate::BaudRates::Baud115200
     );
     if (err != VN::Error::None) {
         return err;
     }
 
-    if (this->baudRate != VN::Registers::System::BaudRate::BaudRates::Baud115200) {
-        err = this->sensor.changeBaudRate(
-            this->baudRate, VN::Registers::System::BaudRate::SerialPort::Serial2
+    if (baudRate != VN::Registers::System::BaudRate::BaudRates::Baud115200) {
+        err = sensor.changeBaudRate(
+            baudRate, VN::Registers::System::BaudRate::SerialPort::Serial2
         );
     }
     return err;
 }
 
-VN::Error VectorNavIMU::setRegisters() {
-    this->binary_out_1_reg.asyncMode.emplace();
-    this->binary_out_1_reg.asyncMode->serial1 = false;
-    this->binary_out_1_reg.asyncMode->serial2 = true;
-    this->binary_out_1_reg.rateDivisor = 1; // 800Hz / 1 = 800Hz
-    this->binary_out_1_reg.imu.accel = true;
+void VectorNavIMU::disconnect() {
+    sensor.disconnect();
+}
 
-    this->binary_out_2_reg.asyncMode.emplace();
-    this->binary_out_2_reg.asyncMode->serial1 = false;
-    this->binary_out_2_reg.asyncMode->serial2 = true;
-    this->binary_out_2_reg.rateDivisor = 8; // 800Hz / 8 = 100Hz
-    this->binary_out_2_reg.ins.posLla = true;
-    this->binary_out_2_reg.ins.posU = true;
-    this->binary_out_2_reg.ins.velBody = true;
-    this->binary_out_2_reg.ins.velU = true;
-    this->binary_out_2_reg.attitude.ypr = true;
-    this->binary_out_2_reg.attitude.yprU = true;
+void VectorNavIMU::initRegisters() {
+    raw_imu_reg.asyncMode.emplace();
+    raw_imu_reg.asyncMode->serial1 = false;
+    raw_imu_reg.asyncMode->serial2 = true;
+    raw_imu_reg.rateDivisor = 1;
 
-    this->binary_out_3_reg.asyncMode.emplace();
-    this->binary_out_3_reg.asyncMode->serial1 = false;
-    this->binary_out_3_reg.asyncMode->serial2 = true;
-    this->binary_out_3_reg.rateDivisor = 1; // 800Hz / 80 = 10Hz
-    this->binary_out_3_reg.time.timeGps = true;
+    nav_reg.asyncMode.emplace();
+    nav_reg.asyncMode->serial1 = false;
+    nav_reg.asyncMode->serial2 = true;
+    nav_reg.rateDivisor = 8;
 
-    this->sensor.writeRegister(&this->binary_out_1_reg);
-    this->sensor.writeRegister(&this->binary_out_2_reg);
-VN::Error err = this->sensor.writeRegister(&this->binary_out_3_reg);
+    time_reg.asyncMode.emplace();
+    time_reg.asyncMode->serial1 = false;
+    time_reg.asyncMode->serial2 = true;
+    time_reg.rateDivisor = 80;
+}
+
+void VectorNavIMU::enableRawImu(bool enabled, uint16_t rateDivisor) {
+    raw_imu_reg.rateDivisor = rateDivisor;
+
+    raw_imu_reg.imu.accel = enabled;
+    raw_imu_reg.imu.angularRate = enabled;
+    raw_imu_reg.imu.mag = enabled;
+    raw_imu_reg.imu.temperature = enabled;
+}
+
+void VectorNavIMU::enableAttitude(bool enabled, uint16_t rateDivisor) {
+    nav_reg.rateDivisor = rateDivisor;
+
+    nav_reg.attitude.ypr = enabled;
+    nav_reg.attitude.quaternion = enabled;
+}
+
+void VectorNavIMU::enableNavigation(bool enabled, uint16_t rateDivisor) {
+    nav_reg.rateDivisor = rateDivisor;
+
+    nav_reg.ins.posLla = enabled;
+    nav_reg.ins.velBody = enabled;
+    nav_reg.ins.velNed = enabled;
+}
+
+void VectorNavIMU::enableUncertainty(bool enabled) {
+    nav_reg.ins.posU = enabled;
+    nav_reg.ins.velU = enabled;
+    nav_reg.attitude.yprU = enabled;
+}
+
+void VectorNavIMU::enableStatus(bool enabled) {
+    raw_imu_reg.imu.imuStatus = enabled;
+    nav_reg.ins.insStatus = enabled;
+    nav_reg.common.insStatus = enabled;
+}
+
+void VectorNavIMU::enableGpsTime(bool enabled, uint16_t rateDivisor) {
+    time_reg.rateDivisor = rateDivisor;
+
+    time_reg.time.timeGps = enabled;
+    time_reg.time.timeGpsTow = enabled;
+    time_reg.time.timeGpsWeek = enabled;
+    time_reg.time.timeUtc = enabled;
+}
+
+void VectorNavIMU::disableAll() {
+    raw_imu_reg.common = 0;
+    raw_imu_reg.time = 0;
+    raw_imu_reg.imu = 0;
+    raw_imu_reg.gnss = 0;
+    raw_imu_reg.attitude = 0;
+    raw_imu_reg.ins = 0;
+
+    nav_reg.common = 0;
+    nav_reg.time = 0;
+    nav_reg.imu = 0;
+    nav_reg.gnss = 0;
+    nav_reg.attitude = 0;
+    nav_reg.ins = 0;
+
+    time_reg.common = 0;
+    time_reg.time = 0;
+    time_reg.imu = 0;
+    time_reg.gnss = 0;
+    time_reg.attitude = 0;
+    time_reg.ins = 0;
+}
+
+VN::Error VectorNavIMU::applyRegisters() {
+    VN::Error err = sensor.writeRegister(&raw_imu_reg);
+    if (err != VN::Error::None) return err;
+
+    err = sensor.writeRegister(&nav_reg);
+    if (err != VN::Error::None) return err;
+
+    err = sensor.writeRegister(&time_reg);
     return err;
 }
 
-VN::Vec3f VectorNavIMU::getData() {
-    if (!this->compositeData) {
-        this->compositeData = this->sensor.getMostRecentMeasurement();
-    }
-
+void VectorNavIMU::refreshData() {
     while (true) {
-        this->compositeData = sensor.getNextMeasurement();
-        // Check to make sure that a measurement is available
-        if (!compositeData) continue;
+        VN::Sensor::CompositeDataQueueReturn compositeData =
+            sensor.getNextMeasurement(false);
 
-        if (compositeData->matchesMessage(this->binary_out_1_reg)) {
-            VN::Vec3f accel = compositeData->imu.accel.value();
-            return accel;
+        if (!compositeData) {
+            break;
+        }
+
+        if (compositeData->matchesMessage(raw_imu_reg)) {
+            lastRawImuData = *compositeData;
+        } else if (compositeData->matchesMessage(nav_reg)) {
+            lastNavData = *compositeData;
+        } else if (compositeData->matchesMessage(time_reg)) {
+            lastTimeData = *compositeData;
         }
     }
 }
 
+std::optional<VN::Vec3f> VectorNavIMU::getAccel() const {
+    if (!lastRawImuData || !lastRawImuData->imu.accel.has_value()) {
+        return std::nullopt;
+    }
+
+    return lastRawImuData->imu.accel.value();
+}
+
+std::optional<VN::Vec3f> VectorNavIMU::getAngularRate() const {
+    if (!lastRawImuData || !lastRawImuData->imu.angularRate.has_value()) {
+        return std::nullopt;
+    }
+
+    return lastRawImuData->imu.angularRate.value();
+}
+
+std::optional<VN::Vec3f> VectorNavIMU::getMag() const {
+    if (!lastRawImuData || !lastRawImuData->imu.mag.has_value()) {
+        return std::nullopt;
+    }
+
+    return lastRawImuData->imu.mag.value();
+}
+
+std::optional<VN::Ypr> VectorNavIMU::getYawPitchRoll() const {
+    if (!lastNavData || !lastNavData->attitude.ypr.has_value()) {
+        return std::nullopt;
+    }
+
+    return lastNavData->attitude.ypr.value();
+}
+
+std::optional<VN::Lla> VectorNavIMU::getPosition() const {
+    if (!lastNavData || !lastNavData->ins.posLla.has_value()) {
+        return std::nullopt;
+    }
+
+    return lastNavData->ins.posLla.value();
+}
+
+std::optional<VN::Vec3f> VectorNavIMU::getVelocityBody() const {
+    if (!lastNavData || !lastNavData->ins.velBody.has_value()) {
+        return std::nullopt;
+    }
+
+    return lastNavData->ins.velBody.value();
+}
+
 std::optional<VN::AsyncError> VectorNavIMU::getAsyncError() {
-    std::optional<VN::AsyncError> asyncError = this->sensor.getNextAsyncError();
+    std::optional<VN::AsyncError> asyncError = sensor.getNextAsyncError();
     return asyncError;
 }
 
@@ -83,8 +203,4 @@ const char* VectorNavIMU::getModel() {
 uint32_t VectorNavIMU::getConnectedBaudRate() {
     auto baud = this->sensor.connectedBaudRate();
     return static_cast<uint32_t>(*baud);
-}
-
-void VectorNavIMU::disconnect() {
-    this->sensor.disconnect();
 }
