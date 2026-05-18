@@ -6,8 +6,8 @@ EventQueue sme_queue;
 Thread etc_queue_thread;
 Thread sme_queue_thread;
 
-CAN can1{PB_8, PB_9, 500000};
-CAN can2{PB_5, PB_6, 500000}; // using both by sending the messages in parallel, but not sure if this is correct usage
+CAN canD{PB_8, PB_9, 2000000};
+CAN canP{PB_5, PB_6, 500000}; // using both by sending the messages in parallel, but not sure if this is correct usage
 ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4};
 const ETCState &etc_state = etc.state;
 
@@ -87,8 +87,8 @@ void send_etc_CAN_messages() {
 
     CANMessage status1_msg{393, buf0, 8};
     CANMessage status2_msg{394, buf1, 6};
-    can1.write(status1_msg);
-    can2.write(status2_msg);
+    canD.write(status1_msg);
+    canP.write(status2_msg);
 }
 
 void send_sme_CAN_messages() {
@@ -113,6 +113,6 @@ void send_sme_CAN_messages() {
 
     CANMessage throttle_msg{390, buf0, 8};
     CANMessage currents_msg{646, buf1, 8};
-    can1.write(throttle_msg);
-    can2.write(currents_msg);
+    canD.write(throttle_msg);
+    canP.write(currents_msg);
 }
