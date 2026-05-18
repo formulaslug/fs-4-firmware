@@ -2,13 +2,17 @@
 #include "vectornav_imu.h"
 
 // CAN can{PA_11, PA_12, 500000};
-
-VectorNavIMU imu(PC_12, PD_2, VN::Registers::System::BaudRate::BaudRates::Baud921600);
+// tx,rx,baud
+VectorNavIMU imu(PC_12, PD_2, VN::Registers::System::BaudRate::BaudRates::Baud115200);
 
 int main() {
     printf("Hello World!\n");
 
-    CHECK_VN_ERR(imu.connect());
+    VN::Error err = imu.connect();
+    if (err != VN::Error::None) {
+        CHECK_VN_ERR(imu.connect());
+        while (1) ThisThread::sleep_for(10000ms);
+    }
     printf("Connected to sensor!\n");
 
     printf("Sensor Model Number: %s\n", imu.getModel());
@@ -22,7 +26,11 @@ int main() {
     // imu.enableGpsTime(true);
     // imu.enableUncertainty(true);
     // imu.enableStatus(true);
-    CHECK_VN_ERR(imu.applyRegisters());
+    err = imu.applyRegisters();
+    if (err != VN::Error::None) {
+        CHECK_VN_ERR(imu.connect());
+        while (1) ThisThread::sleep_for(10000ms);
+    }
 
     while (1) {
         imu.refreshData();
