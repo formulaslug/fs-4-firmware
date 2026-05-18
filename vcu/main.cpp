@@ -6,8 +6,8 @@ EventQueue sme_queue;
 Thread etc_queue_thread;
 Thread sme_queue_thread;
 
-CAN canD{PB_8, PB_9, 2000000};
-CAN canP{PB_5, PB_6, 500000}; // using both by sending the messages in parallel, but not sure if this is correct usage
+CAN canP{PB_8, PB_9, 500000};
+CAN canD{PB_5, PB_6, 2000000}; // using both by sending the messages in parallel, but not sure if this is correct usage
 ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4};
 const ETCState &etc_state = etc.state;
 
@@ -24,7 +24,7 @@ int main() {
 
     CANMessage rx;
     while (true) {
-        if (can1.read(rx)) { // currently just reads from 1, but maybe make this both for possible optimization?
+        if (canP.read(rx)) { // currently just reads from 1, but maybe make this both for possible optimization?
             switch (rx.id) {
                 case 392: {
                     etc.battery_precharged = rx.data[0] & 0b00000010; 
@@ -88,7 +88,7 @@ void send_etc_CAN_messages() {
     CANMessage status1_msg{393, buf0, 8};
     CANMessage status2_msg{394, buf1, 6};
     canD.write(status1_msg);
-    canP.write(status2_msg);
+    canD.write(status2_msg);
 }
 
 void send_sme_CAN_messages() {
@@ -113,6 +113,7 @@ void send_sme_CAN_messages() {
 
     CANMessage throttle_msg{390, buf0, 8};
     CANMessage currents_msg{646, buf1, 8};
-    canD.write(throttle_msg);
+
+    canP.write(throttle_msg);
     canP.write(currents_msg);
 }
