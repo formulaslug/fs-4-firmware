@@ -60,32 +60,6 @@ BO_ 646 SME_RPDO_Max_Currents: 8 VCU
    SG_ SME_CURRLIM_ChargeCurrentLim : 0|16@1+ (1,0) [0|65535] "A" Vector__XXX
    SG_ SME_CURRLIM_DischargeCurrentLim : 16|16@1+ (1,0) [0|65535] "A" Vector__XXX
 
-BO_ 393 VCU_TPDO_PEDAL_TRAVEL: 8 VCU
-   SG_ VCU_APPS1_HE : 0|16@1+ (1,0) [0|65535] "mV" Vector__XXX
-   SG_ VCU_APPS2_HE : 16|16@1+ (1,0) [0|65535] "mV" Vector__XXX
-   SG_ VCU_BPPS_HE : 32|16@1+ (1,0) [0|65535] "mV" Vector__XXX
-   SG_ VCU_ACCEL_PEDAL_TRAVEL : 48|8@1+ (1,0) [0|100] "%" Vector__XXX
-   SG_ VCU_BRAKE_PEDAL_TRAVEL : 56|8@1+ (1,0) [0|100] "%" Vector__XXX
-
-BO_ 394 VCU_TPDO_ETC_BSPD: 6 VCU
-   SG_ VCU_ETC_READY_TO_DRIVE : 0|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_MOTOR_ENABLED : 1|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_RTD_BUTTON_PRESSED : 2|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_BATT_PRECHARGE_DONE : 3|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUS_APPS_OUT_OF_RANGE : 4|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUS_BPPS_OUT_OF_RANGE : 5|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUS_APPS_DEVIATION : 6|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUS_BSE_OUT_OF_RANGE : 7|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_IMPLAUS_BRAKE_AND_ACCEL : 8|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_REVERSE : 9|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_BRAKELIGHT : 10|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_CAN_REGEN : 11|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_ETC_MUST_USE_HYDRAULIC_BRAKES : 12|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_BSPD_FAULT : 14|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_BSPD_SHUTDOWN_OUT : 15|1@1+ (1,0) [0|1] "" Vector__XXX
-   SG_ VCU_BRAKE_PRESSSURE_FRONT : 16|16@1+ (1,0) [0|65535] "psi" Vector__XXX
-   SG_ VCU_BRAKE_PRESSSURE_REAR : 32|16@1+ (1,0) [0|65535] "psi" Vector__XXX
-
 BO_ 1154 SME_TPDO_Torque_speed: 8 SME
    SG_ SME_TRQSPD_SOC_Low_Traction : 32|1@1+ (1,0) [0|1] "" Vector__XXX
    SG_ SME_TRQSPD_SOC_Low_Hydraulic : 33|1@1+ (1,0) [0|1] "" Vector__XXX
@@ -115,7 +89,34 @@ BO_ 1666 SME_TPDO_Temperature: 8 SME
    SG_ SME_TEMP_MotorTemperature : 0|8@1+ (1,-40) [0|255] "C" Vector__XXX
    SG_ SME_TEMP_BusCurrent : 48|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
 
-BO_ 392 BATT_TPDO_STATUS: 8 BATT
+BO_ 402 VCU_TPDO_PEDAL_TRAVEL: 8 VCU
+   SG_ VCU_APPS1_HE : 0|16@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ VCU_APPS2_HE : 16|16@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ VCU_BPPS_HE : 32|16@1+ (1,0) [0|65535] "mV" Vector__XXX
+   SG_ VCU_ACCEL_PEDAL_TRAVEL : 48|8@1+ (1,0) [0|100] "%" Vector__XXX
+   SG_ VCU_BRAKE_PEDAL_TRAVEL : 56|8@1+ (1,0) [0|100] "%" Vector__XXX
+
+BO_ 403 VCU_TPDO_STATUS: 8 VCU
+   SG_ VCU_ETC_READY_TO_DRIVE : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_MOTOR_ENABLED : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_RTD_BUTTON_PRESSED : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_BATT_PRECHARGE_DONE : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_APPS_OUT_OF_RANGE : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_BPPS_OUT_OF_RANGE : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_APPS_DEVIATION : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_BSE_OUT_OF_RANGE : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_IMPLAUS_BRAKE_AND_ACCEL : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_REVERSE : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_BRAKELIGHT : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_REGEN_ALLOWED : 11|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_ETC_SOLENOID_CLOSED : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_BSPD_FAULT : 14|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_BSPD_SHUTDOWN_OUT : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+   SG_ VCU_BRAKE_PRESSSURE_FRONT : 16|16@1+ (1,0) [0|65535] "psi" Vector__XXX
+   SG_ VCU_BRAKE_PRESSSURE_REAR : 32|16@1+ (1,0) [0|65535] "psi" Vector__XXX
+   SG_ VCU_STEERING_ANGLE : 48|16@1- (0.01,0) [-327.68|327.67] "deg" Vector__XXX
+
+BO_ 913 BATT_TPDO_STATUS: 8 BATT
    SG_ BATT_STATUS_BMS_FAULT : 0|1@1+ (1,0) [0|1] "" Vector__XXX
    SG_ BATT_STATUS_IMD_FAULT : 1|1@1+ (1,0) [0|1] "" Vector__XXX
    SG_ BATT_STATUS_SHUTDOWN_FINAL : 2|1@1+ (1,0) [0|1] "" Vector__XXX
@@ -136,13 +137,13 @@ BO_ 392 BATT_TPDO_STATUS: 8 BATT
    SG_ BATT_STATUS_GLV_VOLTAGE : 40|16@1+ (0.001,0) [0|65.635] "V" Vector__XXX
    SG_ BATT_STATUS_FAN_PWM_DUTY : 56|8@1+ (1,0) [0|100] "%" Vector__XXX
 
-BO_ 648 BATT_TPDO_POWER: 8 BATT
+BO_ 914 BATT_TPDO_POWER: 8 BATT
    SG_ BATT_POWER_PACK_VOLTAGE : 0|16@1+ (0.01,0) [0|655.35] "V" Vector__XXX
    SG_ BATT_POWER_CURRENT : 16|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
    SG_ BATT_POWER_INSTANTANEOUS_POWER : 32|18@1- (1,0) [-131072|131071] "W" Vector__XXX
    SG_ BATT_POWER_SOC : 50|10@1+ (0.1,0) [0|100] "%" Vector__XXX
 
-BO_ 1160 BATT_TPDO_CELL_STATS: 6 BATT
+BO_ 915 BATT_TPDO_CELL_STATS: 6 BATT
    SG_ BATT_STAT_AVG_CELL_TEMP : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_STAT_HIGH_CELL_TEMP : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_STAT_LOW_CELL_TEMP : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -150,7 +151,7 @@ BO_ 1160 BATT_TPDO_CELL_STATS: 6 BATT
    SG_ BATT_STAT_HIGH_CELL_VOLT : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_STAT_LOW_CELL_VOLT : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 401 BATT_TPDO_MOD0_VOLTS: 6 BATT
+BO_ 1172 BATT_TPDO_MOD0_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
@@ -158,7 +159,7 @@ BO_ 401 BATT_TPDO_MOD0_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 657 BATT_TPDO_MOD0_TEMPS_A: 6 BATT
+BO_ 1173 BATT_TPDO_MOD0_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -166,7 +167,7 @@ BO_ 657 BATT_TPDO_MOD0_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 658 BATT_TPDO_MOD0_TEMPS_B: 6 BATT
+BO_ 1174 BATT_TPDO_MOD0_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -174,7 +175,7 @@ BO_ 658 BATT_TPDO_MOD0_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 402 BATT_TPDO_MOD1_VOLTS: 6 BATT
+BO_ 1175 BATT_TPDO_MOD1_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
@@ -182,7 +183,7 @@ BO_ 402 BATT_TPDO_MOD1_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 659 BATT_TPDO_MOD1_TEMPS_A: 6 BATT
+BO_ 1176 BATT_TPDO_MOD1_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -190,7 +191,7 @@ BO_ 659 BATT_TPDO_MOD1_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 660 BATT_TPDO_MOD1_TEMPS_B: 6 BATT
+BO_ 1177 BATT_TPDO_MOD1_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -198,7 +199,7 @@ BO_ 660 BATT_TPDO_MOD1_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 403 BATT_TPDO_MOD2_VOLTS: 6 BATT
+BO_ 1178 BATT_TPDO_MOD2_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
@@ -206,7 +207,7 @@ BO_ 403 BATT_TPDO_MOD2_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 661 BATT_TPDO_MOD2_TEMPS_A: 6 BATT
+BO_ 1179 BATT_TPDO_MOD2_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -214,7 +215,7 @@ BO_ 661 BATT_TPDO_MOD2_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 662 BATT_TPDO_MOD2_TEMPS_B: 6 BATT
+BO_ 1180 BATT_TPDO_MOD2_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -222,7 +223,7 @@ BO_ 662 BATT_TPDO_MOD2_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 404 BATT_TPDO_MOD3_VOLTS: 6 BATT
+BO_ 1181 BATT_TPDO_MOD3_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
@@ -230,7 +231,7 @@ BO_ 404 BATT_TPDO_MOD3_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 663 BATT_TPDO_MOD3_TEMPS_A: 6 BATT
+BO_ 1182 BATT_TPDO_MOD3_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -238,7 +239,7 @@ BO_ 663 BATT_TPDO_MOD3_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 664 BATT_TPDO_MOD3_TEMPS_B: 6 BATT
+BO_ 1183 BATT_TPDO_MOD3_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -246,7 +247,7 @@ BO_ 664 BATT_TPDO_MOD3_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 405 BATT_TPDO_MOD4_VOLTS: 6 BATT
+BO_ 1184 BATT_TPDO_MOD4_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL0 : 0|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL1 : 8|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL2 : 16|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
@@ -254,7 +255,7 @@ BO_ 405 BATT_TPDO_MOD4_VOLTS: 6 BATT
    SG_ BATT_MOD0_VOLTS_CELL4 : 32|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
    SG_ BATT_MOD0_VOLTS_CELL5 : 40|8@1+ (0.01,2) [2|4.55] "V" Vector__XXX
 
-BO_ 665 BATT_TPDO_MOD4_TEMPS_A: 6 BATT
+BO_ 1185 BATT_TPDO_MOD4_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL0 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL1 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL2 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -262,7 +263,7 @@ BO_ 665 BATT_TPDO_MOD4_TEMPS_A: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL4 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL5 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 666 BATT_TPDO_MOD4_TEMPS_B: 6 BATT
+BO_ 1186 BATT_TPDO_MOD4_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL6 : 0|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL7 : 8|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL8 : 16|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
@@ -270,68 +271,38 @@ BO_ 666 BATT_TPDO_MOD4_TEMPS_B: 6 BATT
    SG_ BATT_MOD0_TEMPS_CELL10 : 32|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
    SG_ BATT_MOD0_TEMPS_CELL11 : 40|8@1+ (0.25,0) [0|64.0] "C" Vector__XXX
 
-BO_ 904 BATT_TPDO_TRAY_TEMPS: 5 BATT
+BO_ 1216 BATT_TPDO_TRAY_TEMPS: 5 BATT
    SG_ BATT_TRAY_TEMPS_BOLTED_CONNECTION : 0|8@1+ (0.5,0) [0|127.5] "" Vector__XXX
    SG_ BATT_TRAY_TEMPS_BUSBAR : 8|8@1+ (0.5,0) [0|127.5] "" Vector__XXX
    SG_ BATT_TRAY_TEMPS_PACK_FUSE : 16|8@1+ (0.5,0) [0|127.5] "" Vector__XXX
    SG_ BATT_TRAY_TEMPS_COWLING : 24|8@1+ (0.5,0) [0|127.5] "" Vector__XXX
    SG_ BATT_TRAY_TEMPS_INTAKE : 32|8@1+ (0.5,0) [0|127.5] "" Vector__XXX
 
-BO_ 655360 VDM_GPS_LAT_LONG: 8 VDM
-   SG_ VDM_GPS_Latitude : 7|32@0- (1,0) [-90|90] "deg" Vector__XXX
-   SG_ VDM_GPS_Longitude : 39|32@0- (1,0) [-180|180] "deg" Vector__XXX
-
-BO_ 655361 VDM_GPS_DATA: 8 VDM
-   SG_ VDM_GPS_SPEED : 7|16@0+ (0.01,0) [0|655.35] "mph" Vector__XXX
-   SG_ VDM_GPS_ALTITUDE : 23|16@0- (1,0) [-32768|32767] "ft" Vector__XXX
-   SG_ VDM_GPS_TRUE_COURSE : 39|16@0+ (0.01,0) [0|655.35] "deg" Vector__XXX
-   SG_ VDM_GPS_SATELLITES_IN_USE : 55|8@0+ (1,0) [0|255] "" Vector__XXX
-   SG_ VDM_GPS_VALID1 : 63|8@0+ (1,0) [0|1] "" Vector__XXX
-
-BO_ 655362 VDM_DATE_TIME: 8 VDM
-   SG_ VDM_GPS_VALID2 : 7|8@0+ (1,0) [0|1] "" Vector__XXX
-   SG_ VDM_UTC_DATE_YEAR : 15|8@0+ (1,0) [0|0] "years" Vector__XXX
-   SG_ VDM_UTC_DATE_MONTH : 23|8@0+ (1,0) [0|0] "months" Vector__XXX
-   SG_ VDM_UTC_DATE_DAY : 31|8@0+ (1,0) [0|0] "days" Vector__XXX
-   SG_ VDM_UTC_TIME_HOURS : 47|8@0+ (1,0) [0|0] "hours" Vector__XXX
-   SG_ VDM_UTC_TIME_MINUTES : 55|8@0+ (1,0) [0|0] "minutes" Vector__XXX
-   SG_ VDM_UTC_TIME_SECONDS : 63|8@0+ (1,0) [0|0] "seconds" Vector__XXX
-
-BO_ 655363 VDM_ACCELERATION: 8 VDM
-   SG_ VDM_X_AXIS_ACCELERATION : 7|16@0- (0.000244141,0) [-8|8] "gs" Vector__XXX
-   SG_ VDM_Y_AXIS_ACCELERATION : 23|16@0- (0.000244141,0) [-8|8] "gs" Vector__XXX
-   SG_ VDM_Z_AXIS_ACCELERATION : 39|16@0- (0.000244141,0) [-8|8] "gs" Vector__XXX
-
-BO_ 655364 VDM_YAW_RATE: 8 VDM
-   SG_ VDM_X_AXIS_YAW_RATE : 7|16@0- (0.0152588,0) [-500|500] "deg/s" Vector__XXX
-   SG_ VDM_Y_AXIS_YAW_RATE : 23|16@0- (0.0152588,0) [-500|500] "deg/s" Vector__XXX
-   SG_ VDM_Z_AXIS_YAW_RATE : 39|16@0- (0.0152588,0) [-500|500] "deg/s" Vector__XXX
-
-BO_ 418 TPERIPH_FL_TPDO_DATA: 7 TPERIPH_FL
+BO_ 421 TPERIPH_FL_TPDO_DATA: 7 TPERIPH_FL
    SG_ TPERIPH_FL_DATA_WHEELSPEED : 0|16@1- (0.1,0) [-3276.8|3276.7] "rpm" Vector__XXX
    SG_ TPERIPH_FL_DATA_SUSTRAVEL : 16|16@1+ (0.01,0) [0|655.35] "mm" Vector__XXX
    SG_ TPERIPH_FL_DATA_STRAIN : 32|16@1- (1e-07,0) [-0.032768|0.032767] "%" Vector__XXX
    SG_ TPERIPH_FL_DATA_SIDE_TIRE_TEMP : 48|8@1+ (1,0) [0|255] "C" Vector__XXX
 
-BO_ 419 TPERIPH_FR_TPDO_DATA: 7 TPERIPH_FR
+BO_ 422 TPERIPH_FR_TPDO_DATA: 7 TPERIPH_FR
    SG_ TPERIPH_FR_DATA_WHEELSPEED : 0|16@1- (0.1,0) [-3276.8|3276.7] "rpm" Vector__XXX
    SG_ TPERIPH_FR_DATA_SUSTRAVEL : 16|16@1+ (0.01,0) [0|655.35] "mm" Vector__XXX
    SG_ TPERIPH_FR_DATA_STRAIN : 32|16@1- (1e-07,0) [-0.032768|0.032767] "%" Vector__XXX
    SG_ TPERIPH_FR_DATA_SIDE_TIRE_TEMP : 48|8@1+ (1,0) [0|255] "C" Vector__XXX
 
-BO_ 420 TPERIPH_BL_TPDO_DATA: 7 TPERIPH_BL
+BO_ 423 TPERIPH_BL_TPDO_DATA: 7 TPERIPH_BL
    SG_ TPERIPH_BL_DATA_WHEELSPEED : 0|16@1- (0.1,0) [-3276.8|3276.7] "rpm" Vector__XXX
    SG_ TPERIPH_BL_DATA_SUSTRAVEL : 16|16@1+ (0.01,0) [0|655.35] "mm" Vector__XXX
    SG_ TPERIPH_BL_DATA_STRAIN : 32|16@1- (1e-07,0) [-0.032768|0.032767] "%" Vector__XXX
    SG_ TPERIPH_BL_DATA_SIDE_TIRE_TEMP : 48|8@1+ (1,0) [0|255] "C" Vector__XXX
 
-BO_ 421 TPERIPH_BR_TPDO_DATA: 7 TPERIPH_BR
+BO_ 424 TPERIPH_BR_TPDO_DATA: 7 TPERIPH_BR
    SG_ TPERIPH_BR_DATA_WHEELSPEED : 0|16@1- (0.1,0) [-3276.8|3276.7] "rpm" Vector__XXX
    SG_ TPERIPH_BR_DATA_SUSTRAVEL : 16|16@1+ (0.01,0) [0|655.35] "mm" Vector__XXX
    SG_ TPERIPH_BR_DATA_STRAIN : 32|16@1- (1e-07,0) [-0.032768|0.032767] "%" Vector__XXX
    SG_ TPERIPH_BR_DATA_SIDE_TIRE_TEMP : 48|8@1+ (1,0) [0|255] "C" Vector__XXX
 
-BO_ 673 TPERIPH_FL_TPDO_TIRETEMP: 8 TPERIPH_FL
+BO_ 677 TPERIPH_FL_TPDO_TIRETEMP: 8 TPERIPH_FL
    SG_ TPERIPH_FL_TIRETEMP_1 : 0|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_FL_TIRETEMP_2 : 8|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_FL_TIRETEMP_3 : 16|8@1+ (1,0) [0|255] "C" Vector__XXX
@@ -341,7 +312,7 @@ BO_ 673 TPERIPH_FL_TPDO_TIRETEMP: 8 TPERIPH_FL
    SG_ TPERIPH_FL_TIRETEMP_7 : 48|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_FL_TIRETEMP_8 : 56|8@1+ (1,0) [0|255] "C" Vector__XXX
 
-BO_ 674 TPERIPH_FR_TPDO_TIRETEMP: 8 TPERIPH_FR
+BO_ 678 TPERIPH_FR_TPDO_TIRETEMP: 8 TPERIPH_FR
    SG_ TPERIPH_FR_TIRETEMP_1 : 0|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_FR_TIRETEMP_2 : 8|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_FR_TIRETEMP_3 : 16|8@1+ (1,0) [0|255] "C" Vector__XXX
@@ -351,7 +322,7 @@ BO_ 674 TPERIPH_FR_TPDO_TIRETEMP: 8 TPERIPH_FR
    SG_ TPERIPH_FR_TIRETEMP_7 : 48|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_FR_TIRETEMP_8 : 56|8@1+ (1,0) [0|255] "C" Vector__XXX
 
-BO_ 675 TPERIPH_BL_TPDO_TIRETEMP: 8 TPERIPH_BL
+BO_ 679 TPERIPH_BL_TPDO_TIRETEMP: 8 TPERIPH_BL
    SG_ TPERIPH_BL_TIRETEMP_1 : 0|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_BL_TIRETEMP_2 : 8|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_BL_TIRETEMP_3 : 16|8@1+ (1,0) [0|255] "C" Vector__XXX
@@ -361,7 +332,7 @@ BO_ 675 TPERIPH_BL_TPDO_TIRETEMP: 8 TPERIPH_BL
    SG_ TPERIPH_BL_TIRETEMP_7 : 48|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_BL_TIRETEMP_8 : 56|8@1+ (1,0) [0|255] "C" Vector__XXX
 
-BO_ 676 TPERIPH_BR_TPDO_TIRETEMP: 8 TPERIPH_BR
+BO_ 680 TPERIPH_BR_TPDO_TIRETEMP: 8 TPERIPH_BR
    SG_ TPERIPH_BR_TIRETEMP_1 : 0|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_BR_TIRETEMP_2 : 8|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_BR_TIRETEMP_3 : 16|8@1+ (1,0) [0|255] "C" Vector__XXX
@@ -371,7 +342,7 @@ BO_ 676 TPERIPH_BR_TPDO_TIRETEMP: 8 TPERIPH_BR
    SG_ TPERIPH_BR_TIRETEMP_7 : 48|8@1+ (1,0) [0|255] "C" Vector__XXX
    SG_ TPERIPH_BR_TIRETEMP_8 : 56|8@1+ (1,0) [0|255] "C" Vector__XXX
 
-BO_ 888 STEERING_DIAL_MODES: 1 STEERING_WHEEL
+BO_ 432 STEERING_DIAL_MODES: 1 STEERING_WHEEL
    SG_ STEERING_DRIVE_MODE : 0|2@1+ (1,0) [0|2] "" Vector__XXX
    SG_ STEERING_TRACTION_MODE : 2|2@1+ (1,0) [0|2] "" Vector__XXX
    SG_ STEERING_REGEN_MODE : 4|2@1+ (1,0) [0|2] "" Vector__XXX
@@ -458,25 +429,55 @@ BO_ 1223 IZZE_BRAKETEMP_S1M4: 8 IZZE1
 BO_ 1224 IZZE_BRAKETEMP_S1M5: 8 IZZE1
    SG_ IZZE_BRAKETEMP_S1_STEMP : 7|16@0+ (0.1,-100) [-100|1000] "C" Vector__XXX
 
+BO_ 655360 VDM_GPS_LAT_LONG: 8 VDM
+   SG_ VDM_GPS_Latitude : 7|32@0- (1,0) [-90|90] "deg" Vector__XXX
+   SG_ VDM_GPS_Longitude : 39|32@0- (1,0) [-180|180] "deg" Vector__XXX
 
-CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_APPS_OUT_OF_RANGE "APPS1 or APPS2 reading is outside of expected voltage range (for >100ms) (T.4.2.10)";
-CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_BPPS_OUT_OF_RANGE "BPPS reading is outside of expected voltage range (for >100ms) (not rules-required)";
-CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_APPS_DEVIATION "APPS1 and APPS2 readings deviate by >10% (for >100ms) (T.4.2.4)";
-CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_BSE_OUT_OF_RANGE "Front or Rear brake pressure sensor (BSE) is outside of expected voltage range (for >100ms) (T.4.3.3/4)";
-CM_ SG_ 394 VCU_ETC_IMPLAUSIBILITY_BRAKE_AND_ACCEL "Mechanical braking (BSE) is engaged while APPS is at >25% pedal travel (EV.4.7)";
+BO_ 655361 VDM_GPS_DATA: 8 VDM
+   SG_ VDM_GPS_SPEED : 7|16@0+ (0.01,0) [0|655.35] "mph" Vector__XXX
+   SG_ VDM_GPS_ALTITUDE : 23|16@0- (1,0) [-32768|32767] "ft" Vector__XXX
+   SG_ VDM_GPS_TRUE_COURSE : 39|16@0+ (0.01,0) [0|655.35] "deg" Vector__XXX
+   SG_ VDM_GPS_SATELLITES_IN_USE : 55|8@0+ (1,0) [0|255] "" Vector__XXX
+   SG_ VDM_GPS_VALID1 : 63|8@0+ (1,0) [0|1] "" Vector__XXX
 
-CM_ SG_ 394 VCU_ETC_READY_TO_DRIVE "Whether the Ready-To-Drive sequence has been completed. ETC Implausibilities will disable the motor even though RTD remains true and shutdown remains closed.";
-CM_ SG_ 394 VCU_ETC_MOTOR_ENABLED "Whether the motor is enabled. True when Ready-To-Drive AND no ETC implausibilities are detected.";
+BO_ 655362 VDM_DATE_TIME: 8 VDM
+   SG_ VDM_GPS_VALID2 : 7|8@0+ (1,0) [0|1] "" Vector__XXX
+   SG_ VDM_UTC_DATE_YEAR : 15|8@0+ (1,0) [0|0] "years" Vector__XXX
+   SG_ VDM_UTC_DATE_MONTH : 23|8@0+ (1,0) [0|0] "months" Vector__XXX
+   SG_ VDM_UTC_DATE_DAY : 31|8@0+ (1,0) [0|0] "days" Vector__XXX
+   SG_ VDM_UTC_TIME_HOURS : 47|8@0+ (1,0) [0|0] "hours" Vector__XXX
+   SG_ VDM_UTC_TIME_MINUTES : 55|8@0+ (1,0) [0|0] "minutes" Vector__XXX
+   SG_ VDM_UTC_TIME_SECONDS : 63|8@0+ (1,0) [0|0] "seconds" Vector__XXX
 
-CM_ SG_ 394 VCU_ETC_BATT_PRECHARGE_DONE "Whether the VCU has detected that the Tractive Battery has finished Precharging (read from BATT_TPDO_STATUS). Purely for debugging. (previously called 'TS_ACTIVE')";
+BO_ 655363 VDM_ACCELERATION: 8 VDM
+   SG_ VDM_X_AXIS_ACCELERATION : 7|16@0- (0.000244141,0) [-8|8] "gs" Vector__XXX
+   SG_ VDM_Y_AXIS_ACCELERATION : 23|16@0- (0.000244141,0) [-8|8] "gs" Vector__XXX
+   SG_ VDM_Z_AXIS_ACCELERATION : 39|16@0- (0.000244141,0) [-8|8] "gs" Vector__XXX
 
-CM_ SG_ 392 BATT_STATUS_SHUTDOWN_FINAL "Shutdown Circuit reading at the very end of the circuit, i.e. whether the IRs can close & Discharge can open (previously called 'IRs_Final')";
-CM_ SG_ 392 BATT_STATUS_SHUTDOWN_IN "Shutdown Circuit reading after it enters the battery, before BMS & IMD relays";
-CM_ SG_ 392 BATT_STATUS_SHUTDOWN_OUT "Shutdown Circuit reading before it leaves the battery, after BMS & IMD relays";
+BO_ 655364 VDM_YAW_RATE: 8 VDM
+   SG_ VDM_X_AXIS_YAW_RATE : 7|16@0- (0.0152588,0) [-500|500] "deg/s" Vector__XXX
+   SG_ VDM_Y_AXIS_YAW_RATE : 23|16@0- (0.0152588,0) [-500|500] "deg/s" Vector__XXX
+   SG_ VDM_Z_AXIS_YAW_RATE : 39|16@0- (0.0152588,0) [-500|500] "deg/s" Vector__XXX
 
-CM_ SG_ 392 BATT_STATUS_FAULT_MODULE_INDEX "The Tractive Battery module number index that the BMS fault occured in.";
-CM_ SG_ 392 BATT_STATUS_FAULT_SENSOR_INDEX "The sensor index that caused the BMS fault for the given module number. For Voltage faults, this ranges from 0-5 for the 6 series cell groups in the module. For Temperature faults, this ranges from 0-11 for the 12 temperature sensors in the module.";
-CM_ SG_ 392 BATT_STATUS_FAULT_INDEX "The final module-independent sensor index that caused the BMS fault. Calculated as module_index * NUM_SENSORS_PER_MODULE + sensor_index (where NUM_SENSORS_PER_MODULE is 6 for voltage faults and 12 for temperature faults).";
+
+CM_ SG_ 403 VCU_ETC_IMPLAUS_APPS_OUT_OF_RANGE "APPS1 or APPS2 reading is outside of expected voltage range (for >100ms) (T.4.2.10)";
+CM_ SG_ 403 VCU_ETC_IMPLAUS_BPPS_OUT_OF_RANGE "BPPS reading is outside of expected voltage range (for >100ms) (not rules-required)";
+CM_ SG_ 403 VCU_ETC_IMPLAUS_APPS_DEVIATION "APPS1 and APPS2 readings deviate by >10% (for >100ms) (T.4.2.4)";
+CM_ SG_ 403 VCU_ETC_IMPLAUS_BSE_OUT_OF_RANGE "Front or Rear brake pressure sensor (BSE) is outside of expected voltage range (for >100ms) (T.4.3.3/4)";
+CM_ SG_ 403 VCU_ETC_IMPLAUS_BRAKE_AND_ACCEL "Mechanical braking (BSE) is engaged while APPS is at >25% pedal travel (EV.4.7)";
+
+CM_ SG_ 403 VCU_ETC_READY_TO_DRIVE "Whether the Ready-To-Drive sequence has been completed. ETC Implausibilities will disable the motor even though RTD remains true and shutdown remains closed.";
+CM_ SG_ 403 VCU_ETC_MOTOR_ENABLED "Whether the motor is enabled. True when Ready-To-Drive AND no ETC implausibilities are detected.";
+
+CM_ SG_ 403 VCU_ETC_BATT_PRECHARGE_DONE "Whether the VCU has detected that the Tractive Battery has finished Precharging (read from BATT_TPDO_STATUS). Purely for debugging. (previously called 'TS_ACTIVE')";
+
+CM_ SG_ 913 BATT_STATUS_SHUTDOWN_FINAL "Shutdown Circuit reading at the very end of the circuit, i.e. whether the IRs can close & Discharge can open (previously called 'IRs_Final')";
+CM_ SG_ 913 BATT_STATUS_SHUTDOWN_IN "Shutdown Circuit reading after it enters the battery, before BMS & IMD relays";
+CM_ SG_ 913 BATT_STATUS_SHUTDOWN_OUT "Shutdown Circuit reading before it leaves the battery, after BMS & IMD relays";
+
+CM_ SG_ 913 BATT_STATUS_FAULT_MODULE_INDEX "The Tractive Battery module number index that the BMS fault occured in.";
+CM_ SG_ 913 BATT_STATUS_FAULT_SENSOR_INDEX "The sensor index that caused the BMS fault for the given module number. For Voltage faults, this ranges from 0-5 for the 6 series cell groups in the module. For Temperature faults, this ranges from 0-11 for the 12 temperature sensors in the module.";
+CM_ SG_ 913 BATT_STATUS_FAULT_INDEX "The final module-independent sensor index that caused the BMS fault. Calculated as module_index * NUM_SENSORS_PER_MODULE + sensor_index (where NUM_SENSORS_PER_MODULE is 6 for voltage faults and 12 for temperature faults).";
 
 CM_ BO_ 2021 "Layer Setting Services (LSS) Transmit message. Sent by the charger board to the Zero SMPC charger to switch it into configuration mode";
 CM_ BO_ 2020 "Layer Setting Services (LSS) Response message. Sent by the Zero SMPC charger in response to LSS configuration from the charger board";
