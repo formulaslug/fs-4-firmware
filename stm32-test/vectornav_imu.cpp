@@ -1,21 +1,40 @@
 #include "vectornav_imu.h"
 
-VectorNavIMU::VectorNavIMU(PinName tx, PinName rx, VN::Registers::System::BaudRate::BaudRates baudRate)
-    : baudRate(baudRate), tx(tx), rx(rx) {}
+VectorNavIMU::VectorNavIMU(PinName tx, PinName rx)
+    : tx(tx), rx(rx) {}
 
 VN::Error VectorNavIMU::connect() {
-    VN::Error err = sensor.connect(
-        tx, rx, VN::Registers::System::BaudRate::BaudRates::Baud115200
-    );
+    VN::Error err;
+    VN::Registers::System::Model modelRegister;
+    for (int i = 0; i < 5; i++) {
+        err = sensor.connect(
+            tx, rx, VN::Registers::System::BaudRate::BaudRates::Baud921600
+        );
+
+        if (this->sensor.readRegister(&modelRegister) == VN::Error::None) {
+            return VN::Error::None;
+        }
+
+        ThisThread::sleep_for(100ms);
+    }
+
+    err = this->sensor.readRegister(&modelRegister);
     if (err != VN::Error::None) {
+        sensor.disconnect();
+        err = sensor.connect(
+            tx, rx, VN::Registers::System::BaudRate::BaudRates::Baud115200
+        );
+
+        if (err != VN::Error::None) {
+            return err;
+        }
+
+        err = sensor.changeBaudRate(
+            VN::Registers::System::BaudRate::BaudRates::Baud921600, VN::Registers::System::BaudRate::SerialPort::Serial2
+        );
         return err;
     }
 
-    if (baudRate != VN::Registers::System::BaudRate::BaudRates::Baud115200) {
-        err = sensor.changeBaudRate(
-            baudRate, VN::Registers::System::BaudRate::SerialPort::Serial2
-        );
-    }
     return err;
 }
 

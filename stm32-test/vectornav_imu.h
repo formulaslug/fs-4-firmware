@@ -17,7 +17,7 @@ inline void check_vn_error(const char* file, int line, VN::Error err) {
 
 class VectorNavIMU {
     public:
-    VectorNavIMU(PinName tx, PinName rx, VN::Registers::System::BaudRate::BaudRates baudRate);
+    VectorNavIMU(PinName tx, PinName rx);
     VN::Error connect();
     void disconnect();
 
@@ -53,7 +53,6 @@ class VectorNavIMU {
 
     private:
     // Connection Config
-    VN::Registers::System::BaudRate::BaudRates baudRate;
     const PinName tx;
     const PinName rx;
 
