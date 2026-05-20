@@ -29,6 +29,7 @@ ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_
     solenoid.write(0);
     brakelight.write(0);
 
+    // spawns new thread for imu listener
     CHECK_VN_ERR(vn_imu.connect());
     CHECK_VN_ERR(vn_imu.init());
 }
