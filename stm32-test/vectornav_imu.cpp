@@ -4,6 +4,9 @@ VectorNavIMU::VectorNavIMU(PinName tx, PinName rx)
     : tx(tx), rx(rx) {}
 
 VN::Error VectorNavIMU::connect() {
+    // First try connecting at 921600, which it should be at
+    // If it doesn't work, connect at 115200, which is default after a reset
+    // Try 5 times with 100ms delay
     VN::Error err;
     VN::Registers::System::Model modelRegister;
     for (int i = 0; i < 5; i++) {
