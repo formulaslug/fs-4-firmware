@@ -38,9 +38,9 @@ int main() {
     // sg.set_calibration(2500.0f, 0.0f);           
     // //End of Strain Guage Setup
     canMsgTimer.start();
-    queue.call_every(10ms, &sendCANtpdo);
-    queue.call_every(10ms, &sendCANtemp);
-    queue.call_every(10ms, &sendLastMessageTicks);
+    queue.call_every(10ms, &sendCANtpdo); //100Hz
+    queue.call_every(100ms, &sendCANtemp); //10Hz
+    queue.call_every(100ms, &sendLastMessageTicks);
     queue.dispatch_forever();
     
     return 0;
@@ -52,8 +52,9 @@ void sendLastMessageTicks(){
     //8 bits 0-256
     //Can probably be a 1 byte message
     //microseconds to 100hz
-    temp_ticks = (last_temp/10000 > 15) ? 15 : last_temp/10000;
-    tpdo_ticks = (last_tpdo/10000 > 15) ? 15 : last_tpdo/10000;
+    uint64_t temp_ticks = (last_temp/10000 > 15) ? 15 : last_temp/10000;
+    uint64_t tpdo_ticks = (last_tpdo/10000 > 15) ? 15 : last_tpdo/10000;
+    //printf("Temp Ticks: %d\n Tpdo Ticks: %d\n", last_temp, last_tpdo);
     //Not sure how I would want to keep track of the ticks since last message
     //Right now it's in the same queue loop as everything else and I wonder if this is fine
     //Write and send this CAN Message
@@ -92,7 +93,9 @@ void sendCANtpdo() {
 
     // Suspension Travel Readings
     sus_travel_raw = ((1.0 - sus.read()) * 5000);
-
+    printf("Sus Travel: %d, ", sus_travel_raw);
+    printf("Sus Raw: %.4f \n ", sus.read());
+    printf("readCorner(): %d\n", static_cast<int>(readCorner()));
     // // TODO: Uncomment when StrainGuage PR is merged
     // // //Strain Guage Readings
     // // float force = sg.read_units();

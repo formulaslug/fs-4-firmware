@@ -44,6 +44,8 @@ Generates and writes the CAN message for speed, suspension, strain, and temp
 */
 void sendCANtpdo();
 
+void sendLastMessageTicks();
+
 constexpr PinName PIN_STRAIN = PB_0;
 constexpr PinName PIN_DIP_1 = PA_0;
 constexpr PinName PIN_DIP_2 = PA_1;
