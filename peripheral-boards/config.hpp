@@ -61,5 +61,5 @@ constexpr PinName PIN_I2C1_SCL = PA_13;
 constexpr bool ok8 = true; // To manually disable temp sensor if they fail
 constexpr bool ok1 = true;
 
-constexpr uint32_t CAN_FREQUENCY = 500000;
+constexpr uint32_t CAN_FREQUENCY = 2000000; //2Mhz
 constexpr uint8_t TEETH_PER_REV = 60; // Double check this

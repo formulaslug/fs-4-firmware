@@ -36,7 +36,7 @@ if (MBED_TARGET STREQUAL "PERIPHERAL_BOARD" OR
         -c "transport select hla_swd"
         -f target/stm32g4x.cfg
         )
-    set(PYOCD_TARGET_NAME STM32G441KBT6)
+    set(PYOCD_TARGET_NAME STM32G441KBTX)
 endif()
 
 #stm32f4x boards
