@@ -6,6 +6,7 @@
 #define ETC_CONTROLLER_H
 
 #include "mbed.h"
+#include "../imu/vectornav_imu.h"
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
 
@@ -40,6 +41,7 @@ struct ETCState {
     bool must_use_hydraulic_brakes = false;
     bool reversing = false; // CURRENTLY ISN'T IMPLEMENTED
     bool brakelight_enabled = false;
+    VectornavState vectornav;
 };
 
 class ETCController {
@@ -48,7 +50,7 @@ public:
     bool battery_precharged = false;
     bool shutdown_closed = false;
 
-    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin);
+    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin, PinName vectornav_tx, PinName vectornav_rx);
 
     void update_state();
 
@@ -120,6 +122,8 @@ private:
     bool implaus_BPPS_range_timer_running = false;
     bool implaus_BSE_range_timer_running = false;
     bool implaus_brake_and_accel_timer_running = false;
+
+    VectorNavIMU vn_imu;
 
     static float clamp(float value);
 

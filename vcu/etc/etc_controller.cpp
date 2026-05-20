@@ -4,7 +4,7 @@
 
 #include "etc_controller.h"
 
-ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin) :
+ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin, PinName vectornav_tx, PinName vectornav_rx) :
     unfiltered_APPS1_input(APPS1_pin),
     APPS1_input(unfiltered_APPS1_input, 60),
     unfiltered_APPS2_input(APPS2_pin),
@@ -20,7 +20,8 @@ ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_
     rtd_light(rtd_light_pin),
     rtd_buzzer(rtd_buzzer_pin),
     solenoid(solenoid_pin),
-    brakelight(brakelight_pin)
+    brakelight(brakelight_pin),
+    vn_imu(vectornav_tx, vectornav_rx)
 {
     rtd_light.write(0);
     rtd_buzzer.write(0);
@@ -56,6 +57,8 @@ void ETCController::update_state() {
     
     brakelight.write(state.brakelight_enabled);
     solenoid.write(state.solenoid_open);
+
+    vn_imu.refreshDataToState(state.vectornav);
 
     update_implaus();
 

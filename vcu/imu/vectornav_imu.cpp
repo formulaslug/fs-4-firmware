@@ -45,7 +45,8 @@ void VectorNavIMU::disconnect() {
     sensor.disconnect();
 }
 
-void VectorNavIMU::initRegisters() {
+VN::Error VectorNavIMU::init() {
+    // init registers
     raw_imu_reg.asyncMode.emplace();
     raw_imu_reg.asyncMode->serial1 = false;
     raw_imu_reg.asyncMode->serial2 = true;
@@ -60,77 +61,35 @@ void VectorNavIMU::initRegisters() {
     time_reg.asyncMode->serial1 = false;
     time_reg.asyncMode->serial2 = true;
     time_reg.rateDivisor = 80;
-}
 
-void VectorNavIMU::enableRawImu(bool enabled, uint16_t rateDivisor) {
-    raw_imu_reg.rateDivisor = rateDivisor;
+    // set values of what data we want
+    raw_imu_reg.imu.accel = true;
+    raw_imu_reg.imu.angularRate = true;
+    raw_imu_reg.imu.mag = true;
+    raw_imu_reg.imu.temperature = true;
 
-    raw_imu_reg.imu.accel = enabled;
-    raw_imu_reg.imu.angularRate = enabled;
-    raw_imu_reg.imu.mag = enabled;
-    raw_imu_reg.imu.temperature = enabled;
-}
+    nav_reg.attitude.ypr = true;
+    nav_reg.attitude.quaternion = true;
+    nav_reg.ins.posLla = true;
+    nav_reg.ins.velBody = true;
+    nav_reg.ins.velNed = true;
 
-void VectorNavIMU::enableAttitude(bool enabled, uint16_t rateDivisor) {
-    nav_reg.rateDivisor = rateDivisor;
+    // Uncertainty (remove later?)
+    nav_reg.ins.posU = true;
+    nav_reg.ins.velU = true;
+    nav_reg.attitude.yprU = true;
 
-    nav_reg.attitude.ypr = enabled;
-    nav_reg.attitude.quaternion = enabled;
-}
+    // status (remove later?)
+    raw_imu_reg.imu.imuStatus = true;
+    nav_reg.ins.insStatus = true;
+    nav_reg.common.insStatus = true;
 
-void VectorNavIMU::enableNavigation(bool enabled, uint16_t rateDivisor) {
-    nav_reg.rateDivisor = rateDivisor;
+    // Gps time (remove later?)
+    time_reg.time.timeGps = true;
+    time_reg.time.timeGpsTow = true;
+    time_reg.time.timeGpsWeek = true;
+    time_reg.time.timeUtc = true;
 
-    nav_reg.ins.posLla = enabled;
-    nav_reg.ins.velBody = enabled;
-    nav_reg.ins.velNed = enabled;
-}
-
-void VectorNavIMU::enableUncertainty(bool enabled) {
-    nav_reg.ins.posU = enabled;
-    nav_reg.ins.velU = enabled;
-    nav_reg.attitude.yprU = enabled;
-}
-
-void VectorNavIMU::enableStatus(bool enabled) {
-    raw_imu_reg.imu.imuStatus = enabled;
-    nav_reg.ins.insStatus = enabled;
-    nav_reg.common.insStatus = enabled;
-}
-
-void VectorNavIMU::enableGpsTime(bool enabled, uint16_t rateDivisor) {
-    time_reg.rateDivisor = rateDivisor;
-
-    time_reg.time.timeGps = enabled;
-    time_reg.time.timeGpsTow = enabled;
-    time_reg.time.timeGpsWeek = enabled;
-    time_reg.time.timeUtc = enabled;
-}
-
-void VectorNavIMU::disableAll() {
-    raw_imu_reg.common = 0;
-    raw_imu_reg.time = 0;
-    raw_imu_reg.imu = 0;
-    raw_imu_reg.gnss = 0;
-    raw_imu_reg.attitude = 0;
-    raw_imu_reg.ins = 0;
-
-    nav_reg.common = 0;
-    nav_reg.time = 0;
-    nav_reg.imu = 0;
-    nav_reg.gnss = 0;
-    nav_reg.attitude = 0;
-    nav_reg.ins = 0;
-
-    time_reg.common = 0;
-    time_reg.time = 0;
-    time_reg.imu = 0;
-    time_reg.gnss = 0;
-    time_reg.attitude = 0;
-    time_reg.ins = 0;
-}
-
-VN::Error VectorNavIMU::applyRegisters() {
     VN::Error err = sensor.writeRegister(&raw_imu_reg);
     if (err != VN::Error::None) return err;
 
@@ -141,7 +100,9 @@ VN::Error VectorNavIMU::applyRegisters() {
     return err;
 }
 
-void VectorNavIMU::refreshData() {
+
+void VectorNavIMU::refreshDataToState(VectornavState &state) {
+    std::optional<VN::CompositeData> rawImuData, navData, timeData;
     while (true) {
         VN::Sensor::CompositeDataQueueReturn compositeData =
             sensor.getNextMeasurement(false);
@@ -151,61 +112,32 @@ void VectorNavIMU::refreshData() {
         }
 
         if (compositeData->matchesMessage(raw_imu_reg)) {
-            lastRawImuData = *compositeData;
+            rawImuData = *compositeData;
         } else if (compositeData->matchesMessage(nav_reg)) {
-            lastNavData = *compositeData;
+            navData = *compositeData;
         } else if (compositeData->matchesMessage(time_reg)) {
-            lastTimeData = *compositeData;
+            timeData = *compositeData;
         }
     }
-}
 
-std::optional<VN::Vec3f> VectorNavIMU::getAccel() const {
-    if (!lastRawImuData || !lastRawImuData->imu.accel.has_value()) {
-        return std::nullopt;
+    if (rawImuData->imu.accel.has_value()) {
+        state.accel = rawImuData->imu.accel.value();
     }
-
-    return lastRawImuData->imu.accel.value();
-}
-
-std::optional<VN::Vec3f> VectorNavIMU::getAngularRate() const {
-    if (!lastRawImuData || !lastRawImuData->imu.angularRate.has_value()) {
-        return std::nullopt;
+    if (rawImuData->imu.angularRate.has_value()) {
+        state.angRate = rawImuData->imu.angularRate.value();
     }
-
-    return lastRawImuData->imu.angularRate.value();
-}
-
-std::optional<VN::Vec3f> VectorNavIMU::getMag() const {
-    if (!lastRawImuData || !lastRawImuData->imu.mag.has_value()) {
-        return std::nullopt;
+    if (rawImuData->imu.mag.has_value()) {
+        state.mag = rawImuData->imu.mag.value();
     }
-
-    return lastRawImuData->imu.mag.value();
-}
-
-std::optional<VN::Ypr> VectorNavIMU::getYawPitchRoll() const {
-    if (!lastNavData || !lastNavData->attitude.ypr.has_value()) {
-        return std::nullopt;
+    if (navData->attitude.ypr.has_value()) {
+        state.ypr = navData->attitude.ypr.value();
     }
-
-    return lastNavData->attitude.ypr.value();
-}
-
-std::optional<VN::Lla> VectorNavIMU::getPosition() const {
-    if (!lastNavData || !lastNavData->ins.posLla.has_value()) {
-        return std::nullopt;
+    if (navData->ins.posLla.has_value()) {
+        state.pos = navData->ins.posLla.value();
     }
-
-    return lastNavData->ins.posLla.value();
-}
-
-std::optional<VN::Vec3f> VectorNavIMU::getVelocityBody() const {
-    if (!lastNavData || !lastNavData->ins.velBody.has_value()) {
-        return std::nullopt;
+    if (navData->ins.velBody.has_value()) {
+        state.velBody = navData->ins.velBody.value();
     }
-
-    return lastNavData->ins.velBody.value();
 }
 
 std::optional<VN::AsyncError> VectorNavIMU::getAsyncError() {

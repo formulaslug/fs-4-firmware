@@ -8,7 +8,7 @@ Thread sme_queue_thread;
 
 CAN canP{PB_8, PB_9, 500000};
 CAN canD{PB_5, PB_6, 2000000}; // using both by sending the messages in parallel, but not sure if this is correct usage
-ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4};
+ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4, PC_12, PD_2};
 const ETCState &etc_state = etc.state;
 
 void send_etc_CAN_messages();
