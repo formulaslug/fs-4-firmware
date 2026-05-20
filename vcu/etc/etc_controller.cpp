@@ -3,6 +3,7 @@
 //
 
 #include "etc_controller.h"
+#include "../imu/vectornav_imu.h"
 
 ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin, PinName vectornav_tx, PinName vectornav_rx) :
     unfiltered_APPS1_input(APPS1_pin),
@@ -28,7 +29,8 @@ ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_
     solenoid.write(0);
     brakelight.write(0);
 
-    vn_imu.init();
+    CHECK_VN_ERR(vn_imu.connect());
+    CHECK_VN_ERR(vn_imu.init());
 }
 
 float ETCController::clamp(float value) {
