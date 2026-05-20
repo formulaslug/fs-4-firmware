@@ -1,6 +1,3 @@
-#include "Callback.h"
-#include "EventQueue.h"
-#include "PinNames.h"
 #include "mbed.h"
 #include "etc_controller.h"
 
@@ -9,8 +6,9 @@ EventQueue sme_queue;
 Thread etc_queue_thread;
 Thread sme_queue_thread;
 
-CAN can{PA_11, PA_12, 500000};
-ETCController etc(PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7);
+CAN canP{PB_8, PB_9, 500000};
+CAN canD{PB_5, PB_6, 2000000}; // using both by sending the messages in parallel, but not sure if this is correct usage
+ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4};
 const ETCState &etc_state = etc.state;
 
 void send_etc_CAN_messages();
@@ -19,18 +17,18 @@ void send_sme_CAN_messages();
 int main() {
     printf("Hello World!!\n");
 
-    etc_queue.call_every(50ms, &send_etc_);
-    sme_queue.call_every(1ms, &send_CAN_message);
+    etc_queue.call_every(50ms, &send_etc_CAN_messages);
+    sme_queue.call_every(40ms, &send_sme_CAN_messages);
     etc_queue_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
     sme_queue_thread.start(callback(&sme_queue, &EventQueue::dispatch_forever));
 
     CANMessage rx;
     while (true) {
-        if (can.read(rx)) {
+        if (canP.read(rx)) { // currently just reads from 1, but maybe make this both for possible optimization?
             switch (rx.id) {
                 case 392: {
-                    etc.GLV_ok = rx.data[0] & 0b00001000; // CHANGE TO WHATEVER BATT_STATUS_PRECHARGE_DONE IS
-                    etc.shutdown_closed = rx.data[0] & 0b00001000; // CHANGE TO WHATEVER BATT_STATUS_SHUTDOWN_FINAL IS
+                    etc.battery_precharged = rx.data[0] & 0b00000010; 
+                    etc.shutdown_closed = rx.data[0] & 0b00100000; 
                     break;
                 }
                 case 1154: {
@@ -40,7 +38,7 @@ int main() {
                     ground_speed *= wheel_rpm; // meters / minute
                     ground_speed *= 60.0f / 1000.0f; // km / hr
 
-                    etc.update_regen(ground_speed);
+                    etc.update_regen_state(ground_speed);
                     break;
                 }
             }
@@ -75,26 +73,47 @@ void send_etc_CAN_messages() {
     buf1[3] = rear_BSE_scaled_voltage >> 8;
     buf1[4] = etc_state.ready_to_drive |
         (etc_state.motor_enabled << 1) |
-        (etc_state.implaus_APPS_deviation << 2) |
-        (etc_state.implaus_APPS_range << 3) |
-        (etc_state.implaus_BPPS_range << 4) |
-        (etc_state.implaus_brake_and_accel << 5) |
-        (etc_state.can_regen << 6) |
-        (etc_state.must_use_hydraulic_brakes << 7);
+        (etc_state.rtd_button_pressed << 2) |
+        (etc.battery_precharged << 3) |
+        (etc_state.implaus_APPS_range << 4) |
+        (etc_state.implaus_BPPS_range << 5) |
+        (etc_state.implaus_APPS_deviation << 6) |
+        (etc_state.implaus_BSE_range << 7);
+    buf1[5] = etc_state.implaus_brake_and_accel |
+        (etc_state.reversing << 1) | // NEED REVERSE
+        (etc_state.brakelight_enabled << 2) |
+        (etc_state.can_regen << 3) |
+        (etc_state.must_use_hydraulic_brakes << 4);
 
-    CANMessage msg0{393, buf0, 8};
-    CANMessage msg1{394, buf1, 6};
-    can.write(msg0);
-    can.write(msg1);
+    CANMessage status1_msg{393, buf0, 8};
+    CANMessage status2_msg{394, buf1, 6};
+    canD.write(status1_msg);
+    canD.write(status2_msg);
 }
 
 void send_sme_CAN_messages() {
+    etc.update_mbb_alive();
+
     uint8_t buf0[8];
+    buf0[0] = etc_state.motor_torque & 0xFF;
+    buf0[1] = etc_state.motor_torque >> 8;
+    buf0[2] = etc_state.MAX_SPEED & 0xFF;
+    buf0[3] = etc_state.MAX_SPEED >> 8;
+    buf0[4] = !etc_state.reversing |
+        (etc_state.reversing << 1) |
+        (etc_state.motor_enabled << 3);
+    buf0[5] = etc_state.mbb_alive;
 
     uint8_t buf1[8];
+    buf1[0] = etc_state.CHARGE_CURRENT_LIMIT & 0xFF;
+    buf1[1] = etc_state.CHARGE_CURRENT_LIMIT >> 8;
+    buf1[2] = etc_state.DISCHARGE_CURRENT_LIMIT & 0xFF;
+    buf1[3] = etc_state.DISCHARGE_CURRENT_LIMIT >> 8;
 
-    CANMessage msg0{393, buf0, 8};
-    CANMessage msg1{394, buf1, 6};
-    can.write(msg0);
-    can.write(msg1);
+
+    CANMessage throttle_msg{390, buf0, 8};
+    CANMessage currents_msg{646, buf1, 8};
+
+    canP.write(throttle_msg);
+    canP.write(currents_msg);
 }
