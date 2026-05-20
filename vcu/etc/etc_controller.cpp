@@ -27,6 +27,8 @@ ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_
     rtd_buzzer.write(0);
     solenoid.write(0);
     brakelight.write(0);
+
+    vn_imu.init();
 }
 
 float ETCController::clamp(float value) {
