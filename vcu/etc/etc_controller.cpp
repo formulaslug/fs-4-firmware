@@ -20,7 +20,8 @@ ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_
     rtd_light(rtd_light_pin),
     rtd_buzzer(rtd_buzzer_pin),
     solenoid(solenoid_pin),
-    brakelight(brakelight_pin)
+    brakelight(brakelight_pin),
+    traction_controller()
 {
     rtd_light.write(0);
     rtd_buzzer.write(0);
@@ -51,7 +52,20 @@ void ETCController::update_state() {
     state.BPPS_position = clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
 
-    state.motor_torque = state.is_regening ? state.regen_torque : static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
+    //state.motor_torque = state.is_regening ? state.regen_torque : static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
+    if (state.is_regening)
+    {
+      state.motor_torque = state.regen_torque;
+    }
+    else if (state.traction_control_enabled) 
+    {
+      const float tc_torque_reduction_factor = traction_controller.get_output();
+      state.motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE * tc_torque_reduction_factor);
+    }
+    else 
+    {
+      state.motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
+    }
     state.brakelight_enabled = state.is_regening || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT && !state.solenoid_open);
     
     brakelight.write(state.brakelight_enabled);

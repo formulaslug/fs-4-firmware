@@ -13,11 +13,12 @@ TractionController::TractionController()
   this->loop_time = 0.0f;
   this->last_output = 1.0f;
   this->saturated = false;
+  // set filter time constant
+  this->filter_time_constant = 1.0f / (2.0f * M_PI * this->FILTER_CUTOFF_FREQ);
+  // set max integral
+  this->max_integral = KI > 0.0f ? MAX_INTEGRATOR_REDUCTION_FACTOR / KI : 0.0f;  
   // start timer
   this->loop_timer.start();
-  // set filter time constant 
-  this->filter_time_constant = 1.0f / (2.0f * M_PI * this->FILTER_CUTOFF_FREQ);
-  this->max_integral = KI > 0.0f ? MAX_INTEGRATOR_REDUCTION_FACTOR / KI : 0.0f;
 }
 
 float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws_rr)
@@ -87,9 +88,15 @@ float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws
   // skip integration if saturated to prevent integral windup
   // we only care about the positive error case because negative windup
   // is solved by the integral clamp below
-  this->saturated = (unclamped <= this->MIN_OUTPUT) && (error > 0);
+  this->saturated = (unclamped <= this->MIN_OUTPUT) && (error > 0.0f);
   if (!this->saturated && !this->prev_slip_stale) 
   {
+    // Leaving trapezoidal integration formula here.
+    // According to questionable source, trapezoidal integration is 
+    // a more accurate approximation in PID systems with slow sampling
+    // rates.
+    // this->integral += 0.5 * (error + prev_error) * loop_time;
+    // this->integral += 0.5 * (error + (prev_slip - TARGET_WHEEL_SLIP)) * loop_time;
     this->integral += error * loop_time;
     // clamp integral [0, MAX_INTEGRATOR_REDUCTION_FACTOR / KI]
     if (integral > max_integral) integral = max_integral;

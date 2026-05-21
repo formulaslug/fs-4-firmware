@@ -1,5 +1,6 @@
 #include "mbed.h"
 #include "etc_controller.h"
+#include "traction_control.h"
 
 EventQueue etc_queue;
 EventQueue sme_queue;
@@ -13,12 +14,14 @@ const ETCState &etc_state = etc.state;
 
 void send_etc_CAN_messages();
 void send_sme_CAN_messages();
+void update_traction_control();
 
 int main() {
     printf("Hello World!!\n");
 
     etc_queue.call_every(50ms, &send_etc_CAN_messages);
     sme_queue.call_every(40ms, &send_sme_CAN_messages);
+    etc_queue.call_every(10ms, &update_traction_control);
     etc_queue_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
     sme_queue_thread.start(callback(&sme_queue, &EventQueue::dispatch_forever));
 
@@ -41,6 +44,26 @@ int main() {
                     etc.update_regen_state(ground_speed);
                     break;
                 }
+            }
+        }
+        if (canD.read(rx)) {
+          switch (rx.id) {
+              case 421: {
+                  etc.state.wheel_rpm_fl = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                  break;
+              }
+              case 422: {
+                  etc.state.wheel_rpm_fr = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                  break;
+              }
+              case 423: {
+                  etc.state.wheel_rpm_bl = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                  break;
+              }
+              case 424: {
+                  etc.state.wheel_rpm_br = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                  break;
+              }
             }
         }
 
@@ -116,4 +139,8 @@ void send_sme_CAN_messages() {
 
     canP.write(throttle_msg);
     canP.write(currents_msg);
+}
+
+void update_traction_control() {
+  etc.traction_controller.update(etc.state.wheel_rpm_fl, etc.state.wheel_rpm_fr, etc.state.wheel_rpm_bl, etc.state.wheel_rpm_br);
 }

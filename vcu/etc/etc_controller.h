@@ -8,6 +8,7 @@
 #include "mbed.h"
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
+#include "traction_control.h"
 
 struct ETCState {
     float APPS1_voltage = 0.0f;
@@ -40,6 +41,11 @@ struct ETCState {
     bool must_use_hydraulic_brakes = false;
     bool reversing = false; // CURRENTLY ISN'T IMPLEMENTED
     bool brakelight_enabled = false;
+    bool traction_control_enabled = false;
+    float wheel_rpm_fl = 0.0f;
+    float wheel_rpm_fr = 0.0f;
+    float wheel_rpm_bl = 0.0f;
+    float wheel_rpm_br = 0.0f;
 };
 
 class ETCController {
@@ -47,7 +53,7 @@ public:
     ETCState state;
     bool battery_precharged = false;
     bool shutdown_closed = false;
-
+    TractionController traction_controller;
     ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin);
 
     void update_state();
