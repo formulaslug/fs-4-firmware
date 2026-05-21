@@ -60,7 +60,7 @@ int main() {
     printf("Initialization complete\n");
 
     queue.call_every(2ms, &BMSInstance, &BMS::controller);
-    queue.call_every(1000ms, &cGen, &CanGenerator::BuildAndSendMessages);
+    // queue.call_every(1000ms, &cGen, &CanGenerator::BuildAndSendMessages);
     queue.dispatch_forever();
 
     return 0;

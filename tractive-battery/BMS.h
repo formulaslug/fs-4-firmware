@@ -34,7 +34,8 @@ inline constexpr int8_t CELL_MIN = -40;
 inline constexpr uint16_t MAX_CELL_VOLTAGE = 42000; // 4.2 volts
 inline constexpr uint16_t MIN_CELL_VOLTAGE = 25000; // 2.5 volts
 
-inline constexpr uint16_t BALANCING_THRESHOLD = 35700;  // 3.57 volts
+//inline constexpr uint16_t BALANCING_THRESHOLD = 35700;  // 3.57 volts
+inline constexpr uint16_t BALANCING_THRESHOLD = 30000; // temporary balancing threshold 
 inline constexpr uint16_t DIFFERENCE_THRESHOLD = 00300; // 30 milivolts
 
 // tune later lots of placeholder values

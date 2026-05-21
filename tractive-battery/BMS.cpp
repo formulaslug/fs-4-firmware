@@ -117,6 +117,7 @@ void BMS::chargingActions() {
 }
 
 void BMS::turnOffCellBalancing() {
+    ltcBusInterface.WakeupBus();
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         LTC6810::Configuration& config = chips[i].getConfig();
         config.dischargeState = {.value = 0};
@@ -133,8 +134,8 @@ void BMS::readCellVoltages() {
     printf("%f\n", ltcTimeoutTimer.elapsed_time());
     // ltcBusInterface.WakeupBus();
     if (ltcTimeoutTimer.elapsed_time() >= 100ms) {
-        currentState = FAULT;
-        return;
+        // currentState = FAULT;
+        // return;
     }
 
     bool voltsConverted = true;
@@ -144,6 +145,8 @@ void BMS::readCellVoltages() {
     );
     stat = ltcBusInterface.SendCommand(command);
 
+
+
     ThisThread::sleep_for(3ms);
 
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
@@ -152,7 +155,7 @@ void BMS::readCellVoltages() {
 
         if (stat == LTC681xBus::LTC681xBusStatus::PollTimeout) {
             // printf("ADC poll timeout, on Bank %d\n", i);
-            voltsConverted = false;
+            // voltsConverted = false;
             ltcTimeoutTimer.start();
             printf("poll timeout occured...\n");
             // the rules require that we need to ensure we are getting data and that all sensors are
@@ -255,6 +258,7 @@ void BMS::decideBalancing() {
                     }
                     // Logic is find lowest voltage cell - go through each module and balance that
                     // module based on that cell reading so the whole battery is balanced
+                    // it wont let us do adjacent cells so .... may need to update .. 
                 }
                 config.dischargeState.value = dischargeValue;
                 chips[i].updateConfig();
@@ -384,24 +388,31 @@ void BMS::controlFans() {
 void BMS::controller() {
 
     if (currentState != FAULT) {
-
-        chargingActions();
-        printf("charging actions completed okay...\n");
-        turnOffCellBalancing();
-        printf("turn off cell balancing completed okay...\n");
-        ThisThread::sleep_for(3ms);
-        readCellVoltages();
-        printf("cellvoltages read okay\n");
-        // readTemps();
-        printf("read temps went okay....\n");
-        checkForFaults();
-        printf("checked for faults\n"); //
-        controlFans();
-        printf("fan pwm set ...\n");
+        //temporary cell balacing test
         decideBalancing();
-        printf("battery balancing set....");
-        // d266270a (testing updates)
+        ThisThread::sleep_for(1s);
+
+
+        // chargingActions();
+        // printf("charging actions completed okay...\n");
+        // turnOffCellBalancing();
+        // printf("turn off cell balancing completed okay...\n");
+        // ThisThread::sleep_for(3ms);
+        // readCellVoltages();
+        // printf("cellvoltages read okay\n");
+        // turnOffCellBalancing();
+        // readTemps();
+        // printf("read temps went okay....\n");
+        // checkForFaults();
+        // printf("checked for faults\n"); //
+        // controlFans();
+        // printf("fan pwm set ...\n");
+        // decideBalancing();
+        // printf("battery balancing set....");
         // checkShutdownCircuit();
+        // telemetryPins();
+        // readPackCurrent();
+        // ThisThread::sleep_for(1s);
     } else {
         printf("WE ARE IN FAULT");
         turnOffCellBalancing();
