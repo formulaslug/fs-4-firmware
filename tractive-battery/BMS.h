@@ -34,13 +34,14 @@ inline constexpr int8_t CELL_MIN = -40;
 inline constexpr uint16_t MAX_CELL_VOLTAGE = 42000; // 4.2 volts
 inline constexpr uint16_t MIN_CELL_VOLTAGE = 25000; // 2.5 volts
 
-inline constexpr uint16_t BALANCING_THRESHOLD = 35700;  // 3.57 volts
+//inline constexpr uint16_t BALANCING_THRESHOLD = 35700;  // 3.57 volts
+inline constexpr uint16_t BALANCING_THRESHOLD = 30000; // temporary balancing threshold 
 inline constexpr uint16_t DIFFERENCE_THRESHOLD = 00300; // 30 milivolts
 
 // tune later lots of placeholder values
 //  HASS 300-S current sensor constants (from datasheet)
 inline constexpr float HASS300_IPN = 300.0f;                       // Nominal primary current (A)
-inline constexpr float HASS300_SENSITIVITY = 0.625f / HASS300_IPN; // V/A = ~0.002083 V/A
+inline constexpr float HASS300_SENSITIVITY = 0.625f / HASS300_IPN; // V/A = ~0.002083 V/A // this is what we need to calibrate? ...  
 inline constexpr float HASS300_VREF = 2.5f;            // Output voltage at zero current (V)
 inline constexpr float HASS300_ADC_REF = 3.3f;         // MCU ADC reference voltage (V)
 inline constexpr float MAX_PACK_CURRENT_AMPS = 100.0f; // Overcurrent fault threshold - tune later
@@ -105,7 +106,8 @@ public:
     enum bms_state { ACTIVE = 0, CHARGING = 1, FAULT = 2, PRECHARGING = 3 };
 
     float currentSensorOffsetVolts;
-    float packCurrentAmps;
+    float packCurrentAmpsOutput;
+    float packCurrentAmpsInput;
     bool currentSensorCalibrated;
     bms_state currentState;
     float currentBatteryVoltage = 0;
