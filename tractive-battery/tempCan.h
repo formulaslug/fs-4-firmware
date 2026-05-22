@@ -5,29 +5,29 @@
 #include <cstdint>
 
 // voltage messages
-constexpr uint32_t BATT_TPDO_MOD0_VOLTS = 0x191;
-constexpr uint32_t BATT_TPDO_MOD1_VOLTS = 0x192;
-constexpr uint32_t BATT_TPDO_MOD2_VOLTS = 0x193;
-constexpr uint32_t BATT_TPDO_MOD3_VOLTS = 0x194;
-constexpr uint32_t BATT_TPDO_MOD4_VOLTS = 0x195;
+constexpr uint32_t BATT_TPDO_MOD0_VOLTS = 0x495;
+constexpr uint32_t BATT_TPDO_MOD1_VOLTS = 0x498;
+constexpr uint32_t BATT_TPDO_MOD2_VOLTS = 0x49b;
+constexpr uint32_t BATT_TPDO_MOD3_VOLTS = 0x49e;
+constexpr uint32_t BATT_TPDO_MOD4_VOLTS = 0x4a1;
 
 // general status message ids
-constexpr uint32_t BATT_TPDO_STATUS = 0x188;
-constexpr uint32_t BATT_TPDO_POWER = 0x288;
-constexpr uint32_t BATT_TPDO_CELL_STATS = 0x488;
-constexpr uint32_t BATT_TPDO_TRAY_TEMPS = 0x388;
+constexpr uint32_t BATT_TPDO_STATUS = 0x391;
+constexpr uint32_t BATT_TPDO_POWER = 0x392;
+constexpr uint32_t BATT_TPDO_CELL_STATS = 0x393;
+constexpr uint32_t BATT_TPDO_TRAY_TEMPS = 0x4c0;
 
 // temperature messages ids
-constexpr uint32_t BATT_TPDO_MOD0_TEMPSA = 0x291;
-constexpr uint32_t BATT_TPDO_MOD0_TEMPSB = 0x292;
-constexpr uint32_t BATT_TPDO_MOD1_TEMPSA = 0x293;
-constexpr uint32_t BATT_TPDO_MOD1_TEMPSB = 0x294;
-constexpr uint32_t BATT_TPDO_MOD2_TEMPSA = 0x295;
-constexpr uint32_t BATT_TPDO_MOD2_TEMPSB = 0x296;
-constexpr uint32_t BATT_TPDO_MOD3_TEMPSA = 0x297;
-constexpr uint32_t BATT_TPDO_MOD3_TEMPSB = 0x298;
-constexpr uint32_t BATT_TPDO_MOD4_TEMPSA = 0x299;
-constexpr uint32_t BATT_TPDO_MOD4_TEMPSB = 0x29A;
+constexpr uint32_t BATT_TPDO_MOD0_TEMPSA = 0x496;
+constexpr uint32_t BATT_TPDO_MOD0_TEMPSB = 0x497;
+constexpr uint32_t BATT_TPDO_MOD1_TEMPSA = 0x499;
+constexpr uint32_t BATT_TPDO_MOD1_TEMPSB = 0x49a;
+constexpr uint32_t BATT_TPDO_MOD2_TEMPSA = 0x49c;
+constexpr uint32_t BATT_TPDO_MOD2_TEMPSB = 0x49d;
+constexpr uint32_t BATT_TPDO_MOD3_TEMPSA = 0x49f;
+constexpr uint32_t BATT_TPDO_MOD3_TEMPSB = 0x4a0;
+constexpr uint32_t BATT_TPDO_MOD4_TEMPSA = 0x4a2;
+constexpr uint32_t BATT_TPDO_MOD4_TEMPSB = 0x4a3;
 
 constexpr uint32_t VOLTAGE_MESSAGE_IDS[NUM_BATTERY_MODULES] = {
     BATT_TPDO_MOD0_VOLTS,
