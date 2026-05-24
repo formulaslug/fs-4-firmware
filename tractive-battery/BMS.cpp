@@ -128,7 +128,6 @@ void BMS::turnOffCellBalancing() {
 }
 
 void BMS::readCellVoltages() {
-    // char msg3[] = "Reading Cell Voltages\n";
     printf("Reading cell voltages...\n");
     printf("elapsed time ... \n");
     printf("%f\n", ltcTimeoutTimer.elapsed_time());
@@ -145,24 +144,23 @@ void BMS::readCellVoltages() {
     );
     stat = ltcBusInterface.SendCommand(command);
 
-
-
-    ThisThread::sleep_for(3ms);
-
-    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-        command = LTC681xParallelBus::BuildAddressedBusCommand(PollADCStatus(), i);
-        stat = ltcBusInterface.PollAdcCompletion(command, 0);
-
-        if (stat == LTC681xBus::LTC681xBusStatus::PollTimeout) {
-            // printf("ADC poll timeout, on Bank %d\n", i);
-            // voltsConverted = false;
-            ltcTimeoutTimer.start();
-            printf("poll timeout occured...\n");
-            // the rules require that we need to ensure we are getting data and that all sensors are
-            // working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
-            // that time period is a little arbitrary and probably should be adjusted
-        }
-    }
+    // TODO: Why does this seem to always fail with PollTimeout?
+    // ThisThread::sleep_for(3ms);
+    //
+    // for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+    //     command = LTC681xParallelBus::BuildAddressedBusCommand(PollADCStatus(), i);
+    //     stat = ltcBusInterface.PollAdcCompletion(command, 0);
+    //
+    //     if (stat == LTC681xBus::LTC681xBusStatus::PollTimeout) {
+    //         // printf("ADC poll timeout, on Bank %d\n", i);
+    //         // voltsConverted = false;
+    //         ltcTimeoutTimer.start();
+    //         printf("poll timeout occured...\n");
+    //         // the rules require that we need to ensure we are getting data and that all sensors are
+    //         // working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
+    //         // that time period is a little arbitrary and probably should be adjusted
+    //     }
+    // }
 
     ThisThread::sleep_for(3ms);
 
@@ -389,19 +387,23 @@ void BMS::controller() {
 
     if (currentState != FAULT) {
         //temporary cell balacing test
-        decideBalancing();
-        ThisThread::sleep_for(1s);
+        // decideBalancing();
+        // ThisThread::sleep_for(1s);
 
 
         // chargingActions();
         // printf("charging actions completed okay...\n");
-        // turnOffCellBalancing();
+        turnOffCellBalancing();
         // printf("turn off cell balancing completed okay...\n");
-        // ThisThread::sleep_for(3ms);
-        // readCellVoltages();
+        ThisThread::sleep_for(3ms);
+        readCellVoltages();
         // printf("cellvoltages read okay\n");
         // turnOffCellBalancing();
         // readTemps();
+        // for (int i =0; i<NUM_TEMP_SENSORS_PER_MODULE; i++) {
+        //     printf("temp %d: %d degC\n", i, temps[0][i]);
+        // }
+
         // printf("read temps went okay....\n");
         // checkForFaults();
         // printf("checked for faults\n"); //

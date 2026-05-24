@@ -55,7 +55,7 @@ int main() {
 
     // TEMPORARY: searching for 1 wire sensors......
     // should print out to serial the address of any one wire bus temp sensor.
-    debug_search_for_ds18b20_address(TS1W);
+    // debug_search_for_ds18b20_address(TS1W);
 
     printf("Initialization complete\n");
 

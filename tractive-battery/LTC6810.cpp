@@ -9,9 +9,9 @@ LTC6810::LTC6810(LTC681xBus& bus, uint8_t id)
     : m_bus(bus), m_id(id) {
     m_config = Configuration{
         .gpio5 = GPIOOutputState::kPassive,
-        .gpio4 = GPIOOutputState::kPassive,
-        .gpio3 = GPIOOutputState::kPassive,
-        .gpio2 = GPIOOutputState::kPassive,
+        .gpio4 = GPIOOutputState::kHigh,
+        .gpio3 = GPIOOutputState::kHigh,
+        .gpio2 = GPIOOutputState::kHigh,
         .gpio1 = GPIOOutputState::kPassive,
         .referencePowerOff = ReferencePowerOff::kAfterConversions,
         .dischargeTimerEnabled = DischargeTimerEnable::kDisabled,
@@ -178,39 +178,45 @@ float LTC6810::readTemperatureTMP1075(TMP1075_Handle_t* sensor) {
 
     ThisThread::sleep_for(3ms);
 
+    // The STCOMM command is to be followed by 24 clock
+    // cycles for each byte of data to be transmitted to the slave
+    // device while holding CSB low. For example, to transmit 3
+    // bytes of data to the slave, send STCOMM command and
+    // its PEC followed by 72 clock cycles. Pull CSB high at the
+    // end of the 72 clock cycles of STCOMM command.
     m_bus.WakeupBus();
     auto stCmd = LTC681xBus::BuildAddressedBusCommand(StartComm(), m_id);
-    m_bus.SendCommand(stCmd);
-
-    // printf("lkJASDLKJASDLKj commData: %02X %02X %02X %02X %02X %02X\n", commData[0], commData[1],
-    // commData[2], commData[3], commData[4], commData[5]);
+    static uint8_t buf[6] = {};
+    m_bus.SendDataCommand(stCmd, buf);
 
     ThisThread::sleep_for(3ms);
 
-    //   // STEP 2: Read 2 bytes from temperature register
-    //   // I2C Sequence: START -> [ADDR+R] -> ACK -> [READ MSB] -> ACK -> [READ LSB] -> NACK+STOP
-    //   //BYTE 0: Address with Read bit (ADDR << 1 |1)
-    //  buildCOMMBytes(0x6, 0x0, (sensor->i2c_address << 1) | 0x01, tempBytes);
-    //   commData[0] = tempBytes[0];  // COMM0
-    //   commData[1] = tempBytes[1];  // COMM1
+    // STEP 2: Read 2 bytes from temperature register
+    // I2C Sequence: START -> [ADDR+R] -> ACK -> [READ MSB] -> ACK -> [READ LSB] -> NACK+STOP
+    // BYTE 0: Address with Read bit (ADDR << 1 |1)
+    buildCOMMBytes(0x6, 0x0, (sensor->i2c_address << 1) | 0x01, tempBytes);
+    commData[0] = tempBytes[0]; // COMM0
+    commData[1] = tempBytes[1]; // COMM1
 
-    //   //BYTE 1: Read MSB (master sends 0xFF as dummy, master ACKs)
-    //   buildCOMMBytes(0x0, 0x0, 0xFF, tempBytes);
-    //   commData[2] = tempBytes[0];  // COMM2
-    //   commData[3] = tempBytes[1];  // COMM3
+    // BYTE 1: Read MSB (master sends 0xFF as dummy, master ACKs)
+    buildCOMMBytes(0x0, 0x0, 0xFF, tempBytes);
+    commData[2] = tempBytes[0]; // COMM2
+    commData[3] = tempBytes[1]; // COMM3
 
-    //   // BYTE 2: Read LSB (master sends 0xFF as dummy, master NACKs and STOP)
-    //   buildCOMMBytes(0x0, 0x9, 0xFF, tempBytes);
-    //   commData[4] = tempBytes[0];  // COMM4
-    //   commData[5] = tempBytes[1];  // COMM5
+    // BYTE 2: Read LSB (master sends 0xFF as dummy, master NACKs and STOP)
+    buildCOMMBytes(0x0, 0x9, 0xFF, tempBytes);
+    commData[4] = tempBytes[0]; // COMM4
+    commData[5] = tempBytes[1]; // COMM5
 
-    //   m_bus.SendDataCommand(wrCmd, commData);
-    //   m_bus.SendCommand(stCmd);
+    m_bus.WakeupBus();
+    m_bus.SendDataCommand(wrCmd, commData);
+    m_bus.SendDataCommand(stCmd, buf);
 
-    //   ThisThread::sleep_for(3ms);
+    ThisThread::sleep_for(3ms);
 
-    //   auto rdCmd = LTC681xBus::BuildAddressedBusCommand(ReadCommGroup(), m_id);
-    //   m_bus.SendReadCommand(rdCmd, rxData);
+    m_bus.WakeupBus();
+    auto rdCmd = LTC681xBus::BuildAddressedBusCommand(ReadCommGroup(), m_id);
+    m_bus.SendReadCommand(rdCmd, rxData);
 
     // STEP 3: Extract Temperature Data from COMM register
     // MSB is in D1 (rxData[2] upper nibble, rxData[3] lower nibble)
@@ -226,8 +232,6 @@ float LTC6810::readTemperatureTMP1075(TMP1075_Handle_t* sensor) {
     // TMP1075-specific conversion:
     // 12-bit temperature value stored in bits 15-4
     // Each LSB = 0.0625°C
-    // float temperature = (rawTemp >> 4) * 0.0625f;
-
     return (rawTemp >> 4) * 0.0625f;
 }
 

@@ -16,7 +16,7 @@ inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 5;
 // the address of 0x48 (based on the data sheet) based on how they are wired
 //  i assume this is a wip and will be updated later
 inline constexpr uint16_t TMP1075_ADDRESSES[NUM_TEMP_SENSORS_PER_MODULE] = {
-    0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48, 0x48
+    0x48, 0x49, 0x4B, 0x4F, 0x4D, 0x58, 0x4A, 0x4E, 0x40, 0x4C, 0x42, 0x41
 };
 
 // this is a temporary thing - i dont know the actual addresses - 64 bit unique address for each
