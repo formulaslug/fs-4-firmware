@@ -37,31 +37,31 @@ CANMessage CanGenerator::BuildTempMessage(uint8_t modNum, bool AorB) {
     };
 }
 
-CANMessage CanGenerator::BuildStatusMessage() {
+CANMessage CanGenerator::BuildStatusMessage(TelemetryInfo Data) {
     uint8_t data[8] = {0};
 
-    data[0] = (BMSInstance.Data.bmsFaultStatus)
-              + (BMSInstance.Data.imdStatus << 1)
-              + (BMSInstance.Data.shutdownFinal << 2)
-              + (BMSInstance.Data.shutdownIn << 3)
-              + (BMSInstance.Data.shutdownOut << 4)
-              + (BMSInstance.Data.preChargeActive << 5)
-              + (BMSInstance.Data.prechargeDone << 6)
-              + (BMSInstance.Data.charging << 7);
+    data[0] = (Data.bmsFaultStatus)
+              + (Data.imdStatus << 1)
+              + (Data.shutdownFinal << 2)
+              + (Data.shutdownIn << 3)
+              + (Data.shutdownOut << 4)
+              + (Data.preChargeActive << 5)
+              + (Data.prechargeDone << 6)
+              + (Data.charging << 7);
 
-    data[1] = BMSInstance.Data.balanceStat
-              + (BMSInstance.Data.cellTooLow << 1)
-              + (BMSInstance.Data.cellTooHigh << 2)
-              + (BMSInstance.Data.tempTooLow << 3)
-              + (BMSInstance.Data.tempTooHigh << 4)
-              + (BMSInstance.Data.tempTooHighCRG << 5);
+    data[1] = Data.balanceStat
+              + (Data.cellTooLow << 1)
+              + (Data.cellTooHigh << 2)
+              + (Data.tempTooLow << 3)
+              + (Data.tempTooHigh << 4)
+              + (Data.tempTooHighCRG << 5);
 
-    data[2] = BMSInstance.Data.faultModIndex;
-    data[3] = BMSInstance.Data.faultSenseIndex;
-    data[4] = BMSInstance.Data.battStatFaultIndex;
-    data[5] = (uint8_t)(BMSInstance.Data.glvVoltage >> 8);
-    data[6] = (uint8_t)(BMSInstance.Data.glvVoltage);
-    data[7] = BMSInstance.Data.pwmFanstat;
+    data[2] = Data.faultModIndex;
+    data[3] = Data.faultSenseIndex;
+    data[4] = Data.battStatFaultIndex;
+    data[5] = (uint8_t)(Data.glvVoltage >> 8);
+    data[6] = (uint8_t)(Data.glvVoltage);
+    data[7] = Data.pwmFanstat;
     return CANMessage{BATT_TPDO_STATUS, data, 8};
 }
 
@@ -116,7 +116,7 @@ CANMessage CanGenerator::BuildCellStatsMessage() {
     return CANMessage{BATT_TPDO_CELL_STATS, data, 6};
 }
 
-void CanGenerator::BuildAndSendMessages() {
+void CanGenerator::BuildAndSendMessages(TelemetryInfo Data) {
     CANMessage msg;
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         msg = BuildVoltageMessage(i);
@@ -126,4 +126,5 @@ void CanGenerator::BuildAndSendMessages() {
         msg = BuildTempMessage(i, false);
         CAN_POWERTRAIN.write(msg);
     }
+    BuildStatusMessage(Data);
 }

@@ -82,6 +82,17 @@ public:
 
     bms_state currentState;
 
+    bool balancing = 0;
+    bool cellTooHigh = 0;
+    bool cellTooLow = 0;
+    
+    // bool bmsFault = 0;
+
+
+    uint8_t faultModIndex = 0;
+    uint8_t faultSenseIndex = 0;
+    uint8_t battStatFaultIndex = 0;
+
     Timer ltcTimeoutTimer;
     CANMessage msg;
 
@@ -103,7 +114,6 @@ public:
     AnalogIn V_Out_Negative = AnalogIn(PC_1);
     DigitalIn IMD_Fault_3V3 = DigitalIn(PC_4);
     DigitalOut nBMS_Fault_3V3 = DigitalOut(PC_5);
-    PwmOut Fan_PWM = PwmOut(PC_8);
     // look more into this one (i think its a precharge indicator )
     DigitalOut TS_READY = DigitalOut(PC_9);
     DigitalIn SH_RESET_3V3 = DigitalIn(PA_2);

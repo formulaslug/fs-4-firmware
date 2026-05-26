@@ -4,6 +4,31 @@
 #include "mbed.h"
 #include <cstdint>
 
+
+struct TelemetryInfo {
+    bool bmsFaultStatus;
+    bool imdStatus;
+    bool shutdownIn;
+    bool shutdownOut;
+    bool shutdownFinal;
+    bool preChargeActive;
+    bool prechargeDone;
+    bool charging;
+
+    bool balanceStat;
+    bool cellTooLow;
+    bool cellTooHigh;
+    bool tempTooLow;
+    bool tempTooHigh;
+    bool tempTooHighCRG;
+    uint8_t faultModIndex;
+    uint8_t faultSenseIndex;
+    uint8_t battStatFaultIndex; // this is the cell fault num
+    uint16_t glvVoltage;
+    uint8_t pwmFanstat;
+};
+
+
 // voltage messages
 constexpr uint32_t BATT_TPDO_MOD0_VOLTS = 0x495;
 constexpr uint32_t BATT_TPDO_MOD1_VOLTS = 0x498;
@@ -56,13 +81,16 @@ private:
     CAN &CAN_POWERTRAIN;
 
 public:
+
+    
+
     CanGenerator(const BMS&, CAN&);
     CANMessage BuildTempMessage(uint8_t modNum, bool AorB);
     CANMessage BuildVoltageMessage(uint8_t modNum);
-    CANMessage BuildStatusMessage(); // i think this one is likely to be a pain, will probably
+    CANMessage BuildStatusMessage(TelemetryInfo); // i think this one is likely to be a pain, will probably
                                      // require some changes to the BMS Class.
 
     CANMessage BuildTrayTempMessage(uint8_t traytempsensors[5]);
     CANMessage BuildCellStatsMessage();
-    void BuildAndSendMessages();
+    void BuildAndSendMessages(TelemetryInfo);
 };

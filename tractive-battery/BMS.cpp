@@ -30,41 +30,12 @@ BMS::BMS(CAN &CAN_POWERTRAIN, bool charging)
 
     currentState = ACTIVE; // assume everything is okay at startup
     Timer ltcTimeoutTimer; // timer for ltc6810 timeout
-    CANMessage msg;        // can message object
     nBMS_Fault_3V3 = 1;    // assume no fault at startup
-    // nPrechargeControl = 1; // no precharge during startup
-    Data = {
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        0,
-        0,
-        0,
-        0,
-        0
-    };
+    
 
     packCurrentAmpsOutput = 0.0f;
     packCurrentAmpsInput = 0.0f;
 
-    if (charging) {
-        currentState = CHARGING;
-        Data.charging = 1;
-    } else {
-        currentState = ACTIVE;
-        Data.charging = 0;
-    }
 
     // intialize data - assume everything is good at startup
 
@@ -123,7 +94,7 @@ void BMS::turnOffCellBalancing() {
         chips[i].updateConfig();
     }
     printf("Cell balancing deactivated....\n");
-    Data.balanceStat = 0;
+    balancing = 0;
 }
 
 void BMS::readCellVoltages() {
@@ -259,7 +230,7 @@ void BMS::decideBalancing() {
                 chips[i].updateConfig();
             }
         }
-        Data.balanceStat = 1;
+        balancing = 1;
     }
 }
 
@@ -288,12 +259,12 @@ void BMS::checkForFaults() {
             if (voltVal >= MAX_CELL_VOLTAGE || voltVal <= MIN_CELL_VOLTAGE) {
                 currentState = FAULT;
                 nBMS_Fault_3V3 = 0;
-                Data.faultModIndex = i;
-                Data.faultSenseIndex = j;
+                faultModIndex = i;
+                faultSenseIndex = j;
                 if (voltVal >= MAX_CELL_VOLTAGE) {
-                    Data.cellTooHigh = 1;
+                    cellTooHigh = 1;
                 } else {
-                    Data.cellTooLow = 1;
+                    cellTooLow = 1;
                 }
             }
         }
@@ -305,12 +276,12 @@ void BMS::checkForFaults() {
                 if (tempReading >= CHARGING_CELL_MAX_TEMP || tempReading <= CHARGING_CELL_MIN_TEMP) {
                     currentState = FAULT;
                     nBMS_Fault_3V3 = 0;
-                    Data.faultModIndex = i;
-                    Data.faultSenseIndex = j;
+                    faultModIndex = i;
+                    faultSenseIndex = j;
                     if (tempReading >= CHARGING_CELL_MIN_TEMP) {
-                        Data.cellTooLow = 1;
+                        cellTooLow = 1;
                     } else {
-                        Data.cellTooHigh = 1;
+                        cellTooHigh = 1;
                     }
                 }
             }
@@ -328,9 +299,9 @@ void BMS::checkForFaults() {
     //  faults on high reading i think - double check
     //  i believe this opens the shutdown cirtui
 
-    if (currentState == FAULT) {
-        Data.bmsFaultStatus = 1;
-    }
+    // if (currentState == FAULT) {
+    //     bmsFault = 1;
+    // }
 }
 
 // i am undecided wether or not to put the bms into a fault state here - might add a state that
@@ -345,29 +316,14 @@ void BMS::checkForFaults() {
 
 */
 
-void BMS::telemetryPins() {
-    Data.shutdownIn = Shutdown_In_3V3_Filtered.read();
-    Data.shutdownOut = Shutdown_Out_3V3_Filtered.read();
-    Data.shutdownFinal = Shutdown_Final_3V3_Filtered.read();
-    Data.imdStatus = IMD_Fault_3V3.read();
-}
+// void BMS::telemetryPins() {
+//     Data.shutdownIn = Shutdown_In_3V3_Filtered.read();
+//     Data.shutdownOut = Shutdown_Out_3V3_Filtered.read();
+//     Data.shutdownFinal = Shutdown_Final_3V3_Filtered.read();
+//     Data.imdStatus = IMD_Fault_3V3.read();
+// }
 
-void BMS::controlFans() {
-    int8_t maxTemp = maxCellTemp;
 
-    if (currentState != PRECHARGING) {
-        // Linear scaling: 20% at ~20°C, 100% at ~50°C
-        // Formula: (2.6667 * temp) - 33.3333, clamped to [20, 100]
-        int raw_percent = (int)((2.6667f * maxTemp) - 33.3333f);
-        uint8_t fan_percent = (uint8_t)std::clamp(raw_percent, 20, 100);
-        Fan_PWM.write(fan_percent / 100.0f); // PWM expects 0.0 - 1.0
-        Data.pwmFanstat = fan_percent / 100.0f;
-    } else {
-        // Keep fans off until precharge is complete
-        Fan_PWM.write(0.0f);
-        Data.pwmFanstat = 0;
-    }
-}
 
 void BMS::controller() {
 
@@ -401,6 +357,6 @@ void BMS::controller() {
         // need to turn on indicator lights as well .....
         //  precharge relay should be open in this case
         // fans turn off on fault
-        Fan_PWM.write(0.0f);
+        // Fan_PWM.write(0.0f);
     }
 }

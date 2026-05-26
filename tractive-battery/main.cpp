@@ -23,6 +23,8 @@ DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
 // Status of the shutdown circuit after BMS & IMD
 DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
 InterruptIn Shutdown_Final_3V3_Filtered = InterruptIn(PA_6);
+PwmOut Fan_PWM = PwmOut(PC_8);
+
 
 constexpr float PRECHARGE_TIMEOUT = 3.0f;
 DigitalOut nPrechargeControl = DigitalOut(PB_0);
@@ -50,34 +52,16 @@ uint8_t trayTemps[NUM_TRAY_TEMP_SENSORS];
 
 uint32_t dcBusVoltageMv;
 
-struct TelemetryInfo {
-    bool bmsFaultStatus;
-    bool imdStatus;
-    bool shutdownIn;
-    bool shutdownOut;
-    bool shutdownFinal;
-    bool preChargeActive;
-    bool prechargeDone;
-    bool charging;
 
-    bool balanceStat;
-    bool cellTooLow;
-    bool cellTooHigh;
-    bool tempTooLow;
-    bool tempTooHigh;
-    bool tempTooHighCRG;
-    uint8_t faultModIndex;
-    uint8_t faultSenseIndex;
-    uint8_t battStatFaultIndex; // this is the cell fault num
-    uint16_t glvVoltage;
-    uint8_t pwmFanstat;
-} Data;
+TelemetryInfo Data;
+
 
 void processCanRx();
 bool prechargeAllowed();
 bool prechargeComplete();
 bool shutdownClosed();
 void updatePrecharge();
+void controlFans();
 
 // enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHARGE_COMPLETE };
 // precharge_state prechargeState = PRECHARGE_IDLE;
@@ -116,6 +100,7 @@ int main() {
     });
 
     queue.call_every(2ms, &BMSInstance, &BMS::controller);
+    queue.call_every(200ms, controlFans);
     // queue.call_every(1000ms, &cGen, &CanGenerator::BuildAndSendMessages);
 
     while (Data.prechargeDone) {
@@ -126,6 +111,29 @@ int main() {
 
     return 0;
 }
+
+
+void controlFans() {
+    BMSInstance.maxCellTemp;
+
+    if (Data.preChargeActive == true) {
+        // Linear scaling: 20% at ~20°C, 100% at ~50°C
+        // Formula: (2.6667 * temp) - 33.3333, clamped to [20, 100]
+        int raw_percent = (int)((2.6667f * BMSInstance.maxCellTemp) - 33.3333f);
+        uint8_t fan_percent = (uint8_t)std::clamp(raw_percent, 20, 100);
+        Fan_PWM.write(fan_percent / 100.0f); // PWM expects 0.0 - 1.0
+        Data.pwmFanstat = fan_percent / 100.0f;
+    } else {
+        // Keep fans off until precharge is complete
+        Fan_PWM.write(0.0f);
+        Data.pwmFanstat = 0;
+    }
+}
+
+
+
+
+
 
 void processCanRx() {
     CANMessage msg;
@@ -152,6 +160,11 @@ void processCanRx() {
         }
     }
 }
+
+
+
+
+
 
 bool shutdownClosed() { return Shutdown_Final_3V3_Filtered.read(); }
 
