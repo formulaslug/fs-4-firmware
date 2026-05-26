@@ -16,10 +16,10 @@ class TractionController {
     // getters (for logging)
     float get_slip() const;
     float get_integral() const;
+    float get_raw_derivative() const;
     float get_smoothed_derivative() const;
     float get_loop_time() const;
     float get_output() const;
-    bool  get_saturated() const;
 
   private:
     // TUNING VARIABLES
@@ -38,9 +38,9 @@ class TractionController {
     float loop_time;
     float prev_slip;
     float last_output;
+    float raw_derivative;
     float smoothed_derivative;
     bool prev_slip_stale;
-    bool saturated;
     bool filter_init;
     float filter_time_constant;
     float max_integral;

@@ -8,11 +8,11 @@ TractionController::TractionController()
   this->prev_slip = 0.0f;
   this->prev_slip_stale = true;
   this->integral = 0.0f;
+  this->raw_derivative = 0.0f;
   this->smoothed_derivative = 0.0f;
   this->filter_init = false;
   this->loop_time = 0.0f;
   this->last_output = 1.0f;
-  this->saturated = false;
   // set filter time constant
   this->filter_time_constant = 1.0f / (2.0f * M_PI * this->FILTER_CUTOFF_FREQ);
   // set max integral
@@ -53,7 +53,7 @@ float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws
   const float error = this->slip - TARGET_WHEEL_SLIP;
 
   // compute derivative of slip
-  float raw_derivative = 0.0f;
+  this->raw_derivative = 0.0f;
   if (!prev_slip_stale && loop_time > 0.0f)
   {
     raw_derivative = (slip - prev_slip) / loop_time;
@@ -88,8 +88,8 @@ float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws
   // skip integration if saturated to prevent integral windup
   // we only care about the positive error case because negative windup
   // is solved by the integral clamp below
-  this->saturated = (unclamped <= this->MIN_OUTPUT) && (error > 0.0f);
-  if (!this->saturated && !this->prev_slip_stale) 
+  bool saturated = (unclamped <= this->MIN_OUTPUT) && (error > 0.0f);
+  if (!saturated && !this->prev_slip_stale) 
   {
     // Leaving trapezoidal integration formula here.
     // According to questionable source, trapezoidal integration is 
@@ -122,17 +122,22 @@ void TractionController::reset()
   this->integral = 0.0f;
 
   // reset derivative & filter
+  this->raw_derivative = 0.0f;
   this->smoothed_derivative = 0.0f;
   this->filter_init = false;
 
   // reset output & saturated
   this->last_output = 1.0f;
-  this->saturated = false;
 
   // restart timer
   this->loop_timer.stop();
   this->loop_timer.reset();
   this->loop_timer.start();
+}
+
+float TractionController::get_raw_derivative() const
+{
+  return this->raw_derivative;
 }
 
 float TractionController::get_smoothed_derivative() const
@@ -158,9 +163,4 @@ float TractionController::get_slip() const
 float TractionController::get_output() const
 {
   return this->last_output;
-}
-
-bool TractionController::get_saturated() const
-{
-  return this->saturated;
 }
