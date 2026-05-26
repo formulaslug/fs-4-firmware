@@ -9,7 +9,7 @@
 //  static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
 //  static constexpr float MAX_PACK_CURRENT_AMPS = 1000.0f; // adjust later
 
-BMS::BMS(CAN &CAN_POWERTRAIN)
+BMS::BMS(CAN &CAN_POWERTRAIN, bool charging)
     : ltcBusInterface(&spiInterface), CAN_POWERTRAIN(CAN_POWERTRAIN) {
 
     chips.reserve(NUM_BATTERY_MODULES);
@@ -32,7 +32,7 @@ BMS::BMS(CAN &CAN_POWERTRAIN)
     Timer ltcTimeoutTimer; // timer for ltc6810 timeout
     CANMessage msg;        // can message object
     nBMS_Fault_3V3 = 1;    // assume no fault at startup
-    nPrechargeControl = 1; // no precharge during startup
+    // nPrechargeControl = 1; // no precharge during startup
     Data = {
         false,
         false,
@@ -55,17 +55,15 @@ BMS::BMS(CAN &CAN_POWERTRAIN)
         0
     };
 
-    currentSensorOffsetVolts = 0.0f;
     packCurrentAmpsOutput = 0.0f;
     packCurrentAmpsInput = 0.0f;
-    currentSensorCalibrated = false;
 
-    if (Charge_State_Filtered.read()) {
+    if (charging) {
         currentState = CHARGING;
-        Data.chargeStat = 1;
+        Data.charging = 1;
     } else {
         currentState = ACTIVE;
-        Data.chargeStat = 0;
+        Data.charging = 0;
     }
 
     // intialize data - assume everything is good at startup
@@ -90,32 +88,32 @@ BMS::BMS(CAN &CAN_POWERTRAIN)
     - implementing current sensor is underway make sure changes are announced beforehand
 */
 
-void BMS::chargingActions() {
-    // current work in progress - needs to detect soc over can......
-    // I have several questions about this ... do we fault based on this data what exactly do we do
-    // with it - might reference fs3 code from fs3 adapted to fs4
-    uint8_t canData = 0;
-    CAN_POWERTRAIN.read(msg);
-    uint32_t id = msg.id;
-    unsigned char* data = msg.data;
-
-    if (!(currentState == FAULT)) {
-        switch (id) {
-        case 0x682: // temperature message from MC
-            canData = (data[2] | (data[3] << 8));
-            break;
-        default:
-            break;
-        }
-    } else {
-        switch (id) {
-        case 0x190: // charge status from charger, 180 + node ID (10)
-            canData = (data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24)) / 100;
-        default:
-            break;
-        }
-    }
-}
+// void BMS::chargingActions() {
+//     // current work in progress - needs to detect soc over can......
+//     // I have several questions about this ... do we fault based on this data what exactly do we do
+//     // with it - might reference fs3 code from fs3 adapted to fs4
+//     uint8_t canData = 0;
+//     CAN_POWERTRAIN.read(msg);
+//     uint32_t id = msg.id;
+//     unsigned char* data = msg.data;
+//
+//     if (!(currentState == FAULT)) {
+//         switch (id) {
+//         case 0x682: // temperature message from MC
+//             canData = (data[2] | (data[3] << 8));
+//             break;
+//         default:
+//             break;
+//         }
+//     } else {
+//         switch (id) {
+//         case 0x190: // charge status from charger, 180 + node ID (10)
+//             canData = (data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24)) / 100;
+//         default:
+//             break;
+//         }
+//     }
+// }
 
 void BMS::turnOffCellBalancing() {
     ltcBusInterface.WakeupBus();
@@ -166,7 +164,6 @@ void BMS::readCellVoltages() {
     ThisThread::sleep_for(3ms);
 
     if (voltsConverted) {
-        float tempVoltageSum = 0;
         ltcTimeoutTimer.stop();
         ltcTimeoutTimer.reset();
         // reset timer after successful adc conversions...
@@ -185,26 +182,25 @@ void BMS::readCellVoltages() {
                 printf("%d\n", castVoltages[j]); // printing the cell voltages for testing purposes
 
                 voltages[i][j] = castVoltages[j];
-                tempVoltageSum += castVoltages[j];
             }
             printf("\n");
             // 6 bytes per cell group reading (2 bytes per cell) ... transmitted in little endian
             // casted so that its easier to read
         }
 
-        currentBatteryVoltage = tempVoltageSum;
-
-        printf("read voltages...\n");
-        minVoltage = voltages[0][0];
-        maxVoltage = voltages[0][0];
+        minCelVoltage = voltages[0][0];
+        maxCellVoltage = voltages[0][0];
+        packVoltageMv = 0;
 
         for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
             for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-                if (voltages[i][j] < minVoltage) {
-                    minVoltage = voltages[i][j];
+                packVoltageMv += voltages[i][j];
+
+                if (voltages[i][j] < minCelVoltage) {
+                    minCelVoltage = voltages[i][j];
                 }
-                if (voltages[i][j] > maxVoltage) {
-                    maxVoltage = voltages[i][j];
+                if (voltages[i][j] > maxCellVoltage) {
+                    maxCellVoltage = voltages[i][j];
                 }
             }
         }
@@ -238,7 +234,7 @@ void BMS::decideBalancing() {
     // turns on balancing for chips
     printf("deciding balancing......");
     if (currentState != FAULT) {
-        if (maxVoltage >= BALANCING_THRESHOLD && minVoltage > MIN_CELL_VOLTAGE) {
+        if (maxCellVoltage >= BALANCING_THRESHOLD && minCelVoltage > MIN_CELL_VOLTAGE) {
             for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
                 uint8_t dischargeValue = 0x00;
                 LTC6810::Configuration& config = chips[i].getConfig();
@@ -252,7 +248,7 @@ void BMS::decideBalancing() {
                     if (voltages[i][j] > maxModuleVolt) {
                         maxModuleVolt = voltages[i][j];
                     }
-                    if ((maxModuleVolt - minVoltage) >= DIFFERENCE_THRESHOLD) {
+                    if ((maxModuleVolt - minCelVoltage) >= DIFFERENCE_THRESHOLD) {
                         dischargeValue |= (0x1 << j); // we balance based on the whole battery
                     }
                     // Logic is find lowest voltage cell - go through each module and balance that
@@ -306,12 +302,12 @@ void BMS::checkForFaults() {
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
             int8_t tempReading = temps[i][j];
             if (currentState == CHARGING) {
-                if (tempReading >= CHARGING_CELL_MAX || tempReading <= CHARGING_CELL_MIN) {
+                if (tempReading >= CHARGING_CELL_MAX_TEMP || tempReading <= CHARGING_CELL_MIN_TEMP) {
                     currentState = FAULT;
                     nBMS_Fault_3V3 = 0;
                     Data.faultModIndex = i;
                     Data.faultSenseIndex = j;
-                    if (tempReading >= CHARGING_CELL_MIN) {
+                    if (tempReading >= CHARGING_CELL_MIN_TEMP) {
                         Data.cellTooLow = 1;
                     } else {
                         Data.cellTooHigh = 1;
@@ -350,21 +346,10 @@ void BMS::checkForFaults() {
 */
 
 void BMS::telemetryPins() {
-    if (Shutdown_In_3V3_Filtered.read() == 0) {
-        Data.shutDownIn = 0;
-    } else {
-        Data.shutDownIn = 1;
-    }
-    if (Shutdown_Out_3V3_Filtered.read() == 0) {
-        Data.shutDownOut = 0;
-    } else {
-        Data.shutDownOut = 1;
-    }
-    if (IMD_Fault_3V3.read() == 0) {
-        Data.imdStatus = 1;
-    } else {
-        Data.imdStatus = 0;
-    }
+    Data.shutdownIn = Shutdown_In_3V3_Filtered.read();
+    Data.shutdownOut = Shutdown_Out_3V3_Filtered.read();
+    Data.shutdownFinal = Shutdown_Final_3V3_Filtered.read();
+    Data.imdStatus = IMD_Fault_3V3.read();
 }
 
 void BMS::controlFans() {

@@ -3,9 +3,8 @@
 #include <cstdint>
 #include <cstdio>
 
-CanGenerator::CanGenerator(const BMS &GivenBMSObject, CAN &CAN_POWERTRAIN): BMSInstance(GivenBMSObject), CAN_POWERTRAIN(CAN_POWERTRAIN) { 
-    // BMSInstance = GivenBMSObject;  CAN_POWERTRAIN = CAN_POWERTRAIN;
-}
+CanGenerator::CanGenerator(const BMS& GivenBMSObject, CAN& CAN_POWERTRAIN)
+    : BMSInstance(GivenBMSObject), CAN_POWERTRAIN(CAN_POWERTRAIN) {}
 
 CANMessage CanGenerator::BuildVoltageMessage(uint8_t modNum) {
     // builds a voltage message
@@ -43,12 +42,12 @@ CANMessage CanGenerator::BuildStatusMessage() {
 
     data[0] = (BMSInstance.Data.bmsFaultStatus)
               + (BMSInstance.Data.imdStatus << 1)
-              + (BMSInstance.Data.shutDownCircuitReading << 2)
-              + (BMSInstance.Data.shutDownIn << 3)
-              + (BMSInstance.Data.shutDownOut << 4)
+              + (BMSInstance.Data.shutdownFinal << 2)
+              + (BMSInstance.Data.shutdownIn << 3)
+              + (BMSInstance.Data.shutdownOut << 4)
               + (BMSInstance.Data.preChargeActive << 5)
               + (BMSInstance.Data.prechargeDone << 6)
-              + (BMSInstance.Data.chargeStat << 7);
+              + (BMSInstance.Data.charging << 7);
 
     data[1] = BMSInstance.Data.balanceStat
               + (BMSInstance.Data.cellTooLow << 1)
@@ -75,7 +74,7 @@ CANMessage CanGenerator::BuildTrayTempMessage(uint8_t traytempsensors[5]) {
     return CANMessage{BATT_TPDO_TRAY_TEMPS, data, NUM_TRAY_TEMP_SENSORS};
 }
 
-CANMessage CanGenerator::BuildCellStatsMessage(){
+CANMessage CanGenerator::BuildCellStatsMessage() {
     uint8_t data[5] = {0};
 
     int32_t sumTemp = 0;
@@ -93,9 +92,9 @@ CANMessage CanGenerator::BuildCellStatsMessage(){
         }
     }
     float avgTemp = (float)sumTemp / tempCount;
-    int32_t  sumVolt  = 0;
-    uint16_t minVolt  = BMSInstance.voltages[0][0];
-    uint16_t maxVolt  = BMSInstance.voltages[0][0];
+    int32_t sumVolt = 0;
+    uint16_t minVolt = BMSInstance.voltages[0][0];
+    uint16_t maxVolt = BMSInstance.voltages[0][0];
     uint16_t voltCount = 0;
 
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
@@ -108,12 +107,12 @@ CANMessage CanGenerator::BuildCellStatsMessage(){
         }
     }
     float avgVolt = (float)sumVolt / voltCount;
-    data[0] = (uint8_t)(avgTemp  / 0.25f);  
-    data[1] = (uint8_t)(maxTemp  / 0.25f);   
-    data[2] = (uint8_t)(minTemp  / 0.25f);   
-    data[3] = (uint8_t)(avgVolt  / 0.25f);   
-    data[4] = (uint8_t)(maxVolt  / 0.25f);   
-    data[5] = (uint8_t)(minVolt  / 0.25f);
+    data[0] = (uint8_t)(avgTemp / 0.25f);
+    data[1] = (uint8_t)(maxTemp / 0.25f);
+    data[2] = (uint8_t)(minTemp / 0.25f);
+    data[3] = (uint8_t)(avgVolt / 0.25f);
+    data[4] = (uint8_t)(maxVolt / 0.25f);
+    data[5] = (uint8_t)(minVolt / 0.25f);
     return CANMessage{BATT_TPDO_CELL_STATS, data, 6};
 }
 

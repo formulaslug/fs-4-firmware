@@ -26,8 +26,8 @@ inline constexpr uint64_t TRAYTEMP_SENSOR_ADDRESSES[NUM_TRAY_TEMP_SENSORS] = {
 };
 
 // battery cell info for inr-18650-p30b - based on datasheet
-inline constexpr int8_t CHARGING_CELL_MAX = 60;
-inline constexpr int8_t CHARGING_CELL_MIN = 0;
+inline constexpr int8_t CHARGING_CELL_MAX_TEMP = 60;
+inline constexpr int8_t CHARGING_CELL_MIN_TEMP = 0;
 inline constexpr int8_t CELL_MAX = 60;
 inline constexpr int8_t CELL_MIN = -40;
 
@@ -44,16 +44,13 @@ inline constexpr float HASS300_IPN = 300.0f;                       // Nominal pr
 inline constexpr float HASS300_SENSITIVITY = 0.625f / HASS300_IPN; // V/A = ~0.002083 V/A // this is what we need to calibrate? ...  
 inline constexpr float HASS300_VREF = 2.5f;            // Output voltage at zero current (V)
 inline constexpr float HASS300_ADC_REF = 3.3f;         // MCU ADC reference voltage (V)
-inline constexpr float MAX_PACK_CURRENT_AMPS = 100.0f; // Overcurrent fault threshold - tune later
+inline constexpr float MAX_PACK_CURRENT_AMPS = 600.0f; // Overcurrent fault threshold - tune later
 inline constexpr size_t CURRENT_FILTER_SAMPLES = 10;   // Rolling average window size
 
 static constexpr float ADC_REF_VOLTAGE = 3.3f;
 // this will probably be adjusted and tuned as testing happens
 static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f; // first-pass estimate
 static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
-
-// for precharge ???
-inline constexpr float MIN_PACK_MV = 2.5; // this is just a placeholder
 
 class BMS {
 
@@ -69,33 +66,8 @@ private:
     void turnOffCellBalancing();
     void telemetryPins();
 
-    // bms_state currentState;
-    struct TelemetryInfo {
-        bool bmsFaultStatus;
-        bool imdStatus;
-        bool shutDownCircuitReading;
-        bool shutDownIn;
-        bool shutDownOut;
-        bool preChargeActive;
-        bool prechargeDone;
-        bool chargeStat;
-
-        bool balanceStat;
-        bool cellTooLow;
-        bool cellTooHigh;
-        bool tempTooLow;
-        bool tempTooHigh;
-        bool tempTooHighCRG;
-        uint8_t faultModIndex;
-        uint8_t faultSenseIndex;
-        uint8_t battStatFaultIndex; // this is the cell fault num
-        uint16_t glvVoltage;
-        uint8_t pwmFanstat;
-
-    };
-
 public:
-    BMS(CAN &CAN_POWERTRAIN);
+    BMS(CAN &CAN_POWERTRAIN, bool charging);
 
     void controller();
 
@@ -103,24 +75,23 @@ public:
         uint8_t i2c_address;
         uint8_t temp_reg;
     };
-    enum bms_state { ACTIVE = 0, CHARGING = 1, FAULT = 2, PRECHARGING = 3 };
+    enum bms_state { ACTIVE = 0, CHARGING = 1, FAULT = 2 };
 
-    float currentSensorOffsetVolts;
     float packCurrentAmpsOutput;
     float packCurrentAmpsInput;
-    bool currentSensorCalibrated;
-    bms_state currentState;
-    float currentBatteryVoltage = 0;
 
-    TelemetryInfo Data;
+    bms_state currentState;
 
     Timer ltcTimeoutTimer;
     CANMessage msg;
 
-    int8_t temps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
+    // All in mv
     uint16_t voltages[NUM_BATTERY_MODULES][NUM_VOLTAGES_PER_MODULE];
-    uint16_t minVoltage;
-    uint16_t maxVoltage;
+    uint16_t minCelVoltage;
+    uint16_t maxCellVoltage;
+    uint32_t packVoltageMv;
+
+    int8_t temps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
     uint16_t maxCellTemp;
 
     std::vector<LTC6810> chips;
@@ -130,23 +101,15 @@ public:
     // current sensors need to be implemented
     AnalogIn V_Out_Positive = AnalogIn(PC_0);
     AnalogIn V_Out_Negative = AnalogIn(PC_1);
-    // assume 1 for charging 0 for not charging
-    DigitalIn Charge_State_Filtered = DigitalIn(PC_2);
     DigitalIn IMD_Fault_3V3 = DigitalIn(PC_4);
     DigitalOut nBMS_Fault_3V3 = DigitalOut(PC_5);
     PwmOut Fan_PWM = PwmOut(PC_8);
     // look more into this one (i think its a precharge indicator )
     DigitalOut TS_READY = DigitalOut(PC_9);
-    // status of the shutdown circuit before bms
-    DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
-    // status of the shutdown circuit after bms
-    DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
     DigitalIn SH_RESET_3V3 = DigitalIn(PA_2);
-    DigitalIn Shutdown_Measure = DigitalIn(PA_6);
     AnalogIn GLV_Voltage = AnalogIn(PA_7);
     // some configuration for this needs to be done at startup see mbedosce
     // CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
-    DigitalOut nPrechargeControl = DigitalOut(PB_0);
     SPI spiInterface = SPI(PB_5, PB_4, PA_5, PA_4, use_gpio_ssel);
     LTC681xParallelBus ltcBusInterface;
     CAN &CAN_POWERTRAIN; //reference to can object defined in main 
