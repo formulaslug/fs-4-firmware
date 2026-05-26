@@ -134,33 +134,27 @@ void send_sme_CAN_messages() {
     buf1[3] = etc_state.DISCHARGE_CURRENT_LIMIT >> 8;
 
     uint8_t buf2[8];
-    int16_t tc_slip = static_cast<int16_t>(etc.traction_controller.get_slip() * 1000.0f);
+    uint8_t tc_slip = static_cast<uint8_t>(etc.traction_controller.get_slip() * 100.0f);
+    uint8_t tc_output = static_cast<uint8_t>(etc.traction_controller.get_output() * 100.0f);
     int16_t tc_integral = static_cast<int16_t>(etc.traction_controller.get_integral() * 1000.0f);
     int16_t tc_raw_derivative = static_cast<int16_t>(etc.traction_controller.get_raw_derivative() * 1000.0f);
     int16_t tc_smoothed_derivative = static_cast<int16_t>(etc.traction_controller.get_smoothed_derivative() * 1000.0f);
-    buf2[0] = tc_slip & 0xFF;
-    buf2[1] = tc_slip >> 8;
+    buf2[0] = tc_slip;
+    buf2[1] = tc_output;
     buf2[2] = tc_integral & 0xFF;
     buf2[3] = tc_integral >> 8;
     buf2[4] = tc_raw_derivative & 0xFF;
     buf2[5] = tc_raw_derivative >> 8;
     buf2[6] = tc_smoothed_derivative & 0xFF;
     buf2[7] = tc_smoothed_derivative >> 8;
-
-    uint8_t buf3[8];
-    uint16_t tc_output = static_cast<int16_t>(etc.traction_controller.get_output() * 1000.0f);
-    buf3[0] = tc_output & 0xFF;
-    buf3[1] = tc_output >> 8;
     
     CANMessage throttle_msg{390, buf0, 8};
     CANMessage currents_msg{646, buf1, 8};
-    CANMessage traction_control_msg0{0x2B1, buf2, 8};
-    CANMessage traction_control_msg1{0x2B2, buf3, 2};
+    CANMessage traction_control_msg{0x2B1, buf2, 8};
 
     canP.write(throttle_msg);
     canP.write(currents_msg);
-    canD.write(traction_control_msg0);
-    canD.write(traction_control_msg1);
+    canD.write(traction_control_msg);
 }
 
 void update_traction_control() {
