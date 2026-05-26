@@ -101,11 +101,7 @@ int main() {
 
     queue.call_every(2ms, &BMSInstance, &BMS::controller);
     queue.call_every(200ms, controlFans);
-    // queue.call_every(1000ms, &cGen, &CanGenerator::BuildAndSendMessages);
-
-    while (Data.prechargeDone) {
-        updatePrecharge();
-    }
+    queue.call_every(1000ms, &cGen, &CanGenerator::BuildAndSendMessages, Data);
 
     queue.dispatch_forever();
 
