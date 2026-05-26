@@ -3,13 +3,15 @@
 #include <cstdint>
 #include <cstdio>
 
-CanGenerator::CanGenerator(BMS* GivenBMSObject) { BMSInstance = GivenBMSObject; }
+CanGenerator::CanGenerator(const BMS &GivenBMSObject, CAN &CAN_POWERTRAIN): BMSInstance(GivenBMSObject), CAN_POWERTRAIN(CAN_POWERTRAIN) { 
+    // BMSInstance = GivenBMSObject;  CAN_POWERTRAIN = CAN_POWERTRAIN;
+}
 
 CANMessage CanGenerator::BuildVoltageMessage(uint8_t modNum) {
     // builds a voltage message
     char data[6] = {0};
     for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-        data[j] = (uint8_t)(BMSInstance->voltages[modNum][j] / 10 - 200);
+        data[j] = (uint8_t)(BMSInstance.voltages[modNum][j] / 10 - 200);
     }
     return CANMessage{VOLTAGE_MESSAGE_IDS[modNum], data, NUM_VOLTAGES_PER_MODULE};
 }
@@ -21,13 +23,13 @@ CANMessage CanGenerator::BuildTempMessage(uint8_t modNum, bool AorB) {
     if (AorB) {
         messageIdindex = modNum * 2;
         for (uint8_t i = 0; i < NUM_TEMP_SENSORS_PER_MODULE / 2; i++) {
-            data[i] = BMSInstance->temps[messageIdindex][i];
+            data[i] = BMSInstance.temps[messageIdindex][i];
         }
     } else {
         messageIdindex = (modNum * 2) - 1;
         uint8_t index = 0;
         for (uint8_t i = NUM_TEMP_SENSORS_PER_MODULE / 2; i < NUM_TEMP_SENSORS_PER_MODULE; i++) {
-            data[index] = BMSInstance->temps[messageIdindex][i];
+            data[index] = BMSInstance.temps[messageIdindex][i];
             index++;
         }
     }
@@ -39,28 +41,28 @@ CANMessage CanGenerator::BuildTempMessage(uint8_t modNum, bool AorB) {
 CANMessage CanGenerator::BuildStatusMessage() {
     uint8_t data[8] = {0};
 
-    data[0] = (BMSInstance->Data.bmsFaultStatus)
-              + (BMSInstance->Data.imdStatus << 1)
-              + (BMSInstance->Data.shutDownCircuitReading << 2)
-              + (BMSInstance->Data.shutDownIn << 3)
-              + (BMSInstance->Data.shutDownOut << 4)
-              + (BMSInstance->Data.preChargeActive << 5)
-              + (BMSInstance->Data.prechargeDone << 6)
-              + (BMSInstance->Data.chargeStat << 7);
+    data[0] = (BMSInstance.Data.bmsFaultStatus)
+              + (BMSInstance.Data.imdStatus << 1)
+              + (BMSInstance.Data.shutDownCircuitReading << 2)
+              + (BMSInstance.Data.shutDownIn << 3)
+              + (BMSInstance.Data.shutDownOut << 4)
+              + (BMSInstance.Data.preChargeActive << 5)
+              + (BMSInstance.Data.prechargeDone << 6)
+              + (BMSInstance.Data.chargeStat << 7);
 
-    data[1] = BMSInstance->Data.balanceStat
-              + (BMSInstance->Data.cellTooLow << 1)
-              + (BMSInstance->Data.cellTooHigh << 2)
-              + (BMSInstance->Data.tempTooLow << 3)
-              + (BMSInstance->Data.tempTooHigh << 4)
-              + (BMSInstance->Data.tempTooHighCRG << 5);
+    data[1] = BMSInstance.Data.balanceStat
+              + (BMSInstance.Data.cellTooLow << 1)
+              + (BMSInstance.Data.cellTooHigh << 2)
+              + (BMSInstance.Data.tempTooLow << 3)
+              + (BMSInstance.Data.tempTooHigh << 4)
+              + (BMSInstance.Data.tempTooHighCRG << 5);
 
-    data[2] = BMSInstance->Data.faultModIndex;
-    data[3] = BMSInstance->Data.faultSenseIndex;
-    data[4] = BMSInstance->Data.battStatFaultIndex;
-    data[5] = (uint8_t)(BMSInstance->Data.glvVoltage >> 8);
-    data[6] = (uint8_t)(BMSInstance->Data.glvVoltage);
-    data[7] = BMSInstance->Data.pwmFanstat;
+    data[2] = BMSInstance.Data.faultModIndex;
+    data[3] = BMSInstance.Data.faultSenseIndex;
+    data[4] = BMSInstance.Data.battStatFaultIndex;
+    data[5] = (uint8_t)(BMSInstance.Data.glvVoltage >> 8);
+    data[6] = (uint8_t)(BMSInstance.Data.glvVoltage);
+    data[7] = BMSInstance.Data.pwmFanstat;
     return CANMessage{BATT_TPDO_STATUS, data, 8};
 }
 
@@ -77,13 +79,13 @@ CANMessage CanGenerator::BuildCellStatsMessage(){
     uint8_t data[5] = {0};
 
     int32_t sumTemp = 0;
-    int8_t minTemp = BMSInstance->temps[0][0];
-    int8_t maxTemp = BMSInstance->temps[0][0];
+    int8_t minTemp = BMSInstance.temps[0][0];
+    int8_t maxTemp = BMSInstance.temps[0][0];
     uint16_t tempCount = 0;
 
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-            int8_t t = BMSInstance->temps[i][j];
+            int8_t t = BMSInstance.temps[i][j];
             sumTemp += t;
             if (t < minTemp) minTemp = t;
             if (t > maxTemp) maxTemp = t;
@@ -92,13 +94,13 @@ CANMessage CanGenerator::BuildCellStatsMessage(){
     }
     float avgTemp = (float)sumTemp / tempCount;
     int32_t  sumVolt  = 0;
-    uint16_t minVolt  = BMSInstance->voltages[0][0];
-    uint16_t maxVolt  = BMSInstance->voltages[0][0];
+    uint16_t minVolt  = BMSInstance.voltages[0][0];
+    uint16_t maxVolt  = BMSInstance.voltages[0][0];
     uint16_t voltCount = 0;
 
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-            uint16_t v = BMSInstance->voltages[i][j];
+            uint16_t v = BMSInstance.voltages[i][j];
             sumVolt += v;
             if (v < minVolt) minVolt = v;
             if (v > maxVolt) maxVolt = v;
@@ -119,10 +121,10 @@ void CanGenerator::BuildAndSendMessages() {
     CANMessage msg;
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         msg = BuildVoltageMessage(i);
-        BMSInstance->CAN_POWERTRAIN.write(msg);
+        CAN_POWERTRAIN.write(msg);
         msg = BuildTempMessage(i, true);
-        BMSInstance->CAN_POWERTRAIN.write(msg);
+        CAN_POWERTRAIN.write(msg);
         msg = BuildTempMessage(i, false);
-        BMSInstance->CAN_POWERTRAIN.write(msg);
+        CAN_POWERTRAIN.write(msg);
     }
 }

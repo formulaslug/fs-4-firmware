@@ -31,31 +31,32 @@ constexpr uint32_t BATT_TPDO_MOD4_TEMPSB = 0x4a3;
 
 constexpr uint32_t VOLTAGE_MESSAGE_IDS[NUM_BATTERY_MODULES] = {
     BATT_TPDO_MOD0_VOLTS,
-    BATT_TPDO_MOD1_VOLTS,
-    BATT_TPDO_MOD2_VOLTS,
-    BATT_TPDO_MOD3_VOLTS,
-    BATT_TPDO_MOD4_VOLTS
+    // BATT_TPDO_MOD1_VOLTS,
+    // BATT_TPDO_MOD2_VOLTS,
+    // BATT_TPDO_MOD3_VOLTS,
+    // BATT_TPDO_MOD4_VOLTS
 };
 constexpr uint32_t TEMPERATURE_MESSAGE_IDS[NUM_BATTERY_MODULES * 2] = {
     BATT_TPDO_MOD0_TEMPSA,
     BATT_TPDO_MOD0_TEMPSB,
-    BATT_TPDO_MOD1_TEMPSA,
-    BATT_TPDO_MOD1_TEMPSB,
-    BATT_TPDO_MOD2_TEMPSA,
-    BATT_TPDO_MOD2_TEMPSB,
-    BATT_TPDO_MOD3_TEMPSA,
-    BATT_TPDO_MOD3_TEMPSB,
-    BATT_TPDO_MOD4_TEMPSA,
-    BATT_TPDO_MOD4_TEMPSB
+    // BATT_TPDO_MOD1_TEMPSA,
+    // BATT_TPDO_MOD1_TEMPSB,
+    // BATT_TPDO_MOD2_TEMPSA,
+    // BATT_TPDO_MOD2_TEMPSB,
+    // BATT_TPDO_MOD3_TEMPSA,
+    // BATT_TPDO_MOD3_TEMPSB,
+    // BATT_TPDO_MOD4_TEMPSA,
+    // BATT_TPDO_MOD4_TEMPSB
 };
 
 class CanGenerator {
 
 private:
-    BMS* BMSInstance;
+    const BMS &BMSInstance;
+    CAN &CAN_POWERTRAIN;
 
 public:
-    CanGenerator(BMS*);
+    CanGenerator(const BMS&, CAN&);
     CANMessage BuildTempMessage(uint8_t modNum, bool AorB);
     CANMessage BuildVoltageMessage(uint8_t modNum);
     CANMessage BuildStatusMessage(); // i think this one is likely to be a pain, will probably

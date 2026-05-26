@@ -9,13 +9,14 @@
 //  static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
 //  static constexpr float MAX_PACK_CURRENT_AMPS = 1000.0f; // adjust later
 
-BMS::BMS()
-    : ltcBusInterface(&spiInterface) {
+BMS::BMS(CAN &CAN_POWERTRAIN)
+    : ltcBusInterface(&spiInterface), CAN_POWERTRAIN(CAN_POWERTRAIN) {
 
     chips.reserve(NUM_BATTERY_MODULES);
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         chips.emplace_back(ltcBusInterface, i);
     }
+    // CAN_POWERTRAIN = CAN_POWERTRAIN;
 
     // there should also be the startup checks for the ADCS on all the LTC6810s here. not a priority
     // but nice to havce
@@ -145,22 +146,22 @@ void BMS::readCellVoltages() {
     stat = ltcBusInterface.SendCommand(command);
 
     // TODO: Why does this seem to always fail with PollTimeout?
-    // ThisThread::sleep_for(3ms);
-    //
-    // for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-    //     command = LTC681xParallelBus::BuildAddressedBusCommand(PollADCStatus(), i);
-    //     stat = ltcBusInterface.PollAdcCompletion(command, 0);
-    //
-    //     if (stat == LTC681xBus::LTC681xBusStatus::PollTimeout) {
-    //         // printf("ADC poll timeout, on Bank %d\n", i);
-    //         // voltsConverted = false;
-    //         ltcTimeoutTimer.start();
-    //         printf("poll timeout occured...\n");
-    //         // the rules require that we need to ensure we are getting data and that all sensors are
-    //         // working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
-    //         // that time period is a little arbitrary and probably should be adjusted
-    //     }
-    // }
+    // ThisThread::sleep_for(10ms);
+    ThisThread::sleep_for(4ms);
+    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+        command = LTC681xParallelBus::BuildAddressedBusCommand(PollADCStatus(), i);
+        stat = ltcBusInterface.PollAdcCompletion(command, 1);
+    
+        if (stat == LTC681xBus::LTC681xBusStatus::PollTimeout) {
+            // printf("ADC poll timeout, on Bank %d\n", i);
+            // voltsConverted = false;
+            ltcTimeoutTimer.start();
+            printf("poll timeout occured...\n");
+            // the rules require that we need to ensure we are getting data and that all sensors are
+            // working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
+            // that time period is a little arbitrary and probably should be adjusted
+        }
+    }
 
     ThisThread::sleep_for(3ms);
 
@@ -386,23 +387,17 @@ void BMS::controlFans() {
 void BMS::controller() {
 
     if (currentState != FAULT) {
-        //temporary cell balacing test
-        // decideBalancing();
-        // ThisThread::sleep_for(1s);
 
 
         // chargingActions();
         // printf("charging actions completed okay...\n");
-        turnOffCellBalancing();
-        // printf("turn off cell balancing completed okay...\n");
-        ThisThread::sleep_for(3ms);
-        readCellVoltages();
-        // printf("cellvoltages read okay\n");
         // turnOffCellBalancing();
-        // readTemps();
-        // for (int i =0; i<NUM_TEMP_SENSORS_PER_MODULE; i++) {
-        //     printf("temp %d: %d degC\n", i, temps[0][i]);
-        // }
+        // printf("turn off cell balancing completed okay...\n");
+        // ThisThread::sleep_for(3ms);
+        readCellVoltages();
+        printf("cellvoltages read okay\n");
+        // turnOffCellBalancing();
+       
 
         // printf("read temps went okay....\n");
         // checkForFaults();
@@ -411,10 +406,9 @@ void BMS::controller() {
         // printf("fan pwm set ...\n");
         // decideBalancing();
         // printf("battery balancing set....");
-        // checkShutdownCircuit();
         // telemetryPins();
         // readPackCurrent();
-        // ThisThread::sleep_for(1s);
+        ThisThread::sleep_for(1s);
     } else {
         printf("WE ARE IN FAULT");
         turnOffCellBalancing();

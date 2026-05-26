@@ -7,7 +7,7 @@ class prechargeLogic {
 public:
  enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHARGE_COMPLETE };
 
- prechargeLogic(BMS* currentInstance);
+ prechargeLogic(BMS *currentInstance);
  
 float readDcBusVoltage();
 float readPackVoltage();

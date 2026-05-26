@@ -1,5 +1,0 @@
-add_library(can STATIC can.cpp)
-
-target_include_directories(can PUBLIC .)
-
-target_link_libraries(can mbed-os mbed-core-flags)

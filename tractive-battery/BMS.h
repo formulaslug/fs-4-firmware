@@ -8,7 +8,7 @@
 #include "mbed.h"
 
 // general config
-inline constexpr uint8_t NUM_BATTERY_MODULES = 5;
+inline constexpr uint8_t NUM_BATTERY_MODULES = 1;
 inline constexpr uint8_t NUM_VOLTAGES_PER_MODULE = 6;
 inline constexpr uint8_t NUM_TEMP_SENSORS_PER_MODULE = 12;
 inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 5;
@@ -95,7 +95,7 @@ private:
     };
 
 public:
-    BMS();
+    BMS(CAN &CAN_POWERTRAIN);
 
     void controller();
 
@@ -145,8 +145,9 @@ public:
     DigitalIn Shutdown_Measure = DigitalIn(PA_6);
     AnalogIn GLV_Voltage = AnalogIn(PA_7);
     // some configuration for this needs to be done at startup see mbedosce
-    CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
+    // CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
     DigitalOut nPrechargeControl = DigitalOut(PB_0);
     SPI spiInterface = SPI(PB_5, PB_4, PA_5, PA_4, use_gpio_ssel);
     LTC681xParallelBus ltcBusInterface;
+    CAN &CAN_POWERTRAIN; //reference to can object defined in main 
 };

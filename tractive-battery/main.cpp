@@ -14,12 +14,16 @@ TODO items:
 */
 // need to initialize everything on startup - assume everything is okay at first
 
+
+
+CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
+
 constexpr bool eMeterPresent = false;
 
 EventQueue queue(5 * EVENTS_EVENT_SIZE);
 
-BMS BMSInstance;
-CanGenerator cGen(&BMSInstance);
+BMS BMSInstance(CAN_POWERTRAIN);
+CanGenerator cGen(BMSInstance, CAN_POWERTRAIN);
 
 OneWire TS1W = OneWire{PB_14};
 DigitalOut TS1W_PU_Control = DigitalOut(PB_15);
