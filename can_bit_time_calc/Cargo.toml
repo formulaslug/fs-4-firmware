@@ -1,0 +1,6 @@
+[package]
+name = "can_bit_time_calc"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
