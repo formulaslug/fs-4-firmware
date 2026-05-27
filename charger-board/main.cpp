@@ -12,10 +12,17 @@ void sendCAN();
 
 
 // TODO: Get correct pins from charger-board schematic
-BT817Q eve{PC_12, PC_11, PC_10, PD_2, PB_7, PC_13, EvePresets::CFA800480E3};
+BT817Q eve{PA_7, PA_6, PA_5, PA_4, PB_7, PA_15, EvePresets::CFA800480E3};
+  // BT817Q(PinName mosi,
+  //        PinName miso,
+  //        PinName sck,
+  //        PinName cs,
+  //        PinName pdn,
+  //        PinName irq,
+  //        EvePanel panel);
 
 // CAN can{PIN_CAN1_RD, PIN_CAN1_TD, CAN_FREQUENCY};
-CAN can{PB_8, PB_9, CAN_FREQUENCY};
+CAN can{PA_11, PA_12, CAN_FREQUENCY};
 
 AnalogIn control_pilot{PIN_CONTROL_PILOT};
 AnalogIn proximity_pilot{PIN_PROXIMITY_PILOT};
