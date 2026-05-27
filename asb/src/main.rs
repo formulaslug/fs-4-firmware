@@ -4,17 +4,11 @@
 // Bare minimum deps
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_stm32::{
-    can::frame::Header,
-    gpio::{Level, Output, Speed},
-};
-use embassy_time::Timer;
+use embassy_stm32::can::frame::Header;
 use {defmt_rtt as _, panic_probe as _};
 
 // CAN deps
 use embassy_stm32::can;
-use embassy_stm32::can::frame::Envelope;
-use embassy_stm32::can::*; // This is the module
 use embassy_stm32::peripherals::FDCAN1; // THis is just the peripheral struct
 use embassy_stm32::{Config, bind_interrupts};
 use embedded_can::{Id, StandardId};
