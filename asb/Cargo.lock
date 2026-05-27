@@ -42,6 +42,7 @@ dependencies = [
  "embassy-stm32",
  "embassy-sync",
  "embassy-time",
+ "embedded-can",
  "embedded-hal 1.0.0",
  "heapless",
  "panic-probe",

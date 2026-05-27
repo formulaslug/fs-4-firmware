@@ -18,6 +18,7 @@ embedded-hal = "1.0.0"
 panic-probe = { version = "1.0.0", features = ["print-defmt"] }
 heapless = { version = "0.9", default-features = false }
 chrono = { version = "^0.4", default-features = false}
+embedded-can = "0.4.1"
 
 [profile.release]
 debug = 2
