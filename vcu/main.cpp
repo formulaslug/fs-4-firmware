@@ -150,7 +150,7 @@ void send_sme_CAN_messages() {
     
     CANMessage throttle_msg{390, buf0, 8};
     CANMessage currents_msg{646, buf1, 8};
-    CANMessage traction_control_msg{0x2B1, buf2, 8};
+    CANMessage traction_control_msg{660, buf2, 8};
 
     canP.write(throttle_msg);
     canP.write(currents_msg);
