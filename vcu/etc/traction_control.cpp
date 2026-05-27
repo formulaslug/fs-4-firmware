@@ -13,8 +13,6 @@ TractionController::TractionController()
   this->filter_init = false;
   this->loop_time = 0.0f;
   this->last_output = 1.0f;
-  // set filter time constant
-  this->filter_time_constant = 1.0f / (2.0f * M_PI * this->FILTER_CUTOFF_FREQ);
   // set max integral
   this->max_integral = KI > 0.0f ? MAX_INTEGRATOR_REDUCTION_FACTOR / KI : 0.0f;  
   // start timer
@@ -64,9 +62,8 @@ float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws
     } 
     else
     {
-      const float exponent = -1.0f * loop_time / this->filter_time_constant;
-      const float filter_coefficient = exp(exponent);
-      this->smoothed_derivative = (1 - filter_coefficient) * raw_derivative + filter_coefficient * this->smoothed_derivative;
+      const float filter_coefficient = loop_time / (this->FILTER_TIME_CONSTANT + loop_time);
+      this->smoothed_derivative = (1 - filter_coefficient) * smoothed_derivative + filter_coefficient * raw_derivative;
     }
   }
 
