@@ -1,16 +1,10 @@
-
 #include "mbed.h"
 // #include "BMS.h"
 #include "tempCan.h"
 
-/*
-TODO items:
-        - TELEMETRY
-        - calibrate and understand current sensing ...
-        - test precharge go over logic make sure everything at least makes sense
-        - make sure our info being sent to can is kosher (can use a spare can transciever??)
 
-*/
+
+
 // need to initialize everything on startup - assume everything is okay at first
 
 CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);

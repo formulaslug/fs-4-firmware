@@ -102,7 +102,7 @@ public:
     uint16_t maxCellVoltage;
     uint32_t packVoltageMv;
 
-    int8_t temps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
+    float temps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
     uint16_t maxCellTemp;
 
     std::vector<LTC6810> chips;

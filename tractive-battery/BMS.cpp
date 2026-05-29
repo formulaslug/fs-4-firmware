@@ -335,11 +335,17 @@ void BMS::controller() {
         // turnOffCellBalancing();
         // printf("turn off cell balancing completed okay...\n");
         // ThisThread::sleep_for(3ms);
-        readCellVoltages();
-        printf("cellvoltages read okay\n");
+        // readCellVoltages();
+        // printf("cellvoltages read okay\n");
         // turnOffCellBalancing();
-       
+        readTemps();
 
+        for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
+            for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
+                printf("temp reading: ... %f\n", temps[i][j]);
+            }
+        }
+        printf("\n\n");
         // printf("read temps went okay....\n");
         // checkForFaults();
         // printf("checked for faults\n"); //
