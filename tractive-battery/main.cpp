@@ -25,7 +25,6 @@ DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
 InterruptIn Shutdown_Final_3V3_Filtered = InterruptIn(PA_6);
 PwmOut Fan_PWM = PwmOut(PC_8);
 
-
 constexpr float PRECHARGE_TIMEOUT = 3.0f;
 DigitalOut nPrechargeControl = DigitalOut(PB_0);
 Timer prechargeTimer;
@@ -52,9 +51,7 @@ uint8_t trayTemps[NUM_TRAY_TEMP_SENSORS];
 
 uint32_t dcBusVoltageMv;
 
-
 TelemetryInfo Data;
-
 
 void processCanRx();
 bool prechargeAllowed();
@@ -94,9 +91,13 @@ int main() {
 
     CAN_POWERTRAIN.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
 
+    // Start updating precharge, and also again whenever shutdown opens
+    queue.call_every(2ms, &updatePrecharge);
     Shutdown_Final_3V3_Filtered.fall([&]() {
         Data.prechargeDone = false;
-        prechargeUpdateEventId = queue.call_every(2ms, &updatePrecharge);
+        if (prechargeTimer.elapsed_time().count() == 0) {
+            prechargeUpdateEventId = queue.call_every(2ms, &updatePrecharge);
+        }
     });
 
     queue.call_every(2ms, &BMSInstance, &BMS::controller);
@@ -108,10 +109,7 @@ int main() {
     return 0;
 }
 
-
 void controlFans() {
-    BMSInstance.maxCellTemp;
-
     if (Data.preChargeActive == true) {
         // Linear scaling: 20% at ~20°C, 100% at ~50°C
         // Formula: (2.6667 * temp) - 33.3333, clamped to [20, 100]
@@ -125,11 +123,6 @@ void controlFans() {
         Data.pwmFanstat = 0;
     }
 }
-
-
-
-
-
 
 void processCanRx() {
     CANMessage msg;
@@ -152,15 +145,10 @@ void processCanRx() {
             break;
         }
         case BMS::FAULT:
-          break;
+            break;
         }
     }
 }
-
-
-
-
-
 
 bool shutdownClosed() { return Shutdown_Final_3V3_Filtered.read(); }
 
@@ -188,19 +176,20 @@ bool prechargeComplete() { return dcBusVoltageMv >= 0.9f * BMSInstance.packVolta
 // Intented to be called repeatedly during start and until completion of
 // precharge.
 void updatePrecharge() {
-    if (prechargeAllowed() && !prechargeComplete()) {
+    if (!Data.preChargeActive && prechargeAllowed() && !prechargeComplete()) {
         // Start precharge
         nPrechargeControl = 0; // low during precharge!
 
         Data.preChargeActive = true;
+        Data.prechargeDone = false;
         prechargeTimer.reset();
         prechargeTimer.start();
     } else if (Data.preChargeActive && prechargeComplete()) {
         // Stop precharge, success
         nPrechargeControl = 1;
 
-        Data.prechargeDone = true;
         Data.preChargeActive = false;
+        Data.prechargeDone = true;
         prechargeTimer.stop();
         prechargeTimer.reset();
 
