@@ -228,11 +228,18 @@ float LTC6810::readTemperatureTMP1075(TMP1075_Handle_t* sensor) {
     // Combine MSB and LSB into 16-bit value
     int16_t rawTemp = (tempMSB << 8) | tempLSB;
 
+    // TMP1075 temperature register:
+    // bits [15:4] = temperature, 1 LSB = 0.0625°C
+    // Therefore raw register value / 256 = temperature in °C.
+    
+    return static_cast<float>(rawTemp) / 256.0f;
+
     // STEP 4: Convert to Celsius
     // TMP1075-specific conversion:
     // 12-bit temperature value stored in bits 15-4
     // Each LSB = 0.0625°C
-    return (rawTemp >> 4) * 0.0625f;
+    // float temperature = (rawTemp >> 4) * 0.0625f;
+    // return (rawTemp >> 4) * 0.25f;
 }
 
 bool LTC6810::verifyI2CStatus(uint8_t* rxData) {
