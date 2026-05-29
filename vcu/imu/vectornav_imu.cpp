@@ -74,22 +74,6 @@ VN::Error VectorNavIMU::init() {
     nav_reg.ins.velBody = true;
     nav_reg.ins.velNed = true;
 
-    // Uncertainty (remove later?)
-    nav_reg.ins.posU = true;
-    nav_reg.ins.velU = true;
-    nav_reg.attitude.yprU = true;
-
-    // status (remove later?)
-    raw_imu_reg.imu.imuStatus = true;
-    nav_reg.ins.insStatus = true;
-    nav_reg.common.insStatus = true;
-
-    // Gps time (remove later?)
-    time_reg.time.timeGps = true;
-    time_reg.time.timeGpsTow = true;
-    time_reg.time.timeGpsWeek = true;
-    time_reg.time.timeUtc = true;
-
     VN::Error err = sensor.writeRegister(&raw_imu_reg);
     if (err != VN::Error::None) return err;
 
