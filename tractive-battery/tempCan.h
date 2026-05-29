@@ -30,11 +30,11 @@ struct TelemetryInfo {
 
 
 // voltage messages
-constexpr uint32_t BATT_TPDO_MOD0_VOLTS = 0x495;
-constexpr uint32_t BATT_TPDO_MOD1_VOLTS = 0x498;
-constexpr uint32_t BATT_TPDO_MOD2_VOLTS = 0x49b;
-constexpr uint32_t BATT_TPDO_MOD3_VOLTS = 0x49e;
-constexpr uint32_t BATT_TPDO_MOD4_VOLTS = 0x4a1;
+constexpr uint32_t BATT_TPDO_MOD0_VOLTS = 0x494;
+constexpr uint32_t BATT_TPDO_MOD1_VOLTS = 0x497;
+constexpr uint32_t BATT_TPDO_MOD2_VOLTS = 0x49a;
+constexpr uint32_t BATT_TPDO_MOD3_VOLTS = 0x49d;
+constexpr uint32_t BATT_TPDO_MOD4_VOLTS = 0x4a0;
 
 // general status message ids
 constexpr uint32_t BATT_TPDO_STATUS = 0x391;
@@ -43,16 +43,16 @@ constexpr uint32_t BATT_TPDO_CELL_STATS = 0x393;
 constexpr uint32_t BATT_TPDO_TRAY_TEMPS = 0x4c0;
 
 // temperature messages ids
-constexpr uint32_t BATT_TPDO_MOD0_TEMPSA = 0x496;
-constexpr uint32_t BATT_TPDO_MOD0_TEMPSB = 0x497;
-constexpr uint32_t BATT_TPDO_MOD1_TEMPSA = 0x499;
-constexpr uint32_t BATT_TPDO_MOD1_TEMPSB = 0x49a;
-constexpr uint32_t BATT_TPDO_MOD2_TEMPSA = 0x49c;
-constexpr uint32_t BATT_TPDO_MOD2_TEMPSB = 0x49d;
-constexpr uint32_t BATT_TPDO_MOD3_TEMPSA = 0x49f;
-constexpr uint32_t BATT_TPDO_MOD3_TEMPSB = 0x4a0;
-constexpr uint32_t BATT_TPDO_MOD4_TEMPSA = 0x4a2;
-constexpr uint32_t BATT_TPDO_MOD4_TEMPSB = 0x4a3;
+constexpr uint32_t BATT_TPDO_MOD0_TEMPSA = 0x495;
+constexpr uint32_t BATT_TPDO_MOD0_TEMPSB = 0x496;
+constexpr uint32_t BATT_TPDO_MOD1_TEMPSA = 0x498;
+constexpr uint32_t BATT_TPDO_MOD1_TEMPSB = 0x499;
+constexpr uint32_t BATT_TPDO_MOD2_TEMPSA = 0x49b;
+constexpr uint32_t BATT_TPDO_MOD2_TEMPSB = 0x49c;
+constexpr uint32_t BATT_TPDO_MOD3_TEMPSA = 0x49e;
+constexpr uint32_t BATT_TPDO_MOD3_TEMPSB = 0x4af;
+constexpr uint32_t BATT_TPDO_MOD4_TEMPSA = 0x4a1;
+constexpr uint32_t BATT_TPDO_MOD4_TEMPSB = 0x4a2;
 
 constexpr uint32_t VOLTAGE_MESSAGE_IDS[NUM_BATTERY_MODULES] = {
     BATT_TPDO_MOD0_VOLTS,
