@@ -98,9 +98,6 @@ void BMS::turnOffCellBalancing() {
 }
 
 void BMS::readCellVoltages() {
-    printf("Reading cell voltages...\n");
-    printf("elapsed time ... \n");
-    printf("%f\n", ltcTimeoutTimer.elapsed_time());
     // ltcBusInterface.WakeupBus();
     if (ltcTimeoutTimer.elapsed_time() >= 100ms) {
         // currentState = FAULT;
@@ -324,7 +321,6 @@ void BMS::checkForFaults() {
 // }
 
 
-
 void BMS::controller() {
 
     if (currentState != FAULT) {
@@ -338,7 +334,16 @@ void BMS::controller() {
         // readCellVoltages();
         // printf("cellvoltages read okay\n");
         // turnOffCellBalancing();
+
         readTemps();
+        for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+            for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
+                printf("temp %d: %d\n", i*NUM_BATTERY_MODULES + j, temps[i][j]);
+            }
+        }
+
+        readPackCurrent();
+       
 
         for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
             for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
@@ -355,7 +360,6 @@ void BMS::controller() {
         // printf("battery balancing set....");
         // telemetryPins();
         // readPackCurrent();
-        ThisThread::sleep_for(1s);
     } else {
         printf("WE ARE IN FAULT");
         turnOffCellBalancing();

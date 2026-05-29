@@ -26,7 +26,7 @@ int prechargeUpdateEventId;
 
 constexpr bool eMeterPresent = false;
 
-EventQueue queue(5 * EVENTS_EVENT_SIZE);
+EventQueue queue(32 * EVENTS_EVENT_SIZE);
 
 BMS BMSInstance(CAN_POWERTRAIN, Charge_State_Filtered.read());
 CanGenerator cGen(BMSInstance, CAN_POWERTRAIN);
