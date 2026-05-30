@@ -203,7 +203,7 @@ void BMS::decideBalancing() {
 }
 
 void BMS::readPackCurrent() {
-    // HASS 300-S current sensor constants (from datasheet)
+    // HASS 300-S current sensor constants (https://www.lem.com/sites/default/files/products_datasheets/hass-50_600-s-v22.pdf)
 
     // Nominal primary current (A)
     constexpr float HASS300_IPN = 300.0f;
