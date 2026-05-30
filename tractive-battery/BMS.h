@@ -38,19 +38,8 @@ inline constexpr uint16_t MIN_CELL_VOLTAGE = 25000; // 2.5 volts
 inline constexpr uint16_t BALANCING_THRESHOLD = 30000; // temporary balancing threshold 
 inline constexpr uint16_t DIFFERENCE_THRESHOLD = 00300; // 30 milivolts
 
-// tune later lots of placeholder values
-//  HASS 300-S current sensor constants (from datasheet)
-inline constexpr float HASS300_IPN = 300.0f;                       // Nominal primary current (A)
-inline constexpr float HASS300_SENSITIVITY = 0.625f / HASS300_IPN; // V/A = ~0.002083 V/A // this is what we need to calibrate? ...  
-inline constexpr float HASS300_VREF = 2.5f;            // Output voltage at zero current (V)
-inline constexpr float HASS300_ADC_REF = 3.3f;         // MCU ADC reference voltage (V)
-inline constexpr float MAX_PACK_CURRENT_AMPS = 600.0f; // Overcurrent fault threshold - tune later
-inline constexpr size_t CURRENT_FILTER_SAMPLES = 10;   // Rolling average window size
-
-static constexpr float ADC_REF_VOLTAGE = 3.3f;
-// this will probably be adjusted and tuned as testing happens
-static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f; // first-pass estimate
-static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
+// Overcurrent fault threshold - tune later
+inline constexpr float MAX_PACK_CURRENT_AMPS = 600.0f;
 
 class BMS {
 

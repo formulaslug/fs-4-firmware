@@ -9,7 +9,7 @@
 //  static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
 //  static constexpr float MAX_PACK_CURRENT_AMPS = 1000.0f; // adjust later
 
-BMS::BMS(CAN &CAN_POWERTRAIN, bool charging)
+BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
     : ltcBusInterface(&spiInterface), CAN_POWERTRAIN(CAN_POWERTRAIN) {
 
     chips.reserve(NUM_BATTERY_MODULES);
@@ -31,11 +31,9 @@ BMS::BMS(CAN &CAN_POWERTRAIN, bool charging)
     currentState = ACTIVE; // assume everything is okay at startup
     Timer ltcTimeoutTimer; // timer for ltc6810 timeout
     nBMS_Fault_3V3 = 1;    // assume no fault at startup
-    
 
     packCurrentAmpsOutput = 0.0f;
     packCurrentAmpsInput = 0.0f;
-
 
     // intialize data - assume everything is good at startup
 
@@ -58,33 +56,6 @@ BMS::BMS(CAN &CAN_POWERTRAIN, bool charging)
 
     - implementing current sensor is underway make sure changes are announced beforehand
 */
-
-// void BMS::chargingActions() {
-//     // current work in progress - needs to detect soc over can......
-//     // I have several questions about this ... do we fault based on this data what exactly do we do
-//     // with it - might reference fs3 code from fs3 adapted to fs4
-//     uint8_t canData = 0;
-//     CAN_POWERTRAIN.read(msg);
-//     uint32_t id = msg.id;
-//     unsigned char* data = msg.data;
-//
-//     if (!(currentState == FAULT)) {
-//         switch (id) {
-//         case 0x682: // temperature message from MC
-//             canData = (data[2] | (data[3] << 8));
-//             break;
-//         default:
-//             break;
-//         }
-//     } else {
-//         switch (id) {
-//         case 0x190: // charge status from charger, 180 + node ID (10)
-//             canData = (data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24)) / 100;
-//         default:
-//             break;
-//         }
-//     }
-// }
 
 void BMS::turnOffCellBalancing() {
     ltcBusInterface.WakeupBus();
@@ -117,7 +88,7 @@ void BMS::readCellVoltages() {
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         command = LTC681xParallelBus::BuildAddressedBusCommand(PollADCStatus(), i);
         stat = ltcBusInterface.PollAdcCompletion(command, 1);
-    
+
         if (stat == LTC681xBus::LTC681xBusStatus::PollTimeout) {
             // printf("ADC poll timeout, on Bank %d\n", i);
             // voltsConverted = false;
@@ -221,7 +192,7 @@ void BMS::decideBalancing() {
                     }
                     // Logic is find lowest voltage cell - go through each module and balance that
                     // module based on that cell reading so the whole battery is balanced
-                    // it wont let us do adjacent cells so .... may need to update .. 
+                    // it wont let us do adjacent cells so .... may need to update ..
                 }
                 config.dischargeState.value = dischargeValue;
                 chips[i].updateConfig();
@@ -232,17 +203,34 @@ void BMS::decideBalancing() {
 }
 
 void BMS::readPackCurrent() {
-    float voutPos = V_Out_Positive.read() * HASS300_ADC_REF; //idk about this one 
-    float voutNeg = V_Out_Negative.read() * HASS300_ADC_REF;
+    // HASS 300-S current sensor constants (from datasheet)
+
+    // Nominal primary current (A)
+    constexpr float HASS300_IPN = 300.0f;
+    constexpr float HASS300_SENSITIVITY = 0.625f; // V/Ipn
+    // "Ref" pin of the InAmps; i.e. output voltage at 0 current (V)
+    constexpr float HASS300_INSTR_AMP_VREF = 0.184f;
+    // Gain on InAmp output
+    constexpr float HASS300_INSTR_AMP_GAIN = 1.796f; // 61.86 // 62.18
+
+    float voutPos = V_Out_Positive.read() * 3.3f; // idk about this one
+    float voutNeg = V_Out_Negative.read() * 3.3f;
     // HASS 300-S: I = (Vout - Vref) * IPN / 0.625
-    packCurrentAmpsOutput = (voutPos - HASS300_VREF) / HASS300_SENSITIVITY; 
-    packCurrentAmpsInput = (voutNeg - HASS300_VREF) / HASS300_SENSITIVITY;
-    //not sure about the above putting this in here...
-    // packCurrentAmpsOutput = 
+    packCurrentAmpsOutput = (voutPos - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
+    packCurrentAmpsInput = (voutNeg - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
+    // not sure about the above putting this in here...
+    //  packCurrentAmpsOutput =
 
-    printf("Current sense Vout Positive: %.3f V  =>  Pack current (out of battery): %.2f \n", voutPos, packCurrentAmpsOutput);
-    printf("Current sense vout Negative: %.3f V => pack current (into battery) %.2f\n", voutNeg, packCurrentAmpsInput);
-
+    printf(
+        "Current sense Vout Positive: %.3f V  =>  Pack current (out of battery): %.2f \n",
+        voutPos,
+        packCurrentAmpsOutput
+    );
+    printf(
+        "Current sense vout Negative: %.3f V => pack current (into battery) %.2f\n",
+        voutNeg,
+        packCurrentAmpsInput
+    );
 }
 
 void BMS::checkForFaults() {
@@ -270,7 +258,8 @@ void BMS::checkForFaults() {
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
             int8_t tempReading = temps[i][j];
             if (currentState == CHARGING) {
-                if (tempReading >= CHARGING_CELL_MAX_TEMP || tempReading <= CHARGING_CELL_MIN_TEMP) {
+                if (tempReading >= CHARGING_CELL_MAX_TEMP || tempReading <= CHARGING_CELL_MIN_TEMP)
+                {
                     currentState = FAULT;
                     nBMS_Fault_3V3 = 0;
                     faultModIndex = i;
@@ -320,36 +309,27 @@ void BMS::checkForFaults() {
 //     Data.imdStatus = IMD_Fault_3V3.read();
 // }
 
-
 void BMS::controller() {
 
     if (currentState != FAULT) {
-
 
         // chargingActions();
         // printf("charging actions completed okay...\n");
         // turnOffCellBalancing();
         // printf("turn off cell balancing completed okay...\n");
         // ThisThread::sleep_for(3ms);
-        // readCellVoltages();
+        readCellVoltages();
         // printf("cellvoltages read okay\n");
         // turnOffCellBalancing();
 
         readTemps();
         for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
             for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-                printf("temp %d: %d\n", i*NUM_BATTERY_MODULES + j, temps[i][j]);
+                printf("temp reading: ... %f\n", temps[i][j]);
             }
         }
 
         readPackCurrent();
-       
-
-        for(uint8_t i = 0; i < NUM_BATTERY_MODULES; i++){
-            for(uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++){
-                printf("temp reading: ... %f\n", temps[i][j]);
-            }
-        }
         printf("\n\n");
         // printf("read temps went okay....\n");
         // checkForFaults();
