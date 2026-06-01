@@ -56,22 +56,22 @@ constexpr uint32_t BATT_TPDO_MOD4_TEMPSB = 0x4a2;
 
 constexpr uint32_t VOLTAGE_MESSAGE_IDS[NUM_BATTERY_MODULES] = {
     BATT_TPDO_MOD0_VOLTS,
-    // BATT_TPDO_MOD1_VOLTS,
-    // BATT_TPDO_MOD2_VOLTS,
-    // BATT_TPDO_MOD3_VOLTS,
-    // BATT_TPDO_MOD4_VOLTS
+    BATT_TPDO_MOD1_VOLTS,
+    BATT_TPDO_MOD2_VOLTS,
+    BATT_TPDO_MOD3_VOLTS,
+    BATT_TPDO_MOD4_VOLTS
 };
 constexpr uint32_t TEMPERATURE_MESSAGE_IDS[NUM_BATTERY_MODULES * 2] = {
     BATT_TPDO_MOD0_TEMPSA,
     BATT_TPDO_MOD0_TEMPSB,
-    // BATT_TPDO_MOD1_TEMPSA,
-    // BATT_TPDO_MOD1_TEMPSB,
-    // BATT_TPDO_MOD2_TEMPSA,
-    // BATT_TPDO_MOD2_TEMPSB,
-    // BATT_TPDO_MOD3_TEMPSA,
-    // BATT_TPDO_MOD3_TEMPSB,
-    // BATT_TPDO_MOD4_TEMPSA,
-    // BATT_TPDO_MOD4_TEMPSB
+    BATT_TPDO_MOD1_TEMPSA,
+    BATT_TPDO_MOD1_TEMPSB,
+    BATT_TPDO_MOD2_TEMPSA,
+    BATT_TPDO_MOD2_TEMPSB,
+    BATT_TPDO_MOD3_TEMPSA,
+    BATT_TPDO_MOD3_TEMPSB,
+    BATT_TPDO_MOD4_TEMPSA,
+    BATT_TPDO_MOD4_TEMPSB
 };
 
 class CanGenerator {
@@ -79,6 +79,10 @@ class CanGenerator {
 private:
     const BMS &BMSInstance;
     CAN &CAN_POWERTRAIN;
+    // Status of the shutdown circuit before BMS & IMD
+    DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
+    // Status of the shutdown circuit after BMS & IMD
+    DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
 
 public:
 
@@ -92,5 +96,6 @@ public:
 
     CANMessage BuildTrayTempMessage(uint8_t traytempsensors[5]);
     CANMessage BuildCellStatsMessage();
-    void BuildAndSendMessages(TelemetryInfo);
+    void updateTelemetry(TelemetryInfo &Data);
+    void BuildAndSendMessages(TelemetryInfo &Data);
 };

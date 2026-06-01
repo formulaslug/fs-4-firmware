@@ -12,11 +12,13 @@ CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
 // assume 1 for charging 0 for not charging
 DigitalIn Charge_State_Filtered = DigitalIn(PC_2);
 
-// Status of the shutdown circuit before BMS & IMD
-DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
-// Status of the shutdown circuit after BMS & IMD
-DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
+// // Status of the shutdown circuit before BMS & IMD
+// DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
+// // Status of the shutdown circuit after BMS & IMD
+// DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
 InterruptIn Shutdown_Final_3V3_Filtered = InterruptIn(PA_6);
+
+
 PwmOut Fan_PWM = PwmOut(PC_8);
 
 constexpr float PRECHARGE_TIMEOUT = 3.0f;
@@ -53,6 +55,7 @@ bool prechargeComplete();
 bool shutdownClosed();
 void updatePrecharge();
 void controlFans();
+void updateTelemetry();
 
 // enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHARGE_COMPLETE };
 // precharge_state prechargeState = PRECHARGE_IDLE;
@@ -89,6 +92,7 @@ int main() {
     queue.call_every(2ms, &updatePrecharge);
     Shutdown_Final_3V3_Filtered.fall([&]() {
         Data.prechargeDone = false;
+        Data.shutdownFinal = Shutdown_Final_3V3_Filtered.read();
         if (prechargeTimer.elapsed_time().count() == 0) {
             prechargeUpdateEventId = queue.call_every(2ms, &updatePrecharge);
         }
@@ -96,12 +100,42 @@ int main() {
 
     queue.call_every(2ms, &BMSInstance, &BMS::controller);
     queue.call_every(200ms, controlFans);
-    queue.call_every(1000ms, &cGen, &CanGenerator::BuildAndSendMessages, Data);
+    // queue.call_every(1000ms, [&cGen, &Data]){
+    //     BuildAndSendMessages(Data);
+    // };
+
+    queue.call_every(1000ms, callback(&cGen, &CanGenerator::BuildAndSendMessages), Data);
 
     queue.dispatch_forever();
 
     return 0;
 }
+
+// void updateTelemetry(BMS &BMSInstance){
+//     //BMS based telemetry updates
+//     if(BMS.faultLoc == VOLTAGE){
+//         Data.faultModIndex = BMS.faultModIndex * NUM_VOLTAGES_PER_MODULE; 
+//     }else if(BMS.faultLoc == TEMPS){
+//         Data.faultModIndex = BMS.faultModIndex * NUM_TRAY_TEMP_SENSORS;
+//     }else{
+//         //we default to temperature index in the edge case....
+//         Data.faultModIndex = BMS.faultModIndex * NUM_TRAY_TEMP_SENSORS;
+//     }
+//     Data.faultModIndex = BMS.faultModIndex;
+//     Data.faultSenseIndex = BMS.faultSenseIndex;
+//     Data.glvVoltage = (uint16_t)(BMSInstance.GLV_Voltage.read() * 3.3 * 21.9 / 3.9 * 1000);
+//     Data.BMSInstance.IMD_Fault_3V3.read();
+//     Data.tempTooLow = BMSInstance.cellTooLow;
+//     Data.tempTooHigh = BMSInstance.cellTooHigh;
+//     Data.shutdownIn = BMSInstance.shutdownIn.read();
+//     Data.shutdownOut = BMSInstance.shutdownOut.read();
+//     Data.shutdownFinal = BMSInstance.shutdownFinal.read();
+
+
+
+
+// }
+
 
 void controlFans() {
     if (Data.preChargeActive == true) {

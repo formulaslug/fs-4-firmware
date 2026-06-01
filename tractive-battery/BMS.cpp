@@ -1,4 +1,5 @@
 #include "BMS.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -243,6 +244,11 @@ void BMS::checkForFaults() {
             uint16_t voltVal = voltages[i][j];
             if (voltVal >= MAX_CELL_VOLTAGE || voltVal <= MIN_CELL_VOLTAGE) {
                 currentState = FAULT;
+                if(faultLoc == NONE){
+                    faultLoc = VOLTAGE;
+                }else{
+                    faultLoc = BOTH;
+                }
                 nBMS_Fault_3V3 = 0;
                 faultModIndex = i;
                 faultSenseIndex = j;
@@ -261,6 +267,12 @@ void BMS::checkForFaults() {
                 if (tempReading >= CHARGING_CELL_MAX_TEMP || tempReading <= CHARGING_CELL_MIN_TEMP)
                 {
                     currentState = FAULT;
+                    //this is for telemetry purposes
+                    if(faultLoc == NONE){
+                        faultLoc = TEMPS;
+                    }else{
+                        faultLoc = BOTH;
+                    }
                     nBMS_Fault_3V3 = 0;
                     faultModIndex = i;
                     faultSenseIndex = j;
@@ -309,10 +321,13 @@ void BMS::checkForFaults() {
 //     Data.imdStatus = IMD_Fault_3V3.read();
 // }
 
+
+
 void BMS::controller() {
 
     if (currentState != FAULT) {
-
+        glvVoltage = (GLV_Voltage.read() * 3.3 * 21.9 / 3.9 * 1000);
+        imdFaultStat = IMD_Fault_3V3.read(); 
         // chargingActions();
         // printf("charging actions completed okay...\n");
         // turnOffCellBalancing();
@@ -340,6 +355,7 @@ void BMS::controller() {
         // printf("battery balancing set....");
         // telemetryPins();
         // readPackCurrent();
+
     } else {
         printf("WE ARE IN FAULT");
         turnOffCellBalancing();

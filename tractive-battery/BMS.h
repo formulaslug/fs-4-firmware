@@ -8,7 +8,7 @@
 #include "mbed.h"
 
 // general config
-inline constexpr uint8_t NUM_BATTERY_MODULES = 1;
+inline constexpr uint8_t NUM_BATTERY_MODULES = 5;
 inline constexpr uint8_t NUM_VOLTAGES_PER_MODULE = 6;
 inline constexpr uint8_t NUM_TEMP_SENSORS_PER_MODULE = 12;
 inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 5;
@@ -66,10 +66,13 @@ public:
     };
     enum bms_state { ACTIVE = 0, CHARGING = 1, FAULT = 2 };
 
+    enum fault_location{VOLTAGE = 0, TEMPS = 1, BOTH = 2, NONE = 3};
+
     float packCurrentAmpsOutput;
     float packCurrentAmpsInput;
 
     bms_state currentState;
+    fault_location faultLoc = NONE;
 
     bool balancing = 0;
     bool cellTooHigh = 0;
@@ -82,6 +85,8 @@ public:
     uint8_t faultSenseIndex = 0;
     uint8_t battStatFaultIndex = 0;
 
+    uint16_t glvVoltage = 0;
+    bool imdFaultStat;
     Timer ltcTimeoutTimer;
     CANMessage msg;
 

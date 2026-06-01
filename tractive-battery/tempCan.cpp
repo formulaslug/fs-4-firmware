@@ -56,6 +56,7 @@ CANMessage CanGenerator::BuildStatusMessage(TelemetryInfo Data) {
               + (Data.tempTooHigh << 4)
               + (Data.tempTooHighCRG << 5);
 
+    // we need to add updates here   
     data[2] = Data.faultModIndex;
     data[3] = Data.faultSenseIndex;
     data[4] = Data.battStatFaultIndex;
@@ -75,7 +76,7 @@ CANMessage CanGenerator::BuildTrayTempMessage(uint8_t traytempsensors[5]) {
 }
 
 CANMessage CanGenerator::BuildCellStatsMessage() {
-    uint8_t data[5] = {0};
+    uint8_t data[6] = {0};
 
     int32_t sumTemp = 0;
     int8_t minTemp = BMSInstance.temps[0][0];
@@ -116,8 +117,33 @@ CANMessage CanGenerator::BuildCellStatsMessage() {
     return CANMessage{BATT_TPDO_CELL_STATS, data, 6};
 }
 
-void CanGenerator::BuildAndSendMessages(TelemetryInfo Data) {
+
+void CanGenerator::updateTelemetry(TelemetryInfo &Data){
+    if(BMSInstance.faultLoc == BMS::VOLTAGE){
+        Data.faultModIndex = BMSInstance.faultModIndex * NUM_VOLTAGES_PER_MODULE; 
+    }else if(BMSInstance.faultLoc == BMS::TEMPS){
+        Data.faultModIndex = BMSInstance.faultModIndex * NUM_TRAY_TEMP_SENSORS;
+    }else{
+        //we default to temperature index in the edge case....
+        Data.faultModIndex = BMSInstance.faultModIndex * NUM_TRAY_TEMP_SENSORS;
+    }
+    Data.faultModIndex = BMSInstance.faultModIndex;
+    Data.faultSenseIndex = BMSInstance.faultSenseIndex;
+    Data.glvVoltage = BMSInstance.glvVoltage;
+    Data.imdStatus = BMSInstance.imdFaultStat;
+    Data.tempTooLow = BMSInstance.cellTooLow;
+    Data.tempTooHigh = BMSInstance.cellTooHigh;
+    Data.shutdownIn = Shutdown_In_3V3_Filtered.read();
+    Data.shutdownOut = Shutdown_Out_3V3_Filtered.read();
+}
+
+
+void CanGenerator::BuildAndSendMessages(TelemetryInfo &Data) {
+    
+    updateTelemetry(Data);
+
     CANMessage msg;
+    
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         msg = BuildVoltageMessage(i);
         CAN_POWERTRAIN.write(msg);
