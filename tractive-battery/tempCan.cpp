@@ -176,6 +176,7 @@ void CanGenerator::updateTelemetry(TelemetryInfo &Data){
     Data.tempTooHigh = BMSInstance.cellTooHigh;
     Data.shutdownIn = Shutdown_In_3V3_Filtered.read();
     Data.shutdownOut = Shutdown_Out_3V3_Filtered.read();
+    Data.tempTooHighCRG = (BMSInstance.charging && BMSInstance.cellTooHigh);
 }
 
 
