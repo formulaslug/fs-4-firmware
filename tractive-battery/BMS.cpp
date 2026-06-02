@@ -210,7 +210,7 @@ void BMS::readPackCurrent() {
     constexpr float HASS300_IPN = 300.0f;
     constexpr float HASS300_SENSITIVITY = 0.625f; // V/Ipn
     // "Ref" pin of the InAmps; i.e. output voltage at 0 current (V)
-    constexpr float HASS300_INSTR_AMP_VREF = 0.184f;
+    constexpr float HASS300_INSTR_AMP_VREF = 0.2024f; // 0.174f;
     // Gain on InAmp output
     constexpr float HASS300_INSTR_AMP_GAIN = 1.796f; // 61.86 // 62.18
 
