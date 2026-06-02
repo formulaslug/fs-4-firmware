@@ -192,6 +192,8 @@ void CanGenerator::BuildAndSendMessages(TelemetryInfo &Data) {
         CAN_POWERTRAIN.write(msg);
         msg = BuildTempMessage(i, false);
         CAN_POWERTRAIN.write(msg);
+        msg = BuildPowerMessage();
+        CAN_POWERTRAIN.write(msg);
     }
     BuildStatusMessage(Data);
 }
