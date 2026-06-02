@@ -18,17 +18,26 @@ CANMessage CanGenerator::BuildVoltageMessage(uint8_t modNum) {
 CANMessage CanGenerator::BuildTempMessage(uint8_t modNum, bool AorB) {
     char data[8] = {0};
     uint8_t messageIdindex;
-    // uint8_t limit;
+    // our temps are in float the scale is 0.25 we need quarters of a degree 
     if (AorB) {
         messageIdindex = modNum * 2;
         for (uint8_t i = 0; i < NUM_TEMP_SENSORS_PER_MODULE / 2; i++) {
-            data[i] = BMSInstance.temps[messageIdindex][i];
+            float recordedTemp = BMSInstance.temps[messageIdindex][i];
+            recordedTemp*=100;
+            uint8_t canTempData = (uint8_t)recordedTemp;
+            canTempData *= 4;
+            data[i] = canTempData;
         }
     } else {
         messageIdindex = (modNum * 2) - 1;
         uint8_t index = 0;
         for (uint8_t i = NUM_TEMP_SENSORS_PER_MODULE / 2; i < NUM_TEMP_SENSORS_PER_MODULE; i++) {
-            data[index] = BMSInstance.temps[messageIdindex][i];
+            // data[index] = BMSInstance.temps[messageIdindex][i];
+            float recordedTemp = BMSInstance.temps[messageIdindex][i];
+            recordedTemp*=100;
+            uint8_t canTempData = (uint8_t)recordedTemp;
+            canTempData *= 4;
+            data[index]= canTempData;
             index++;
         }
     }
@@ -69,7 +78,9 @@ CANMessage CanGenerator::BuildStatusMessage(TelemetryInfo Data) {
 CANMessage CanGenerator::BuildTrayTempMessage(uint8_t traytempsensors[5]) {
     char data[5] = {0};
     for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) {
-        data[i] = (uint8_t)(traytempsensors[i]);
+        uint8_t trayTempData = (uint8_t)traytempsensors[i] * 2;
+        //tray temp messages have a scale of 0.5
+        data[i] = trayTempData;
     }
 
     return CANMessage{BATT_TPDO_TRAY_TEMPS, data, NUM_TRAY_TEMP_SENSORS};
@@ -115,6 +126,36 @@ CANMessage CanGenerator::BuildCellStatsMessage() {
     data[4] = (uint8_t)(maxVolt / 0.25f);
     data[5] = (uint8_t)(minVolt / 0.25f);
     return CANMessage{BATT_TPDO_CELL_STATS, data, 6};
+}
+
+CANMessage CanGenerator::BuildPowerMessage(){
+    uint8_t data[8] = {0};
+    uint16_t packVolts = (uint16_t)(BMSInstance.packVoltageMv/10);
+    //scale of 0.1
+
+    data[0] = (uint8_t)(packVolts>>8); 
+    data[1] = (uint8_t)(packVolts);
+    
+    int16_t posCurr = (uint16_t)(BMSInstance.packCurrentAmpsOutput*10);
+    int16_t negCurr = (uint16_t)(BMSInstance.packCurrentAmpsInput*10) ;
+    int16_t totalCurr = posCurr - negCurr;
+    data[2] = (uint8_t)(totalCurr>>8);
+    data[3] = (uint8_t)(totalCurr);
+
+    //again scale of 0.1 
+
+    int32_t totalPower = totalCurr * packVolts; 
+    uint8_t top2bits = (uint8_t)((totalPower & 0x00300000)<<8);
+    data[4] = (uint8_t)(totalPower << 24);
+    data[5] = (uint8_t)(totalPower <<16);
+    data[6] |= top2bits;
+
+
+    //state of charge remains to be done ... .
+
+    return CANMessage{BATT_TPDO_POWER, data, 8};
+
+  
 }
 
 

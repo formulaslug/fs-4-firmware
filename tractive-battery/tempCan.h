@@ -96,6 +96,7 @@ public:
 
     CANMessage BuildTrayTempMessage(uint8_t traytempsensors[5]);
     CANMessage BuildCellStatsMessage();
+    CANMessage BuildPowerMessage();
     void updateTelemetry(TelemetryInfo &Data);
     void BuildAndSendMessages(TelemetryInfo &Data);
 };
