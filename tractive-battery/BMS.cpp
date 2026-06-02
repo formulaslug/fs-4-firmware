@@ -203,7 +203,7 @@ void BMS::decideBalancing() {
     }
 }
 
-void BMS::readPackCurrent() {
+float BMS::readPackCurrent() {
     // HASS 300-S current sensor constants (https://www.lem.com/sites/default/files/products_datasheets/hass-50_600-s-v22.pdf)
 
     // Nominal primary current (A)
@@ -217,12 +217,23 @@ void BMS::readPackCurrent() {
     float voutPos = V_Out_Positive.read() * 3.3f; // idk about this one
     float voutNeg = V_Out_Negative.read() * 3.3f;
     // HASS 300-S: I = (Vout - Vref) * IPN / 0.625
+    
+
+
     packCurrentAmpsOutput = (voutPos - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
     packCurrentAmpsInput = (voutNeg - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
+    float totalPackCurrent = 0;
     // not sure about the above putting this in here...
-    //  packCurrentAmpsOutput =
 
-    printf(
+    //at very low current values the negative value jumps up crazy so we should return a value of the total current based on the voltage difference
+    if(voutPos >= voutNeg){
+        totalPackCurrent = (voutPos - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
+    }else{
+        totalPackCurrent = -1.0f * (voutNeg - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
+    }
+
+    //keeping this here for debug purposes
+      printf(
         "Current sense Vout Positive: %.3f V  =>  Pack current (out of battery): %.2f \n",
         voutPos,
         packCurrentAmpsOutput
@@ -232,6 +243,10 @@ void BMS::readPackCurrent() {
         voutNeg,
         packCurrentAmpsInput
     );
+
+
+    return totalPackCurrent;
+
 }
 
 void BMS::checkForFaults() {

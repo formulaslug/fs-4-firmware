@@ -100,9 +100,7 @@ int main() {
 
     queue.call_every(2ms, &BMSInstance, &BMS::controller);
     queue.call_every(200ms, controlFans);
-    // queue.call_every(1000ms, [&cGen, &Data]){
-    //     BuildAndSendMessages(Data);
-    // };
+
 
     queue.call_every(1000ms, callback(&cGen, &CanGenerator::BuildAndSendMessages), Data);
 

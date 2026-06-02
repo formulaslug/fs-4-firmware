@@ -51,7 +51,7 @@ private:
     void checkForFaults();
     void generateStatusMessage();
     void controlFans();
-    void readPackCurrent();
+    float readPackCurrent();
     void turnOffCellBalancing();
     void telemetryPins();
 
