@@ -56,7 +56,7 @@ public:
      * @param cutoff_frequency Cutoff frequency at the -3db level (see ../README.md, 𝜏 = 1 / (2π * f_c))
     */
     void set_time_constant(const float cutoff_frequency) {
-        _time_constant = cutoff_frequency;
+        _time_constant = 1.0 / (2.0 * M_PI * cutoff_frequency);
     }
 
 private:
