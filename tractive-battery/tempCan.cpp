@@ -16,28 +16,19 @@ CANMessage CanGenerator::BuildVoltageMessage(uint8_t modNum) {
 }
 
 CANMessage CanGenerator::BuildTempMessage(uint8_t modNum, bool AorB) {
-    char data[8] = {0};
+    char data[6] = {0};
     uint8_t messageIdindex;
     // our temps are in float the scale is 0.25 we need quarters of a degree 
-    if (AorB) {
+        if (AorB) {
         messageIdindex = modNum * 2;
         for (uint8_t i = 0; i < NUM_TEMP_SENSORS_PER_MODULE / 2; i++) {
-            float recordedTemp = BMSInstance.temps[messageIdindex][i];
-            recordedTemp*=100;
-            uint8_t canTempData = (uint8_t)recordedTemp;
-            canTempData *= 4;
-            data[i] = canTempData;
+            data[i] = (uint8_t)(BMSInstance.temps[modNum][i] / 0.25f);
         }
     } else {
-        messageIdindex = (modNum * 2) - 1;
+        messageIdindex = modNum * 2 + 1;
         uint8_t index = 0;
         for (uint8_t i = NUM_TEMP_SENSORS_PER_MODULE / 2; i < NUM_TEMP_SENSORS_PER_MODULE; i++) {
-            // data[index] = BMSInstance.temps[messageIdindex][i];
-            float recordedTemp = BMSInstance.temps[messageIdindex][i];
-            recordedTemp*=100;
-            uint8_t canTempData = (uint8_t)recordedTemp;
-            canTempData *= 4;
-            data[index]= canTempData;
+            data[index] = (uint8_t)(BMSInstance.temps[modNum][i] / 0.25f);
             index++;
         }
     }
@@ -69,8 +60,9 @@ CANMessage CanGenerator::BuildStatusMessage(TelemetryInfo Data) {
     data[2] = Data.faultModIndex;
     data[3] = Data.faultSenseIndex;
     data[4] = Data.battStatFaultIndex;
-    data[5] = (uint8_t)(Data.glvVoltage >> 8);
-    data[6] = (uint8_t)(Data.glvVoltage);
+    //GLV voltage, scale = 0.001, low byte first
+    data[5] = (uint8_t)(Data.glvVoltage & 0x00FF);
+    data[6] = (uint8_t)((Data.glvVoltage >> 8) & 0x00FF);
     data[7] = Data.pwmFanstat;
     return CANMessage{BATT_TPDO_STATUS, data, 8};
 }
@@ -118,13 +110,15 @@ CANMessage CanGenerator::BuildCellStatsMessage() {
             voltCount++;
         }
     }
-    float avgVolt = (float)sumVolt / voltCount;
+    float avgVoltMv = (float)sumVolt / voltCount;
     data[0] = (uint8_t)(avgTemp / 0.25f);
     data[1] = (uint8_t)(maxTemp / 0.25f);
     data[2] = (uint8_t)(minTemp / 0.25f);
-    data[3] = (uint8_t)(avgVolt / 0.25f);
-    data[4] = (uint8_t)(maxVolt / 0.25f);
-    data[5] = (uint8_t)(minVolt / 0.25f);
+    
+    // volts: scale=0.01, bias=2, raw =s mV/10 - 200
+    data[3] = (uint8_t)((avgVoltMv / 10.0f) - 200.0f);
+    data[4] = (uint8_t)((maxVolt / 10) - 200);
+    data[5] = (uint8_t)((minVolt / 10) - 200);
     return CANMessage{BATT_TPDO_CELL_STATS, data, 6};
 }
 
