@@ -136,9 +136,9 @@ void send_imu_CAN_messages() {
     buf_accel[5] = az >> 8;
 
      uint8_t buf_gyro[6];
-    int16_t wx = static_cast<int16_t>(etc_state.vectornav.angRate[0] * 1000);
-    int16_t wy = static_cast<int16_t>(etc_state.vectornav.angRate[1] * 1000);
-    int16_t wz = static_cast<int16_t>(etc_state.vectornav.angRate[2] * 1000);
+    int16_t wx = static_cast<int16_t>(etc_state.vectornav.angRate[0] * 10);
+    int16_t wy = static_cast<int16_t>(etc_state.vectornav.angRate[1] * 10);
+    int16_t wz = static_cast<int16_t>(etc_state.vectornav.angRate[2] * 10);
     buf_gyro[0] = wx & 0xFF;
     buf_gyro[1] = wx >> 8;
     buf_gyro[2] = wy & 0xFF;
@@ -187,12 +187,12 @@ void send_imu_CAN_messages() {
     buf_alt[2] = (alt >> 16) & 0xFF;
     buf_alt[3] = (alt >> 24) & 0xFF;
 
-    CANMessage accel_msg  {0x1D0, buf_accel,  6};
-    CANMessage gyro_msg   {0x1D1, buf_gyro,   6};
-    CANMessage ypr_msg    {0x2D0, buf_ypr,    6};
-    CANMessage vel_msg    {0x2D1, buf_vel,     6};
-    CANMessage latlon_msg {0x3D0, buf_latlon,  8};
-    CANMessage alt_msg    {0x3D1, buf_alt,     4};
+    CANMessage accel_msg  {0x2D0, buf_accel,  6};
+    CANMessage gyro_msg   {0x3D1, buf_gyro,   6};
+    CANMessage ypr_msg    {0x3D0, buf_ypr,    6};
+    CANMessage vel_msg    {0x2D2, buf_vel,     6};
+    CANMessage latlon_msg {0x2D1, buf_latlon,  8};
+    CANMessage alt_msg    {0x3D2, buf_alt,     4};
 
     canD.write(accel_msg);
     canD.write(gyro_msg);
