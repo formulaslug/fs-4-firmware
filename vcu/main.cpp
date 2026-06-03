@@ -136,13 +136,14 @@ void send_sme_CAN_messages() {
     uint8_t buf2[8];
     uint8_t tc_slip = static_cast<uint8_t>(etc.traction_controller.get_slip() * 100.0f);
     uint8_t tc_output = static_cast<uint8_t>(etc.traction_controller.get_output() * 100.0f);
-    int16_t tc_integral = static_cast<int16_t>(etc.traction_controller.get_integral() * 1000.0f);
+    uint8_t tc_integral = static_cast<uint8_t>(etc.traction_controller.get_integral() * 100.0f);
+    uint8_t tc_loop_time = static_cast<uint8_t>(etc.traction_controller.get_loop_time() * 1000.0f);
     int16_t tc_raw_derivative = static_cast<int16_t>(etc.traction_controller.get_raw_derivative() * 1000.0f);
     int16_t tc_smoothed_derivative = static_cast<int16_t>(etc.traction_controller.get_smoothed_derivative() * 1000.0f);
     buf2[0] = tc_slip;
     buf2[1] = tc_output;
-    buf2[2] = tc_integral & 0xFF;
-    buf2[3] = tc_integral >> 8;
+    buf2[2] = tc_integral;
+    buf2[3] = tc_loop_time;
     buf2[4] = tc_raw_derivative & 0xFF;
     buf2[5] = tc_raw_derivative >> 8;
     buf2[6] = tc_smoothed_derivative & 0xFF;

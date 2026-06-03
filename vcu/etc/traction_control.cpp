@@ -27,7 +27,7 @@ float TractionController::update(float ws_fl, float ws_fr, float ws_rl, float ws
 
   // compute slip if above minimum activation speed
   this->slip = 0.0f;
-  if (v_front > this->ACTIVATION_RPM && v_rear > 0)
+  if (v_rear > this->ACTIVATION_RPM)
   {
     slip = (v_rear - v_front) / v_rear;
   }
