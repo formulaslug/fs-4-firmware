@@ -467,6 +467,32 @@ BO_ 655364 VDM_YAW_RATE: 8 VDM
    SG_ VDM_Y_AXIS_YAW_RATE : 23|16@0- (0.0152588,0) [-500|500] "deg/s" Vector__XXX
    SG_ VDM_Z_AXIS_YAW_RATE : 39|16@0- (0.0152588,0) [-500|500] "deg/s" Vector__XXX
 
+BO_ 720 VCU_IMU_ACCEL: 6 VCU
+   SG_ VCU_IMU_ACCEL_ax : 0|16@1- (0.01,0) [-327.68|327.67] "m/s^2" Vector__XXX
+   SG_ VCU_IMU_ACCEL_ay : 16|16@1- (0.01,0) [-327.68|327.67] "m/s^2" Vector__XXX
+   SG_ VCU_IMU_ACCEL_az : 32|16@1- (0.01,0) [-327.68|327.67] "m/s^2" Vector__XXX
+
+BO_ 976 VCU_IMU_YPR: 6 VCU
+   SG_ VCU_IMU_YPR_yaw : 0|16@1- (0.01,0) [-327.68|327.67] "deg" Vector__XXX
+   SG_ VCU_IMU_YPR_pitch : 16|16@1- (0.01,0) [-327.68|327.67] "deg" Vector__XXX
+   SG_ VCU_IMU_YPR_roll : 32|16@1- (0.01,0) [-327.68|327.67] "deg" Vector__XXX
+
+BO_ 721 VCU_IMU_POS_LATLON: 8 VCU
+   SG_ VCU_IMU_POS_LATLON_lat : 0|32@1- (1e-07,0) [-214.748|214.748] "" Vector__XXX
+   SG_ VCU_IMU_POS_LATLON_lon : 32|32@1- (1e-07,0) [-214.748|214.748] "" Vector__XXX
+
+BO_ 977 VCU_IMU_GYRO: 6 VCU
+   SG_ VCU_IMU_GYRO_wx : 0|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
+   SG_ VCU_IMU_GYRO_wy : 16|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
+   SG_ VCU_IMU_GYRO_wz : 32|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
+
+BO_ 722 VCU_IMU_VEL_BODY: 6 VCU
+   SG_ VCU_IMU_VEL_BODY_vx : 0|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
+   SG_ VCU_IMU_VEL_BODY_vy : 16|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
+   SG_ VCU_IMU_VEL_BODY_vz : 32|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
+
+BO_ 978 VCU_IMU_POS_ALT: 4 VCU
+   SG_ VCU_IMU_POS_ALT_alt : 0|32@1- (0.001,0) [-2.14748e+06|2.14748e+06] "m" Vector__XXX
 
 CM_ SG_ 403 VCU_ETC_IMPLAUS_APPS_OUT_OF_RANGE "APPS1 or APPS2 reading is outside of expected voltage range (for >100ms) (T.4.2.10)";
 CM_ SG_ 403 VCU_ETC_IMPLAUS_BPPS_OUT_OF_RANGE "BPPS reading is outside of expected voltage range (for >100ms) (not rules-required)";
