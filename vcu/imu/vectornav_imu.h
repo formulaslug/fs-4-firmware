@@ -16,11 +16,19 @@ inline void check_vn_error(const char* file, int line, VN::Error err) {
 #define CHECK_VN_ERR(err) check_vn_error(__FILE__, __LINE__, err)
 
 struct VectornavState {
+    // m/s^2
     VN::Vec3f accel{0,0,0};
+    // rad/s
     VN::Vec3f angRate{0,0,0};
+
     VN::Vec3f mag{0,0,0};
+
+    // deg
     VN::Ypr ypr{0,0,0};
+
     VN::Lla pos{0,0,0};
+
+    // m/s
     VN::Vec3f velBody{0,0,0};
 };
 

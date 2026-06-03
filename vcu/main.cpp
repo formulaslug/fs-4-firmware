@@ -17,6 +17,10 @@ void send_etc_CAN_messages();
 void send_sme_CAN_messages();
 void send_imu_CAN_messages();
 
+namespace {
+constexpr float RAD_TO_DEG = 57.2957795f;
+}
+
 int main() {
     printf("Hello World!!\n");
 
@@ -135,10 +139,10 @@ void send_imu_CAN_messages() {
     buf_accel[4] = az & 0xFF;
     buf_accel[5] = az >> 8;
 
-     uint8_t buf_gyro[6];
-    int16_t wx = static_cast<int16_t>(etc_state.vectornav.angRate[0] * 10);
-    int16_t wy = static_cast<int16_t>(etc_state.vectornav.angRate[1] * 10);
-    int16_t wz = static_cast<int16_t>(etc_state.vectornav.angRate[2] * 10);
+    uint8_t buf_gyro[6];
+    int16_t wx = static_cast<int16_t>(etc_state.vectornav.angRate[0] * RAD_TO_DEG * 10);
+    int16_t wy = static_cast<int16_t>(etc_state.vectornav.angRate[1] * RAD_TO_DEG * 10);
+    int16_t wz = static_cast<int16_t>(etc_state.vectornav.angRate[2] * RAD_TO_DEG * 10);
     buf_gyro[0] = wx & 0xFF;
     buf_gyro[1] = wx >> 8;
     buf_gyro[2] = wy & 0xFF;

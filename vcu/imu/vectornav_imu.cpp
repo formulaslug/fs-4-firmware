@@ -104,23 +104,28 @@ void VectorNavIMU::refreshDataToState(VectornavState &state) {
         }
     }
 
-    if (rawImuData->imu.accel.has_value()) {
-        state.accel = rawImuData->imu.accel.value();
+    if (rawImuData.has_value()) {
+        if (rawImuData->imu.accel.has_value()) {
+            state.accel = rawImuData->imu.accel.value();
+        }
+        if (rawImuData->imu.angularRate.has_value()) {
+            state.angRate = rawImuData->imu.angularRate.value();
+        }
+        if (rawImuData->imu.mag.has_value()) {
+            state.mag = rawImuData->imu.mag.value();
+        }
     }
-    if (rawImuData->imu.angularRate.has_value()) {
-        state.angRate = rawImuData->imu.angularRate.value();
-    }
-    if (rawImuData->imu.mag.has_value()) {
-        state.mag = rawImuData->imu.mag.value();
-    }
-    if (navData->attitude.ypr.has_value()) {
-        state.ypr = navData->attitude.ypr.value();
-    }
-    if (navData->ins.posLla.has_value()) {
-        state.pos = navData->ins.posLla.value();
-    }
-    if (navData->ins.velBody.has_value()) {
-        state.velBody = navData->ins.velBody.value();
+
+    if (navData.has_value()) {
+        if (navData->attitude.ypr.has_value()) {
+            state.ypr = navData->attitude.ypr.value();
+        }
+        if (navData->ins.posLla.has_value()) {
+            state.pos = navData->ins.posLla.value();
+        }
+        if (navData->ins.velBody.has_value()) {
+            state.velBody = navData->ins.velBody.value();
+        }
     }
 }
 
@@ -130,7 +135,7 @@ std::optional<VN::AsyncError> VectorNavIMU::getAsyncError() {
 }
 
 const char* VectorNavIMU::getModel() {
-    VN::Registers::System::Model modelRegister;
+    static VN::Registers::System::Model modelRegister;
     VN::Error err = this->sensor.readRegister(&modelRegister);
     CHECK_VN_ERR(err);
 
