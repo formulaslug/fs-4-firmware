@@ -3,12 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-// ideally I would want thse in BMS.h for now its fine tho.
-//  static constexpr float ADC_REF_VOLTAGE = 3.3f;
-//  //this will probably be adjusted and tuned as testing happens
-//  static constexpr float CURRENT_SENSOR_VOLTS_PER_AMP = 0.0037f; // first-pass estimate
-//  static constexpr size_t CURRENT_SENSOR_CALIBRATION_SAMPLES = 500;
-//  static constexpr float MAX_PACK_CURRENT_AMPS = 1000.0f; // adjust later
+
 
 BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
     : ltcBusInterface(&spiInterface), CAN_POWERTRAIN(CAN_POWERTRAIN) {
@@ -190,10 +185,10 @@ void BMS::decideBalancing() {
                     }
                     if ((maxModuleVolt - minCelVoltage) >= DIFFERENCE_THRESHOLD) {
                         dischargeValue |= (0x1 << j); // we balance based on the whole battery
+                        j++; // this ensures that a BMS will not balance adjacent cells
                     }
                     // Logic is find lowest voltage cell - go through each module and balance that
                     // module based on that cell reading so the whole battery is balanced
-                    // it wont let us do adjacent cells so .... may need to update ..
                 }
                 config.dischargeState.value = dischargeValue;
                 chips[i].updateConfig();
@@ -341,43 +336,32 @@ void BMS::checkForFaults() {
 void BMS::controller() {
 
     if (currentState != FAULT) {
-        glvVoltage = (GLV_Voltage.read() * 3.3 * 21.9 / 3.9 * 1000);
-        imdFaultStat = IMD_Fault_3V3.read(); 
-        // chargingActions();
-        // printf("charging actions completed okay...\n");
-        // turnOffCellBalancing();
-        // printf("turn off cell balancing completed okay...\n");
-        // ThisThread::sleep_for(3ms);
-        readCellVoltages();
-        // printf("cellvoltages read okay\n");
-        // turnOffCellBalancing();
-
+        if(balancing == FALSE){
+            readCellVoltages();
+        }
         readTemps();
-        for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-            for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-                printf("temp reading: ... %f\n", temps[i][j]);
-            }
+        checkForFaults();
+        readPackCurrent();
+        decideBalancing();
+        if(balancing == TRUE && balancingTimer != 0){
+            balancingTimer = Kernel::get_ms_count();
+            //set the timer so that we balance for 1 second before checking the voltage again
+        }
+        if(Kernel::get_ms_count() > (balancingTimer+1000)){
+            //truns off cel balancing after the timeout
+            balancingTimer = 0;
+            turnOffCellBalancing();
         }
 
-        readPackCurrent();
-        printf("\n\n");
-        // printf("read temps went okay....\n");
-        // checkForFaults();
-        // printf("checked for faults\n"); //
-        // controlFans();
-        // printf("fan pwm set ...\n");
-        // decideBalancing();
-        // printf("battery balancing set....");
-        // telemetryPins();
-        // readPackCurrent();
+
+
 
     } else {
         printf("WE ARE IN FAULT");
         turnOffCellBalancing();
         nBMS_Fault_3V3 = 0;
         // need to turn on indicator lights as well .....
-        //  precharge relay should be open in this case
-        // fans turn off on fault
-        // Fan_PWM.write(0.0f);
+        TS_READY = 0;
+
     }
 }

@@ -86,6 +86,9 @@ public:
     uint8_t battStatFaultIndex = 0;
 
     uint16_t glvVoltage = 0;
+
+    uint64_t balancingTimer = 0;
+
     bool imdFaultStat;
     Timer ltcTimeoutTimer;
     CANMessage msg;

@@ -18,6 +18,7 @@ DigitalIn Charge_State_Filtered = DigitalIn(PC_2);
 // DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
 InterruptIn Shutdown_Final_3V3_Filtered = InterruptIn(PA_6);
 
+DigitalOut TS_READY = DigitalOut(PC_9);
 
 PwmOut Fan_PWM = PwmOut(PC_8);
 
@@ -100,9 +101,9 @@ int main() {
 
     queue.call_every(2ms, &BMSInstance, &BMS::controller);
     queue.call_every(200ms, controlFans);
-
-
     queue.call_every(1000ms, callback(&cGen, &CanGenerator::BuildAndSendMessages), Data);
+    TS_READY = 1;
+
 
     queue.dispatch_forever();
 
