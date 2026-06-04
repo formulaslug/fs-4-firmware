@@ -3,8 +3,9 @@
 //
 
 #include "etc_controller.h"
+#include "../imu/vectornav_imu.h"
 
-ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin) :
+ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin, PinName vectornav_tx, PinName vectornav_rx) :
     unfiltered_APPS1_input(APPS1_pin),
     APPS1_input(unfiltered_APPS1_input, 60),
     unfiltered_APPS2_input(APPS2_pin),
@@ -21,12 +22,17 @@ ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_
     rtd_buzzer(rtd_buzzer_pin),
     solenoid(solenoid_pin),
     brakelight(brakelight_pin),
+    vn_imu(vectornav_tx, vectornav_rx),
     traction_controller()
 {
     rtd_light.write(0);
     rtd_buzzer.write(0);
     solenoid.write(0);
     brakelight.write(0);
+
+    // spawns new thread for imu listener
+    CHECK_VN_ERR(vn_imu.connect());
+    CHECK_VN_ERR(vn_imu.init());
 }
 
 float ETCController::clamp(float value) {
@@ -52,24 +58,13 @@ void ETCController::update_state() {
     state.BPPS_position = clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
 
-    //state.motor_torque = state.is_regening ? state.regen_torque : static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
-    if (state.is_regening)
-    {
-      state.motor_torque = state.regen_torque;
-    }
-    else if (state.traction_control_enabled) 
-    {
-      const float tc_torque_reduction_factor = traction_controller.get_output();
-      state.motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE * tc_torque_reduction_factor);
-    }
-    else 
-    {
-      state.motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
-    }
+    state.motor_torque = state.is_regening ? state.regen_torque : static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
     state.brakelight_enabled = state.is_regening || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT && !state.solenoid_open);
     
     brakelight.write(state.brakelight_enabled);
     solenoid.write(state.solenoid_open);
+
+    vn_imu.refreshDataToState(state.vectornav);
 
     update_implaus();
 

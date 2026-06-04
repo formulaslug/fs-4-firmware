@@ -29,7 +29,7 @@ class TractionController {
     static constexpr float MAX_INTEGRATOR_REDUCTION_FACTOR = 0.5f;   // maximum strength of integral component ALONE
     static constexpr float TARGET_WHEEL_SLIP = 0.09f;                // wheel slip the controller will try to maintain
     static constexpr float ACTIVATION_RPM = 100.0f;                  // minimum rear wheel rpm for controller to reduce torque
-    static constexpr float FILTER_TIME_CONSTANT = 0.05f;             // 0.05 seconds or 50 ms
+    static constexpr float FILTER_TIME_CONSTANT = 0.2f;              // 0.2 seconds or 200 ms
     static constexpr float MIN_OUTPUT = 0.2f;                        // min reduction factor
     static constexpr float MAX_OUTPUT = 1.0f;                        // max reduction factor (DO NOT INCREASE)
   

@@ -20,6 +20,7 @@ add_subdirectory(../mbed-os mbed-os)
 # add_subdirectory(../libraries/FilterUtils FilterUtils)
 
 add_subdirectory(../libraries/FilterUtils filter-utils)
+add_subdirectory(../libraries/vectornav-sdk-1-2-0-mbed vectornav-sdk)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -27,8 +28,10 @@ add_executable(${PROJECT_NAME}
         main.cpp
         ./etc/etc_controller.cpp
         ./etc/traction_control.cpp
+        ./imu/vectornav_imu.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ./etc)
 target_link_libraries(${PROJECT_NAME} mbed-os filter-utils)
+target_link_libraries(${PROJECT_NAME} mbed-os oVnSensor)
 mbed_set_post_build(${PROJECT_NAME})
