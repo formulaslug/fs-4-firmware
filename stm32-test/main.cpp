@@ -21,6 +21,7 @@ using namespace std::chrono_literals;
 // constexpr int PIN_RST = 8;  // Optional for SPI
 
 /* ---------------- SPI Bus ---------------- */
+// CS, INT, RST, WAKE, int clkin, int mode, SCK, MISO, MOSI
 BnoSPIBus bus(PB_12, PB_13, PC_8, PA_11, 1000000UL, 3, PC_7, PB_14, PB_15);
 // BnoSPIBus bus(PA_11, PB_5, PA_8, PB_1, 1000000UL, 3, PA_5, PA_6, PA_7); // nucleo l432kc
 
