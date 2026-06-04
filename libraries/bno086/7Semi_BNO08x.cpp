@@ -12,9 +12,26 @@
 
 #include "7Semi_BNO08x.h"
 
+using namespace std::chrono_literals;
+
 #ifndef BNO_RX_CAP
-#define BNO_RX_CAP 64
+#define BNO_RX_CAP 300
 #endif
+
+enum : uint8_t {
+  SHTP_REPORT_PRODUCT_ID_REQUEST  = 0xF9,
+  SHTP_REPORT_PRODUCT_ID_RESPONSE = 0xF8,
+  SHTP_REPORT_BASE_TIMESTAMP      = 0xFB,
+  SHTP_REPORT_TIMESTAMP_REBASE    = 0xFA,
+};
+
+enum : size_t {
+  SIZEOF_BASE_TIMESTAMP = 5,
+  SIZEOF_TIMESTAMP_REBASE = 5,
+  SIZEOF_VEC3_REPORT = 10,
+  SIZEOF_GAME_ROTATION_VECTOR_REPORT = 12,
+  SIZEOF_ROTATION_VECTOR_REPORT = 14,
+};
 
 // ============================ Internal helpers ============================
 
@@ -25,6 +42,82 @@
 static inline int16_t read2Bytes(const uint8_t *p)
 {
   return (int16_t)((p[1] << 8) | p[0]);
+}
+
+static inline int sensorReportOffset(const uint8_t *pkt, size_t n)
+{
+  if (!pkt || n <= 4)
+    return -1;
+
+  size_t off = 4; // SHTP header length
+  if (pkt[off] == SHTP_REPORT_BASE_TIMESTAMP) {
+    off += SIZEOF_BASE_TIMESTAMP;
+    if (n <= off)
+      return -1;
+  }
+
+  return (int)off;
+}
+
+static inline size_t sensorReportSize(uint8_t reportId)
+{
+  switch (reportId) {
+  case SHTP_REPORT_TIMESTAMP_REBASE:
+    return SIZEOF_TIMESTAMP_REBASE;
+  case ACCELEROMETER:
+  case GYROSCOPE_CALIBRATED:
+  case MAGNETIC_FIELD_CALIBRATED:
+  case LINEAR_ACCELERATION:
+  case GRAVITY:
+    return SIZEOF_VEC3_REPORT;
+  case GAME_ROTATION_VECTOR:
+    return SIZEOF_GAME_ROTATION_VECTOR_REPORT;
+  case ROTATION_VECTOR:
+  case GEOMAGNETIC_ROTATION_VECTOR:
+    return SIZEOF_ROTATION_VECTOR_REPORT;
+  default:
+    return 0;
+  }
+}
+
+static inline bool parseVec3At(
+    const uint8_t *pkt,
+    size_t n,
+    size_t off,
+    uint8_t id,
+    float scale,
+    Vec3 &out)
+{
+  if (!pkt || n < off + SIZEOF_VEC3_REPORT)
+    return false;
+  if (pkt[off] != id)
+    return false;
+
+  out.x = read2Bytes(&pkt[off + 4]) / scale;
+  out.y = read2Bytes(&pkt[off + 6]) / scale;
+  out.z = read2Bytes(&pkt[off + 8]) / scale;
+  return true;
+}
+
+static inline bool parseQuatAt(
+    const uint8_t *pkt,
+    size_t n,
+    size_t off,
+    uint8_t id,
+    float scale,
+    Quat &out)
+{
+  const size_t reportSize = sensorReportSize(id);
+  if (!pkt || reportSize == 0 || n < off + reportSize)
+    return false;
+  if (pkt[off] != id)
+    return false;
+
+  out.i = read2Bytes(&pkt[off + 4]) / scale;
+  out.j = read2Bytes(&pkt[off + 6]) / scale;
+  out.k = read2Bytes(&pkt[off + 8]) / scale;
+  out.r = read2Bytes(&pkt[off + 10]) / scale;
+  return true;
 }
 
 /**
@@ -43,15 +136,8 @@ static inline bool parseVec3L(
     float scale,
     Vec3 &out)
 {
-  if (!pkt || n < 19)
-    return false; // 9-byte header + 3*2 bytes data + id
-  if (pkt[9] != id)
-    return false; // check report id matches
-
-  out.x = read2Bytes(&pkt[13]) / scale; // x at pkt[13..14]
-  out.y = read2Bytes(&pkt[15]) / scale; // y at pkt[15..16]
-  out.z = read2Bytes(&pkt[17]) / scale; // z at pkt[17..18]
-  return true;
+  const int off = sensorReportOffset(pkt, n);
+  return off >= 0 && parseVec3At(pkt, n, (size_t)off, id, scale, out);
 }
 
 /**
@@ -63,8 +149,8 @@ static inline bool parseVec3L(
  * - out   : output Quat
  * - return: true if parsed successfully
  * - This function:
- *   - report id is checked at pkt[9]
- *   - i/j/k/r are read from pkt[13..20]
+ *   - report id is checked after the SHTP header and optional timestamp
+ *   - i/j/k/r are read from the report payload
  */
 static inline bool parseQuatL(
     const uint8_t *pkt,
@@ -73,16 +159,8 @@ static inline bool parseQuatL(
     float scale,
     Quat &out)
 {
-  if (!pkt || n < 21)
-    return false; // 9-byte header + 4*2 bytes data + id
-  if (pkt[9] != id)
-    return false; // check report id matches
-
-  out.i = read2Bytes(&pkt[13]) / scale; // i at pkt[13..14]
-  out.j = read2Bytes(&pkt[15]) / scale; // j at pkt[15..16]
-  out.k = read2Bytes(&pkt[17]) / scale; // k at pkt[17..18]
-  out.r = read2Bytes(&pkt[19]) / scale; // r at pkt[19..20]
-  return true;
+  const int off = sensorReportOffset(pkt, n);
+  return off >= 0 && parseQuatAt(pkt, n, (size_t)off, id, scale, out);
 }
 
 // =============================== Begin ===============================
@@ -94,7 +172,14 @@ static inline bool parseQuatL(
  */
 bool BNO08x_7Semi::begin()
 {
-  return bus && bus->begin(); // initialize bus
+  if (!bus || !bus->begin())
+    return false;
+
+  drainStartupPackets_(500);
+  if (!writeProductIdRequest_())
+    return false;
+
+  return waitForProductIdResponse_(500);
 }
 
 // =============================== IO wrappers =============================
@@ -115,15 +200,18 @@ int BNO08x_7Semi::readPacket(uint8_t *buffer, size_t len)
 }
 
 /**
- * - Helper that reads and parses one packet
+ * - Helper that reads and parses a small batch of pending packets
  * - Call this very frequently in loop() for continuous update
  */
 void BNO08x_7Semi::processData()
 {
   uint8_t pkt[BNO_RX_CAP];
-  int n = readPacket(pkt, sizeof(pkt));
-  if (n > 0)
+  for (int i = 0; i < 4; i++) {
+    int n = readPacket(pkt, sizeof(pkt));
+    if (n <= 0)
+      break;
     processPacket(pkt, (size_t)n);
+  }
 }
 
 // ============================ Packet processor ===========================
@@ -135,108 +223,119 @@ void BNO08x_7Semi::processData()
  *   - non-input channels
  * - Updates:
  *   - channel is pkt[2] low nibble
- *   - report id is pkt[9]
+ *   - report id follows the SHTP header and optional timestamp
  */
 void BNO08x_7Semi::processPacket(const uint8_t *pkt, size_t n)
 {
-  if (!pkt || n < 10)
+  if (!pkt || n < 5)
     return; // must have at least header + id
 
   const uint8_t ch = pkt[2] & 0x0F; // channel = low nibble of pkt[2]
-  const uint8_t report_id = pkt[9]; // report id at pkt[9]
-                                    /** Ignore command/control packets */
+  /** Ignore command/control packets */
   if (ch == SHTP_CH_CTRL)
     return;
 
   /** Accept only input channels */
-  if (ch != SHTP_CH_INPUT && ch != SHTP_CH_WAKE && ch != SHTP_CH_GYRO_RV)
+  if (ch != SHTP_CH_INPUT && ch != SHTP_CH_WAKE)
     return;
 
   const uint32_t now = us_ticker_read();
+  size_t reportOffset = 4;
 
-  Vec3 v{};
-  Quat q{};
-  bool status = false;
-  switch (report_id)
-  {                                         // report id
-  case ACCELEROMETER:                       // 0x01
-    status = parseAccelerometer(pkt, n, v); // parse accel
-    if (status)
-    {
-      data.accel_mps2 = v;
-      data.hasAccel = true; // new data
-    }
-    break;
-
-  case GYROSCOPE_CALIBRATED:            // 0x02
-    status = parseGyroscope(pkt, n, v); // parse gyro
-    if (status)
-    {
-      data.gyro_rps = v;
-      data.hasGyro = true;
-    }
-    break;
-
-  case MAGNETIC_FIELD_CALIBRATED:          // 0x03
-    status = parseMagnetometer(pkt, n, v); // parse mag
-    if (status)
-    {
-      data.mag_uT = v;
-      data.hasMag = true;
-    }
-    break;
-
-  case LINEAR_ACCELERATION:               // 0x04 
-    status = parseLinearAccel(pkt, n, v); // parse linear accel
-    if (status)
-    {
-      data.linear_mps2 = v;
-      data.hasLinear = true;
-    }
-    break;
-
-  case GRAVITY:                          // 0x06
-    status = parseGravity(pkt, n, v);    // parse gravity
-    if (status)
-    {
-      data.gravity_mps2 = v;
-      data.hasGravity = true;
-    }
-    break;
-
-  case ROTATION_VECTOR:                      // 0x05
-    status = parseRotationVector(pkt, n, q); // parse rv
-    if (status)
-    {
-      data.rv_q = q;
-      data.hasQuat = true;
-    }
-    break;
-
-  case GAME_ROTATION_VECTOR:                     // 0x08
-    status = parseGameRotationVector(pkt, n, q); // parse game rv
-    if (status)
-    {
-      data.grv_q = q;
-      data.hasGameQuat = true;
-    }
-    break;
-
-  case GEOMAGNETIC_ROTATION_VECTOR:                // 0x09
-    status = parseGeoRotationVector(pkt, n, q);    // parse geomagnetic rv
-    if (status)
-    {
-      data.gerv_q = q;
-      data.hasGeoQuat = true;
-    }
-    break;
-
-  default:
-    return;
+  if (pkt[reportOffset] == SHTP_REPORT_BASE_TIMESTAMP) {
+    reportOffset += SIZEOF_BASE_TIMESTAMP;
   }
 
-  if (status)
+  bool updated = false;
+  while (reportOffset < n)
   {
+    const uint8_t report_id = pkt[reportOffset];
+    const size_t reportSize = sensorReportSize(report_id);
+    if (reportSize == 0 || reportOffset + reportSize > n)
+      break;
+
+    Vec3 v{};
+    Quat q{};
+    bool status = false;
+
+    switch (report_id)
+    {
+    case SHTP_REPORT_TIMESTAMP_REBASE:
+      break;
+
+    case ACCELEROMETER:
+      status = parseVec3At(pkt, n, reportOffset, ACCELEROMETER, 256.0f, v);
+      if (status) {
+        data.accel_mps2 = v;
+        data.hasAccel = true;
+      }
+      break;
+
+    case GYROSCOPE_CALIBRATED:
+      status = parseVec3At(pkt, n, reportOffset, GYROSCOPE_CALIBRATED, 512.0f, v);
+      if (status) {
+        data.gyro_rps = v;
+        data.hasGyro = true;
+      }
+      break;
+
+    case MAGNETIC_FIELD_CALIBRATED:
+      status = parseVec3At(pkt, n, reportOffset, MAGNETIC_FIELD_CALIBRATED, 16.0f, v);
+      if (status) {
+        data.mag_uT = v;
+        data.hasMag = true;
+      }
+      break;
+
+    case LINEAR_ACCELERATION:
+      status = parseVec3At(pkt, n, reportOffset, LINEAR_ACCELERATION, 256.0f, v);
+      if (status) {
+        data.linear_mps2 = v;
+        data.hasLinear = true;
+      }
+      break;
+
+    case GRAVITY:
+      status = parseVec3At(pkt, n, reportOffset, GRAVITY, 256.0f, v);
+      if (status) {
+        data.gravity_mps2 = v;
+        data.hasGravity = true;
+      }
+      break;
+
+    case ROTATION_VECTOR:
+      status = parseQuatAt(pkt, n, reportOffset, ROTATION_VECTOR, 16384.0f, q);
+      if (status) {
+        data.rv_q = q;
+        data.hasQuat = true;
+      }
+      break;
+
+    case GAME_ROTATION_VECTOR:
+      status = parseQuatAt(pkt, n, reportOffset, GAME_ROTATION_VECTOR, 16384.0f, q);
+      if (status) {
+        data.grv_q = q;
+        data.hasGameQuat = true;
+      }
+      break;
+
+    case GEOMAGNETIC_ROTATION_VECTOR:
+      status = parseQuatAt(pkt, n, reportOffset, GEOMAGNETIC_ROTATION_VECTOR, 16384.0f, q);
+      if (status) {
+        data.gerv_q = q;
+        data.hasGeoQuat = true;
+      }
+      break;
+
+    default:
+      break;
+    }
+
+    updated = status || updated;
+    reportOffset += reportSize;
+  }
+
+  if (updated) {
     data.t_us = now;
     data.dataReady = true;
   }
@@ -265,11 +364,11 @@ bool BNO08x_7Semi::parseAccelerometer(const uint8_t *pkt, size_t n, Vec3 &out) c
  * - out : Vec3 output
  * - return : true if parsed successfully
  * - Gyroscope calibrated vector
- * -  Scaling uses Q8 => divide by 256.0f
+ * -  Scaling uses Q9 => divide by 512.0f
  */
 bool BNO08x_7Semi::parseGyroscope(const uint8_t *pkt, size_t n, Vec3 &out) const
 {
-  return parseVec3L(pkt, n, GYROSCOPE_CALIBRATED, 256.0f, out);
+  return parseVec3L(pkt, n, GYROSCOPE_CALIBRATED, 512.0f, out);
 }
 
 /**
@@ -279,11 +378,11 @@ bool BNO08x_7Semi::parseGyroscope(const uint8_t *pkt, size_t n, Vec3 &out) const
  * - out : Vec3 output
  * - return : true if parsed successfully
  * - Magnetometer calibrated vector
- * -  Scaling uses Q8 => divide by 256.0f
+ * -  Scaling uses Q4 => divide by 16.0f
  */
 bool BNO08x_7Semi::parseMagnetometer(const uint8_t *pkt, size_t n, Vec3 &out) const
 {
-  return parseVec3L(pkt, n, MAGNETIC_FIELD_CALIBRATED, 256.0f, out);
+  return parseVec3L(pkt, n, MAGNETIC_FIELD_CALIBRATED, 16.0f, out);
 }
 
 /**
@@ -544,17 +643,82 @@ bool BNO08x_7Semi::writeSetFeature_(
   return bus->tx(tx, sizeof(tx));
 }
 
+bool BNO08x_7Semi::writeProductIdRequest_()
+{
+  if (!bus)
+    return false;
+
+  uint8_t tx[6] = {0};
+  const uint16_t L = sizeof(tx);
+  tx[0] = L & 0xFF;
+  tx[1] = L >> 8;
+  tx[2] = SHTP_CH_CTRL;
+  tx[3] = seq[SHTP_CH_CTRL]++;
+  tx[4] = SHTP_REPORT_PRODUCT_ID_REQUEST;
+  tx[5] = 0;
+
+  return bus->tx(tx, sizeof(tx));
+}
+
+void BNO08x_7Semi::drainStartupPackets_(uint32_t timeoutMs)
+{
+  if (!bus)
+    return;
+
+  uint8_t buf[BNO_RX_CAP];
+  const auto quietTime = std::chrono::milliseconds(50);
+  auto deadline = rtos::Kernel::Clock::now() + std::chrono::milliseconds(timeoutMs);
+  auto quietDeadline = rtos::Kernel::Clock::now() + quietTime;
+  bool sawPacket = false;
+
+  while (rtos::Kernel::Clock::now() < deadline)
+  {
+    int n = bus->rx(buf, sizeof(buf));
+    if (n > 0) {
+      sawPacket = true;
+      quietDeadline = rtos::Kernel::Clock::now() + quietTime;
+    } else {
+      if (sawPacket && rtos::Kernel::Clock::now() >= quietDeadline)
+        break;
+      ThisThread::sleep_for(2ms);
+    }
+  }
+}
+
+bool BNO08x_7Semi::waitForProductIdResponse_(uint32_t timeoutMs)
+{
+  if (!bus)
+    return false;
+
+  uint8_t buf[BNO_RX_CAP];
+  auto deadline = rtos::Kernel::Clock::now() + std::chrono::milliseconds(timeoutMs);
+
+  while (rtos::Kernel::Clock::now() < deadline)
+  {
+    int n = bus->rx(buf, sizeof(buf));
+    if (n >= 5)
+    {
+      const uint8_t channel = buf[2] & 0x0F;
+      if (channel == SHTP_CH_CTRL && buf[4] == SHTP_REPORT_PRODUCT_ID_RESPONSE)
+        return true;
+
+      processPacket(buf, (size_t)n);
+    }
+    else
+    {
+      ThisThread::sleep_for(2ms);
+    }
+  }
+
+  return false;
+}
+
 /**
- * - Wait for "Set Feature Response" frame
+ * - Wait for a Get Feature Response frame
  * - expects:
  *   - channel == 2 (control)
- *   - reportId == 0xFC (SetFeatureResponse)
+ *   - reportId == 0xFC (Get Feature Response)
  *   - buf[5] == expectedFeatureId
- *   - buf[6] == status (0 = success)
- *
- * - IMPORTANT:
- *   - Some firmwares use Command Response reportId 0xF1 instead.
- *   - If enableReport() prints FAIL but data works, response type may differ.
  */
 bool BNO08x_7Semi::waitForSetFeatureResponse(uint8_t expectedFeatureId, uint32_t timeout)
 {
@@ -563,20 +727,18 @@ bool BNO08x_7Semi::waitForSetFeatureResponse(uint8_t expectedFeatureId, uint32_t
 
   while (rtos::Kernel::Clock::now() - start < std::chrono::milliseconds(timeout))
   {
-    uint8_t n = bus->rx(buf, BNO_RX_CAP);
+    int n = bus->rx(buf, BNO_RX_CAP);
 
-    if (n > 4)
+    if (n >= 6)
     {
-      ThisThread::sleep_for(5ms);
       uint8_t channel = buf[2] & 0x0F;
-      uint8_t reportId = buf[4]; // Command Response report must be on Control channel and reportId == 0xFC
+      uint8_t reportId = buf[4];
       if (channel == 2 && reportId == 0xFC)
       {
         uint8_t featureId = buf[5];
         if (featureId == expectedFeatureId)
         {
-          uint8_t status = buf[6];
-          return (status == 0x00);
+          return true;
         }
       }
     }
@@ -655,23 +817,14 @@ bool BNO08x_7Semi::enableGravity(uint32_t intervalMs)
  * - Enable one SH-2 report at a given interval
  * - reportId : * report id (e.g., ACCELEROMETER)
  * - intervalMs : requested report interval in milliseconds
- * - pumpMs   : optional time to pump RX after enabling (default 5 ms)
  * - return   : true if SetFeature frame transmitted
  * - Enable any report via Set Feature
- * - Retries once if response not received
  */
 bool BNO08x_7Semi::enableReport(uint8_t reportId, uint32_t intervalMs)
 {
   if (!writeSetFeature_(reportId, intervalMs, SHTP_CH_CTRL, 0xFD))
     return false;
 
-  if (!waitForSetFeatureResponse(reportId, 100))
-  {
-    if (!writeSetFeature_(reportId, intervalMs, SHTP_CH_CTRL, 0xFD))
-      return false;
-    if (!waitForSetFeatureResponse(reportId, 100))
-      return false;
-  }
-
+  ThisThread::sleep_for(10ms);
   return true;
 }

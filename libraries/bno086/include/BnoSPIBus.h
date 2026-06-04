@@ -21,7 +21,7 @@
  *  BNO08x SPI transport configuration
  *
  *  - Uses standard 4-byte SHTP header
- *  - SPI_MODE0 and MSB-first expected by BNO08x
+ *  - SPI mode 3 and MSB-first expected by BNO08x
  *  - Default clock is 1 MHz (safe for most boards)
  *  ------------------------------------------------------------------------- */
 
@@ -33,8 +33,6 @@
  *  - Assumes only a single BNO08x device is active on SPI
  *  - Allows static ISR to signal instance logic using g_intFlag
  *  ------------------------------------------------------------------------- */
-// static SPISettings g_settings(1000000, MSBFIRST, SPI_MODE0);
-
 /** ---------------------------------------------------------------------------
  *  BnoSPIBus
  *
@@ -71,7 +69,7 @@ struct BnoSPIBus : public BnoBus {
             PinName mosiPin = NC
           )
     : spi(mosiPin, misoPin, sckPin),
-      cs(csPin),
+      cs(csPin, 1),
       intn(intnPin),
       rst(rstPin, 1),
       wake(wakePin, 1),
@@ -94,24 +92,18 @@ struct BnoSPIBus : public BnoBus {
    *  - INT pin is configured using INPUT_PULLUP and FALLING edge trigger
    *  ----------------------------------------------------------------------- */
   bool begin() override {
-    // g_settings = SPISettings(clk, MSBFIRST, mode);
     cs = 1;
     spi.format(8,mode);
     spi.frequency(clk);
-
-    /** CS pin
-     *
-     *  - Active LOW
-     *  - Default idle state HIGH
-     */
-    cs = 0;
 
     /** INT pin
      *
      *  - Optional
      *  - Uses FALLING edge to signal FIFO has data
      */
-    intn.mode(PullUp);
+    if (intn.is_connected()) {
+      intn.mode(PullUp);
+    }
 
     /** Reset sequence (recommended for BNO08x)
      *
@@ -119,12 +111,13 @@ struct BnoSPIBus : public BnoBus {
      *  - Pulse LOW then allow device boot time
      */
     if (true) {
+      wake = 1;
       rst = 1;
-      ThisThread::sleep_for(5ms); 
+      ThisThread::sleep_for(std::chrono::milliseconds(5));
       rst = 0;
-      ThisThread::sleep_for(10ms); 
+      ThisThread::sleep_for(std::chrono::milliseconds(10));
       rst = 1;
-      ThisThread::sleep_for(300ms); 
+      ThisThread::sleep_for(std::chrono::milliseconds(300));
     }
     cs = 1;
     return true;
@@ -146,26 +139,24 @@ struct BnoSPIBus : public BnoBus {
 
     // Wake up the BNO08x (required by SHTP over SPI spec)
     wake = 0;
-    int timeout = 0;
-    while (intn) { // wait for INTN to go low indicating BNO is ready
-      timeout++;
-      if (timeout > 100) break; // Timeout
-      ThisThread::sleep_for(1ms);
+    if (intn.is_connected()) {
+      int timeout = 0;
+      while (intn) { // wait for INTN to go low indicating BNO is ready
+        if (++timeout > 125) {
+          wake = 1;
+          return false;
+        }
+        ThisThread::sleep_for(std::chrono::milliseconds(1));
+      }
     }
-    printf("Begin transmission\n");
-
-    // spi->beginTransaction(g_settings);
     cs = 0;
     wait_us(5);
 
     for (size_t i = 0; i < n; i++) spi.write(data[i]);
-    //  for (size_t i = 0; i < n; i++)
-    // spi.write(data[i]);
       
     wait_us(5);
     cs = 1;
-    wake = 1; // Release WAKE pin
-    // spi->endTransaction();
+    wake = 1;
 
     return true;
   }
@@ -173,9 +164,9 @@ struct BnoSPIBus : public BnoBus {
   /** -------------------------------------------------------------------------
    *  rx()
    *
-   *  - Reads one or more packets from the BNO08x FIFO
-   *  - Handles continuation packets (MSB of length set)
-   *  - Copies the raw SHTP packet stream into caller buffer
+   *  - Reads one packet from the BNO08x FIFO
+   *  - Clears the continuation flag from the length field
+   *  - Copies the raw SHTP packet into caller buffer
    *
    *  Inputs:
    *  - buf    : output buffer to store packet(s)
@@ -186,78 +177,64 @@ struct BnoSPIBus : public BnoBus {
    *  - Returns number of bytes read (0 if nothing / failure)
    *
    *  Notes:
-   *  - INT-based gating is intentionally bypassable for debug
+   *  - INT gates reads when connected; invalid headers are rejected
    *  - Each packet includes its own 4-byte header
-   *  - Stops if packet size invalid or buffer would overflow
+   *  - Rejects oversized packets so a bad header cannot stall the app
    *  ----------------------------------------------------------------------- */
   int rx(uint8_t *buf, size_t cap) override {
-    uint16_t len = 0;
-    /** Optional INT gating
+    if (!buf || cap < 4) return 0;
+
+    if (intn.is_connected() && intn) {
+      return 0;
+    }
+
+    uint8_t hdr[4]; // SHTP header buffer
+
+    cs = 0; // select device
+    wait_us(5);
+
+    /** Read 4-byte SHTP header
      *
-     *  - When enabled, rx() will only read after INT asserts
-     *  - Can be bypassed for debug sessions
+     *  - First 2 bytes: packet length (with continuation flag)
+     *  - Next 2 bytes : channel + sequence
      */
-    if (false) { // optional INT pin
-      int i = 0;
-      while (intn) { // wait for INT to go LOW
-        printf("Wait intn\n");
-        i++;
-        if (i > 100) // Timeout after ~100 ms
-          return 0;  // nothing to read
-        ThisThread::sleep_for(1ms);
-      }
+    for (int i = 0; i < 4; i++)
+      hdr[i] = spi.write(0x00); // dummy write to clock data out
+
+    /** Parse packet length and continuation flag */
+    uint16_t pktLen = hdr[0] | (hdr[1] << 8);
+    pktLen &= ~0x8000; // clear continuation flag
+    uint8_t channel = hdr[2] & 0x0F;
+
+    /** Packet sanity check
+     *
+     *  - pktLen must at least include header
+     *  - pktLen must fit the caller's buffer
+     */
+    if ((hdr[0] == 0xFF && hdr[1] == 0xFF) || pktLen < 4 || channel > 5) {
+      cs = 1;
+      return 0;
     }
 
-    printf("Begin recv\n");
-    while (true) {
-      uint8_t hdr[4]; // SHTP header buffer
-
-      cs = 0; // select device
-
-      /** Read 4-byte SHTP header
-       *
-       *  - First 2 bytes: packet length (with continuation flag)
-       *  - Next 2 bytes : channel + sequence
-       */
-      for (int i = 0; i < 4; i++)
-        hdr[i] = spi.write(0x00); // dummy write to clock data out
-      /** Parse packet length and continuation flag */
-      uint16_t pktLen = hdr[0] | (hdr[1] << 8);
-      bool ok = pktLen & 0x8000;  // MSB = ok to continue
-      pktLen &= ~0x8000;              // clear MSB
-      /** Packet sanity check
-       *
-       *  - pktLen must at least include header
-       *  - total must fit in user buffer
-       */
-      if (pktLen < 4 || pktLen > cap) {
-        cs = 1;
-        // spi->endTransaction();
-        break;
-      }
-
-      /** Copy header into buffer */
-      memcpy(buf + len, hdr, 4);
-
-      /** Read payload bytes
-       *
-       *  - Payload length = pktLen - headerLen
-       *  - Uses dummy reads (0xFF) to clock data out
-       */
-      uint16_t payloadLen = pktLen - 4; // exclude header
-      //  Read payload bytes
-      for (uint16_t i = 0; i < payloadLen; i++) {
-        buf[len + 4 + i] = spi.write(0xFF);// dummy write to clock data out
-      }
-
-      cs = 1; // deselect device
-      // spi->endTransaction();// end SPI transaction
-      len += pktLen;// update total length
-      /** Exit when FIFO drained */
-      if (!ok) break;
+    uint16_t payloadLen = pktLen - 4; // exclude header
+    if (pktLen > cap) {
+      cs = 1;
+      return 0;
     }
-    ThisThread::sleep_for(3ms);
-    /** Clear interrupt flag after draining FIFO */
-    return len;
+
+    /** Copy header into buffer */
+    memcpy(buf, hdr, 4);
+
+    /** Read payload bytes
+     *
+     *  - Payload length = pktLen - headerLen
+     *  - Uses dummy reads (0xFF) to clock data out
+     */
+    for (uint16_t i = 0; i < payloadLen; i++) {
+      buf[4 + i] = spi.write(0xFF);// dummy write to clock data out
+    }
+
+    cs = 1; // deselect device
+    return pktLen;
   }
 };

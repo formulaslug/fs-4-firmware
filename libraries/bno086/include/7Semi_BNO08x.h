@@ -177,8 +177,8 @@ public:
    * processData()
    * -------------
    * - Convenience wrapper:
-   *   - Reads one packet
-   *   - Decodes it
+   *   - Reads a bounded batch of pending packets
+   *   - Decodes each one
    * - Call this as frequently as possible in loop()
    */
   void processData();
@@ -260,11 +260,20 @@ private:
    */
   bool writeSetFeature_(uint8_t reportId, uint32_t intervalMs, uint8_t channel, uint8_t command);
 
+  /** Send Product ID Request (0xF9) on the control channel. */
+  bool writeProductIdRequest_();
+
+  /** Drain startup advertisement / initialize packets after reset. */
+  void drainStartupPackets_(uint32_t timeoutMs);
+
+  /** Wait for Product ID Response (0xF8), proving SHTP communication works. */
+  bool waitForProductIdResponse_(uint32_t timeoutMs);
+
   /**
    * waitForSetFeatureResponse()
    * --------------------------
-   * - Waits for control channel reply confirming Set Feature
-   * - Returns true if status == SUCCESS
+   * - Waits for control channel Get Feature Response after Set Feature
+   * - Returns true when the expected feature id is acknowledged
    */
   bool waitForSetFeatureResponse(uint8_t expectedFeatureId, uint32_t timeout);
 
