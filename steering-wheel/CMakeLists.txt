@@ -18,13 +18,33 @@ include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 
 add_subdirectory(../mbed-os mbed-os)
 add_subdirectory(../libraries/bt817q bt817q)
+add_subdirectory(../libraries/FilterUtils debounced_digital_in)
 
 set(CMAKE_CXX_STANDARD 20)
+
+# Auto-generate CANbus.c / CANbus.h from CANbus.dbc using dbcc by Howerj
+# Generated output files placed in build directory
+# Was building off the add-can-dbc library
+set(DBC_FILE     ${CMAKE_CURRENT_SOURCE_DIR}/../CANbus.dbc)
+set(GENERATED_C  ${CMAKE_CURRENT_BINARY_DIR}/CANbus.c)
+set(GENERATED_H  ${CMAKE_CURRENT_BINARY_DIR}/CANbus.h)
+
+add_custom_command(
+    OUTPUT  ${GENERATED_C} ${GENERATED_H}
+    COMMAND dbcc ${DBC_FILE}
+    DEPENDS ${DBC_FILE}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating CANbus.c and CANbus.h from CANbus.dbc"
+)
 
 add_executable(${PROJECT_NAME}
         main.cpp
         dash_screen.cpp
+        ${GENERATED_C}  
 )
-target_include_directories(${PROJECT_NAME} PUBLIC .)
-target_link_libraries(${PROJECT_NAME} mbed-os bt817q)
+add_custom_target(generate_canbus DEPENDS ${GENERATED_C} ${GENERATED_H})
+add_dependencies(${PROJECT_NAME} generate_canbus)
+
+target_include_directories(${PROJECT_NAME} PUBLIC . ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(${PROJECT_NAME} mbed-os bt817q filter_utils)
 mbed_set_post_build(${PROJECT_NAME})
