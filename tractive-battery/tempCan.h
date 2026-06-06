@@ -26,6 +26,7 @@ struct TelemetryInfo {
     uint8_t battStatFaultIndex; // this is the cell fault num
     uint16_t glvVoltage;
     uint8_t pwmFanstat;
+    uint16_t socEstimate;
 };
 
 
@@ -96,7 +97,7 @@ public:
 
     CANMessage BuildTrayTempMessage(uint8_t traytempsensors[5]);
     CANMessage BuildCellStatsMessage();
-    CANMessage BuildPowerMessage();
+    CANMessage BuildPowerMessage(TelemetryInfo &Data);
     void updateTelemetry(TelemetryInfo &Data);
     void BuildAndSendMessages(TelemetryInfo &Data);
 };

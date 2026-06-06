@@ -122,7 +122,7 @@ CANMessage CanGenerator::BuildCellStatsMessage() {
     return CANMessage{BATT_TPDO_CELL_STATS, data, 6};
 }
 
-CANMessage CanGenerator::BuildPowerMessage(){
+CANMessage CanGenerator::BuildPowerMessage(TelemetryInfo &Data){
     uint8_t data[8] = {0};
     uint16_t packVolts = (uint16_t)(BMSInstance.packVoltageMv/10);
     //scale of 0.1
@@ -145,7 +145,15 @@ CANMessage CanGenerator::BuildPowerMessage(){
     data[6] |= top2bits;
 
 
-    //state of charge remains to be done ... .
+    //state of charge remains to be done ... 
+    
+    uint16_t socEstimateShift = Data.socEstimate;
+    socEstimateShift &=  0xFFC0;
+    //isolate the top 10 bits
+    socEstimateShift  = socEstimateShift >> 2;
+    //shift it over in accordance with this cursed can message
+    data[6] |= (uint8_t)(socEstimateShift & 0x3f);
+    data[7] |= (int8_t)(socEstimateShift & 0x00f);
 
     return CANMessage{BATT_TPDO_POWER, data, 8};
 
@@ -187,7 +195,7 @@ void CanGenerator::BuildAndSendMessages(TelemetryInfo &Data) {
         CAN_POWERTRAIN.write(msg);
         msg = BuildTempMessage(i, false);
         CAN_POWERTRAIN.write(msg);
-        msg = BuildPowerMessage();
+        msg = BuildPowerMessage(Data);
         CAN_POWERTRAIN.write(msg);
     }
     BuildStatusMessage(Data);

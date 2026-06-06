@@ -1,7 +1,7 @@
 #include "mbed.h"
 // #include "BMS.h"
 #include "tempCan.h"
-
+#include "kalmanfilter.h"
 
 
 
@@ -34,6 +34,11 @@ EventQueue queue(32 * EVENTS_EVENT_SIZE);
 BMS BMSInstance(CAN_POWERTRAIN, Charge_State_Filtered.read());
 CanGenerator cGen(BMSInstance, CAN_POWERTRAIN);
 
+//the following is test soc code to get soc integrated into tbb firmware
+
+KalmanSOC socEstimator(100, 100, 1);
+
+
 OneWire TS1W = OneWire{PB_14};
 DigitalOut TS1W_PU_Control = DigitalOut(PB_15);
 // clang-format off
@@ -57,6 +62,7 @@ bool shutdownClosed();
 void updatePrecharge();
 void controlFans();
 void updateTelemetry();
+void updateSoc();
 
 // enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHARGE_COMPLETE };
 // precharge_state prechargeState = PRECHARGE_IDLE;
@@ -108,6 +114,11 @@ int main() {
     queue.dispatch_forever();
 
     return 0;
+}
+
+
+void updateSoc(){
+    Data.socEstimate = socEstimator.update((BMSInstance.packCurrentAmpsOutput-BMSInstance.packCurrentAmpsInput), BMSInstance.packVoltageMv);
 }
 
 // void updateTelemetry(BMS &BMSInstance){
