@@ -20,7 +20,6 @@ set(MBED_RESET_BAUDRATE 115200)
 #set(STLINK_UPLOAD_ENABLED true)
 #set(STLINK_ARGS --version) # send commands to stlink, no need to uncomment
 
-
 # STM32CUBE Upload Method, here in case STLINK doesn't work
 #set(UPLOAD_METHOD_DEFAULT = STM32CUBE)
 #set(STM32CUBE_UPLOAD_ENABLED true)
