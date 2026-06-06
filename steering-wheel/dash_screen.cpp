@@ -348,7 +348,7 @@ void DashScreen::drawDebugFaultLayout(
     endFrame();
 }
 
-void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, bool fans, uint16_t acc_volt, uint8_t acc_temp, uint8_t soc, int tick, uint16_t speed, const char* lap_time, uint16_t glv, uint8_t mtr_temp, uint8_t ctrl_temp, uint16_t dc_bus) {
+void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, bool fans, uint16_t acc_volt, uint8_t acc_temp, uint8_t soc, int tick, uint16_t speed, const char* lap_time, uint16_t glv, uint8_t mtr_temp, uint8_t ctrl_temp, uint16_t dc_bus, uint8_t regen_state) {
     // init
     if (!startFrame()) return;
     clear(white.red, white.green, white.blue);
@@ -378,8 +378,9 @@ void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, 
     drawRect(Point{400, 70}, Point{700, 170}, volt_box_color, 32);
     drawFormattedText(550, 120, "%d.%dV", 31, OPT_CENTER, acc_volt / 100, acc_volt % 100);
 
-    // speedometer
-    drawFormattedText(400, 315, "%u", 1, OPT_CENTER, speed);
+    // speedometer: convert motor RPM to km/h (gear ratio 11:40, wheel radius 0.190 m)
+    float ground_speed = (11.0f / 40.0f) * (2.0f * M_PI * 0.190f) * speed * (60.0f / 1000.0f);
+    drawFormattedText(400, 315, "%d", 1, OPT_CENTER, static_cast<int>(ground_speed));
 
     // Non-fault bools
     // 	RTD
@@ -425,6 +426,10 @@ void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, 
     // CTRL
     drawText(500, 425, "CTRL", 31, OPT_CENTERY);
     drawFormattedText(650, 425, "%d'C", 31, OPT_CENTERY, ctrl_temp);
+    
+    //Dials, Testing the Dials
+    // drawText(500, 455, "Regen", 23, OPT_CENTERY);
+    // drawFormattedText(650, 455, "%d", 23, OPT_CENTERY, regen_state);
 
     endFrame();
 }

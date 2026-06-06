@@ -55,6 +55,19 @@ inline constexpr EvePanel CFA800480E3{
     3, // vSync0, vSync1  (3‑line pulse)
     2  // PCLK = 60 MHz / 2 = 30 MHz
 };
+inline constexpr EvePanel CFAF800480H0{ //4.3 inch IPS, uses same SITRONIX ST7262 LCD driver as the CFA800480E3 and thus has same timing parameters
+    800,
+    480, // width, height
+    928,
+    88, // hCycle, hOffset
+    0,
+    48, // hSync0, hSync1  (48‑pixel pulse)
+    525,
+    32, // vCycle, vOffset
+    0,
+    3, // vSync0, vSync1  (3‑line pulse)
+    2  // PCLK = 60 MHz / 2 = 30 MHz
+};
 } // namespace EvePresets
 
 /**
@@ -162,6 +175,20 @@ public:
   void setMainColor(Color color);
   void setBackgroundColor(Color color);
   void setForegroundColor(Color color);
+
+  /**
+    * Rotates the screen
+    * @param rotation sets the orientation of the screen
+    * 0 Default landscape
+    * 1 Inverted Landscape
+    * 2 Portrait
+    * 3 inverted Portrait
+    * 4 Mirrored Landscape
+    * 5 Mirrored Inverted Landscape
+    * 6 Mirrored Portrait
+    * 7 Mirrored inverted portrait
+    */
+  void setRotate(uint8_t rotation);
 
   /**
    *Draws a circular point at (x,y) with specified radius and color
@@ -299,7 +326,11 @@ public:
 
   void endFrame(); // DISPLAY + CMD_SWAP
   void setBacklight(bool on);
-
+  /**
+   *  Reads the frame register which is 32bits and increments every screen frame
+   *  If at 60Hz, will wrap up until 828 days after reset
+   */
+  uint32_t readFrames();
   void loadFonts();
 
 private:
@@ -383,6 +414,7 @@ private:
   static constexpr uint32_t CMD_FGCOLOR = 0xFFFFFF0A;
   static constexpr uint32_t CMD_BGCOLOR = 0xFFFFFF09;
   static constexpr uint32_t CMD_GAUGE = 0xFFFFFF13;
+  static constexpr uint32_t CMD_SETROTATE = 0xFFFFFF36;
   static constexpr uint32_t CMD_ROMFONT = 0xFFFFFF3F;
 
   static constexpr uint32_t CMD_PROGRESS = 0xFFFFFF0F;

@@ -87,6 +87,8 @@ void BT817Q::init(const EvePanel &p) {
 
   write8(REG_PWM_DUTY, 128);
 
+  
+
   // explicitly set vertex format for vertex2F
   cmd(VERTEX_FORMAT(4));
   loadFonts();
@@ -361,6 +363,12 @@ void BT817Q::setForegroundColor(Color color) {
   cmd(color.red << 16 | color.green << 8 | color.blue);
 }
 
+void BT817Q::setRotate(uint8_t rotation)
+{
+
+  cmd(CMD_SETROTATE);
+  cmd(rotation);
+}
 /*
  * X and Y valid range from 0-511
  */
@@ -514,8 +522,14 @@ void BT817Q::drawProgressBar(Point pos,
   cmd(RESTORE_CONTEXT());
 }
 
+uint32_t BT817Q::readFrames(){
+  return read32(REG_FRAMES);
+}
+
+
 void BT817Q::cmdLoadRomFonts(uint8_t handle, uint8_t font) {
   cmd(CMD_ROMFONT);
   cmd(uint32_t(handle));
   cmd(uint32_t(font));
 }
+

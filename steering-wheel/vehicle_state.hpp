@@ -70,3 +70,4 @@ void drawScreenLayout();
 void canISR();
 void processCANMessage();
 void sendCANMessage();
+void readFPS();

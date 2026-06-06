@@ -75,7 +75,8 @@ public:
         uint16_t glv,
         uint8_t mtr_temp,
         uint8_t ctrl_temp,
-        uint16_t dc_bus
+        uint16_t dc_bus,
+        uint8_t regen_state
     );
 
     void debugCellTemps(const uint8_t seg_temps[5][6]);
