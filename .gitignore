@@ -42,3 +42,4 @@ Doxygen
 # from this gitignore. This line MUST be last
 !mbed-os/**
 vcu/
+vcu/
