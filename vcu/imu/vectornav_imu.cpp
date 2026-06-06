@@ -16,6 +16,8 @@ VN::Error VectorNavIMU::connect() {
 
         if (this->sensor.readRegister(&modelRegister) == VN::Error::None) {
             return VN::Error::None;
+        } else {
+            sensor.disconnect();
         }
 
         ThisThread::sleep_for(100ms);
@@ -46,6 +48,50 @@ void VectorNavIMU::disconnect() {
 }
 
 VN::Error VectorNavIMU::init() {
+    // negate x and y
+    VN::Registers::IMU::RefFrameRot mounting_rotation;
+    mounting_rotation.rfr(VN::Mat3f{{
+        -1.0f,  0.0f, 0.0f,
+         0.0f, -1.0f, 0.0f,
+         0.0f,  0.0f, 1.0f
+    }});
+
+    // Measured in meters from the IMU to antenna, AFAIK
+    // measured in actual coordinates AFTER the transform
+    VN::Registers::GNSS::GnssAOffset antenna_offset;
+    antenna_offset.position(VN::Vec3f{0.0f, 0.0f, 0.0f});
+
+    // rot frame needs to be written persistently to imu
+    VN::Registers::IMU::RefFrameRot current_mounting_rotation;
+    VN::Error err = sensor.readRegister(&current_mounting_rotation);
+    if (err != VN::Error::None) return err;
+
+    VN::Registers::GNSS::GnssAOffset current_antenna_offset;
+    err = sensor.readRegister(&current_antenna_offset);
+    if (err != VN::Error::None) return err;
+
+    bool mounting_rotation_changed =
+        current_mounting_rotation != mounting_rotation;
+    bool antenna_offset_changed = current_antenna_offset != antenna_offset;
+
+    if (mounting_rotation_changed) {
+        err = sensor.writeRegister(&mounting_rotation);
+        if (err != VN::Error::None) return err;
+    }
+
+    if (antenna_offset_changed) {
+        err = sensor.writeRegister(&antenna_offset);
+        if (err != VN::Error::None) return err;
+    }
+
+    if (mounting_rotation_changed || antenna_offset_changed) {
+        err = sensor.writeSettings();
+        if (err != VN::Error::None) return err;
+
+        err = sensor.reset();
+        if (err != VN::Error::None) return err;
+    }
+
     // init registers
     raw_imu_reg.asyncMode.emplace();
     raw_imu_reg.asyncMode->serial1 = false;
@@ -62,7 +108,6 @@ VN::Error VectorNavIMU::init() {
     time_reg.asyncMode->serial2 = true;
     time_reg.rateDivisor = 80;
 
-    // set values of what data we want
     raw_imu_reg.imu.accel = true;
     raw_imu_reg.imu.angularRate = true;
     raw_imu_reg.imu.mag = true;
@@ -74,13 +119,34 @@ VN::Error VectorNavIMU::init() {
     nav_reg.ins.velBody = true;
     nav_reg.ins.velNed = true;
 
-    VN::Error err = sensor.writeRegister(&raw_imu_reg);
+    // set if not set already on imu
+    VN::Registers::System::BinaryOutput1 current_raw_imu_reg;
+    err = sensor.readRegister(&current_raw_imu_reg);
     if (err != VN::Error::None) return err;
 
-    err = sensor.writeRegister(&nav_reg);
+    if (!(current_raw_imu_reg == raw_imu_reg)) {
+        err = sensor.writeRegister(&raw_imu_reg);
+        if (err != VN::Error::None) return err;
+    }
+
+    VN::Registers::System::BinaryOutput2 current_nav_reg;
+    err = sensor.readRegister(&current_nav_reg);
     if (err != VN::Error::None) return err;
 
-    err = sensor.writeRegister(&time_reg);
+    if (!(current_nav_reg == nav_reg)) {
+        err = sensor.writeRegister(&nav_reg);
+        if (err != VN::Error::None) return err;
+    }
+
+    VN::Registers::System::BinaryOutput3 current_time_reg;
+    err = sensor.readRegister(&current_time_reg);
+    if (err != VN::Error::None) return err;
+
+    if (!(current_time_reg == time_reg)) {
+        err = sensor.writeRegister(&time_reg);
+        if (err != VN::Error::None) return err;
+    }
+
     return err;
 }
 
