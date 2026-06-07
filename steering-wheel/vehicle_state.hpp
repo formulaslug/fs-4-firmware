@@ -57,7 +57,8 @@ struct VehicleState{
     uint16_t vcu_etc_brake_pressure_rear;
 
     // Battery cell temperatures: 5 modules × 6 cells (°C, 0.2 scaling applied)
-    uint8_t batt_mod_temps[5][6];
+    uint8_t batt_mod_temps_A[5][6];
+    uint8_t batt_mod_temps_B[5][6];
 
     // Battery cell voltages: 5 modules × 6 cells (raw byte)
     uint8_t batt_mod_volts[5][6];
