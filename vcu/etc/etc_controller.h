@@ -42,12 +42,15 @@ struct ETCState {
     bool must_use_hydraulic_brakes = false;
     bool reversing = false; // CURRENTLY ISN'T IMPLEMENTED
     bool brakelight_enabled = false;
-    bool traction_control_enabled = false;
     float wheel_rpm_fl = 0.0f;
     float wheel_rpm_fr = 0.0f;
     float wheel_rpm_bl = 0.0f;
     float wheel_rpm_br = 0.0f;
     VectornavState vectornav;
+    uint8_t drive_mode = 0;
+    uint8_t traction_mode = 0;
+    uint8_t regen_mode = 0;
+
 };
 
 class ETCController {

@@ -74,6 +74,12 @@ int main() {
                   etc.state.wheel_rpm_br = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
                   break;
               }
+              case 432: {
+                  const uint8_t modes = rx.data[0];
+                  etc.state.drive_mode = modes & 0b00000011;
+                  etc.state.traction_mode = (modes >> 2) & 0b00000011;
+                  etc.state.regen_mode = (modes >> 4) & 0b00000011;
+              }
             }
         }
 
@@ -128,7 +134,7 @@ void send_sme_CAN_messages() {
     etc.update_mbb_alive();
 
     update_traction_control();
-    if (!etc_state.is_regening && etc_state.traction_control_enabled) {
+    if (etc_state.traction_mode != 0 && !etc_state.is_regening) {
       const float tc_torque_reduction_factor = etc.traction_controller.get_output();
       etc.state.motor_torque = static_cast<int16_t>(etc.state.motor_torque * tc_torque_reduction_factor);
     }
