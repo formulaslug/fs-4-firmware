@@ -12,7 +12,7 @@ add_subdirectory(../custom_targets custom_targets)
 set(MBED_TARGET PERIPHERAL_BOARD)
 
 include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
-project(stm32-test
+project(peripheral-board
         LANGUAGES C CXX ASM)
 include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 
