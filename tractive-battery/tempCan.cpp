@@ -130,15 +130,13 @@ CANMessage CanGenerator::BuildPowerMessage(TelemetryInfo &Data){
     data[0] = (uint8_t)(packVolts>>8); 
     data[1] = (uint8_t)(packVolts);
     
-    int16_t posCurr = (uint16_t)(BMSInstance.packCurrentAmpsOutput*10);
-    int16_t negCurr = (uint16_t)(BMSInstance.packCurrentAmpsInput*10) ;
-    int16_t totalCurr = posCurr - negCurr;
-    data[2] = (uint8_t)(totalCurr>>8);
-    data[3] = (uint8_t)(totalCurr);
+    int16_t curr = (uint16_t)(BMSInstance.packCurrent*10);
+    data[2] = (uint8_t)(curr>>8);
+    data[3] = (uint8_t)(curr);
 
     //again scale of 0.1 
 
-    int32_t totalPower = totalCurr * packVolts; 
+    int32_t totalPower = BMSInstance.packCurrent * BMSInstance.packVoltageMv/1000.0f; 
     uint8_t top2bits = (uint8_t)((totalPower & 0x00300000)<<8);
     data[4] = (uint8_t)(totalPower << 24);
     data[5] = (uint8_t)(totalPower <<16);
@@ -173,6 +171,7 @@ void CanGenerator::updateTelemetry(TelemetryInfo &Data){
     Data.faultModIndex = BMSInstance.faultModIndex;
     Data.faultSenseIndex = BMSInstance.faultSenseIndex;
     Data.glvVoltage = BMSInstance.glvVoltage;
+    Data.bmsFaultStatus = BMSInstance.currentState == BMS::FAULT;
     Data.imdStatus = BMSInstance.imdFaultStat;
     Data.tempTooLow = BMSInstance.cellTooLow;
     Data.tempTooHigh = BMSInstance.cellTooHigh;
@@ -195,8 +194,11 @@ void CanGenerator::BuildAndSendMessages(TelemetryInfo &Data) {
         CAN_POWERTRAIN.write(msg);
         msg = BuildTempMessage(i, false);
         CAN_POWERTRAIN.write(msg);
+        ThisThread::sleep_for(2ms);
         msg = BuildPowerMessage(Data);
         CAN_POWERTRAIN.write(msg);
+        ThisThread::sleep_for(2ms);
     }
-    BuildStatusMessage(Data);
+    msg = BuildStatusMessage(Data);
+    CAN_POWERTRAIN.write(msg);
 }

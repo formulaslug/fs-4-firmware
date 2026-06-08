@@ -34,8 +34,8 @@ inline constexpr int8_t MIN_CELL_TEMP = -40;
 inline constexpr uint16_t MAX_CELL_VOLTAGE = 42000; // 4.2 volts
 inline constexpr uint16_t MIN_CELL_VOLTAGE = 25000; // 2.5 volts
 
-//inline constexpr uint16_t BALANCING_THRESHOLD = 35700;  // 3.57 volts
-inline constexpr uint16_t BALANCING_THRESHOLD = 30000; // temporary balancing threshold 
+// inline constexpr uint16_t BALANCING_THRESHOLD = 0.85 * MAX_CELL_VOLTAGE; // 0.85*4.2v = 3.57v
+inline constexpr uint16_t BALANCING_THRESHOLD = 30000;  // temporary balancing threshold
 inline constexpr uint16_t DIFFERENCE_THRESHOLD = 00300; // 30 milivolts
 
 // Overcurrent fault threshold - tune later
@@ -45,18 +45,18 @@ class BMS {
 
 private:
     void chargingActions();
-    void decideBalancing();
+    void turnOnBalancing();
     void readCellVoltages();
     void readTemps();
     void checkForFaults();
     void generateStatusMessage();
     void controlFans();
-    float readPackCurrent();
-    void turnOffCellBalancing();
+    void readPackCurrent();
+    void turnOffBalancing();
     void telemetryPins();
 
 public:
-    BMS(CAN &CAN_POWERTRAIN, bool charging);
+    BMS(CAN& CAN_POWERTRAIN, bool charging);
 
     void controller();
 
@@ -66,10 +66,10 @@ public:
     };
     enum bms_state { ACTIVE = 0, CHARGING = 1, FAULT = 2 };
 
-    enum fault_location{VOLTAGE = 0, TEMPS = 1, BOTH = 2, NONE = 3};
+    enum fault_location { VOLTAGE = 0, TEMPS = 1, BOTH = 2, NONE = 3 };
 
-    float packCurrentAmpsOutput;
-    float packCurrentAmpsInput;
+    // Current in Amps. Positive for discharge, negative for regen
+    float packCurrent;
 
     bms_state currentState;
     fault_location faultLoc = NONE;
@@ -83,8 +83,6 @@ public:
     uint8_t battStatFaultIndex = 0;
 
     uint16_t glvVoltage = 0;
-
-    uint64_t balancingTimer = 0;
 
     bool imdFaultStat;
     Timer ltcTimeoutTimer;
@@ -106,7 +104,8 @@ public:
     // current sensors need to be implemented
     AnalogIn V_Out_Positive = AnalogIn(PC_0);
     AnalogIn V_Out_Negative = AnalogIn(PC_1);
-    DigitalIn IMD_Fault_3V3 = DigitalIn(PC_4);
+    // Note: IMD_Fault_3V3 is actually fault-low, and should be called nIMD_Fault_3V3
+    DigitalIn nIMD_Fault_3V3 = DigitalIn(PC_4);
     DigitalOut nBMS_Fault_3V3 = DigitalOut(PC_5);
     // look more into this one (i think its a precharge indicator )
     DigitalOut TS_READY = DigitalOut(PC_9);
@@ -116,5 +115,5 @@ public:
     // CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
     SPI spiInterface = SPI(PB_5, PB_4, PA_5, PA_4, use_gpio_ssel);
     LTC681xParallelBus ltcBusInterface;
-    CAN &CAN_POWERTRAIN; //reference to can object defined in main 
+    CAN& CAN_POWERTRAIN; // reference to can object defined in main
 };

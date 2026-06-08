@@ -20,37 +20,13 @@ BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
         }
     }
 
-    currentState = ACTIVE; // assume everything is okay at startup
-    Timer ltcTimeoutTimer; // timer for ltc6810 timeout
-    nBMS_Fault_3V3 = 1;    // assume no fault at startup
+    currentState = charging ? CHARGING : ACTIVE;
+    Timer ltcTimeoutTimer;
 
-    packCurrentAmpsOutput = 0.0f;
-    packCurrentAmpsInput = 0.0f;
+    nBMS_Fault_3V3 = 1;
+    packCurrent = 0;
 }
 
-/*
-    move structs and telemetry data to seperate can class - call can class every so often using data
-   from BMS instance move BMSfaultDetection functions to BMS class so we dont have to keep passing a
-   reference (in the event queue we would make controller a public function and call that ) make
-   changes to precharge ... soon - note ideally precharge runs once per startup we do NOT close the
-   precharge relay while the car is running (add real tmp1075 addresses)
-
-    note for precharge - precharge should be run once during startup and once after each time the
-   shutdown circuit is open
-
-    - implementing current sensor is underway make sure changes are announced beforehand
-*/
-
-void BMS::turnOffCellBalancing() {
-    ltcBusInterface.WakeupBus();
-    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-        LTC6810::Configuration& config = chips[i].getConfig();
-        config.dischargeState = {.value = 0};
-        chips[i].updateConfig();
-    }
-    printf("Cell balancing deactivated....\n");
-    balancing = 0;
-}
 
 void BMS::readCellVoltages() {
     // If PollTimeout is the only thing we've received for 100ms, throw a BMS fault.
@@ -149,13 +125,11 @@ void BMS::readTemps() {
     maxCellTemp = maxTemp;
 }
 
-// balancing should be done while charging and most cells are most of the way charged, or when idle
-// and most cells are mostly charged our balancing threshold is at 85% of maximum charges
-void BMS::decideBalancing() {
-    // turns on balancing for chips
-    printf("deciding balancing......");
+// Turns on balancing for chips. Balancing should be done while charging and
+// cells are most of the way charged, or when active and cells are most of the
+// way charged. Our balancing threshold is at 85% of maximum cell voltage
+void BMS::turnOnBalancing() {
     if (currentState != FAULT) {
-        if (maxCellVoltage >= BALANCING_THRESHOLD && minCelVoltage > MIN_CELL_VOLTAGE) {
             for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
                 uint8_t dischargeValue = 0x00;
                 LTC6810::Configuration& config = chips[i].getConfig();
@@ -179,12 +153,22 @@ void BMS::decideBalancing() {
                 config.dischargeState.value = dischargeValue;
                 chips[i].updateConfig();
             }
-        }
         balancing = 1;
     }
 }
 
-float BMS::readPackCurrent() {
+void BMS::turnOffBalancing() {
+    ltcBusInterface.WakeupBus();
+    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+        LTC6810::Configuration& config = chips[i].getConfig();
+        config.dischargeState = {.value = 0};
+        chips[i].updateConfig();
+    }
+    // printf("Cell balancing deactivated....\n");
+    balancing = 0;
+}
+
+void BMS::readPackCurrent() {
     // HASS 300-S current sensor constants
     // (https://www.lem.com/sites/default/files/products_datasheets/hass-50_600-s-v22.pdf)
 
@@ -200,45 +184,34 @@ float BMS::readPackCurrent() {
     float voutNeg = V_Out_Negative.read() * 3.3f;
     // HASS 300-S: I = (Vout - Vref) * IPN / 0.625
 
-    packCurrentAmpsOutput = (voutPos - HASS300_INSTR_AMP_VREF)
-                            / HASS300_SENSITIVITY
-                            * HASS300_IPN
-                            / HASS300_INSTR_AMP_GAIN;
-    packCurrentAmpsInput = (voutNeg - HASS300_INSTR_AMP_VREF)
-                           / HASS300_SENSITIVITY
-                           * HASS300_IPN
-                           / HASS300_INSTR_AMP_GAIN;
-    float totalPackCurrent = 0;
-    // not sure about the above putting this in here...
+    float packCurrentAmpsOutput = (voutPos - HASS300_INSTR_AMP_VREF)
+                                  / HASS300_SENSITIVITY
+                                  * HASS300_IPN
+                                  / HASS300_INSTR_AMP_GAIN;
+    float packCurrentAmpsInput = (voutNeg - HASS300_INSTR_AMP_VREF)
+                                 / HASS300_SENSITIVITY
+                                 * HASS300_IPN
+                                 / HASS300_INSTR_AMP_GAIN;
 
-    // at very low current values the negative value jumps up crazy so we should return a value of
-    // the total current based on the voltage difference
+    // At very low current values the negative value jumps up crazy so we should
+    // return a value of the total current based on the voltage difference
     if (voutPos >= voutNeg) {
-        totalPackCurrent = (voutPos - HASS300_INSTR_AMP_VREF)
-                           / HASS300_SENSITIVITY
-                           * HASS300_IPN
-                           / HASS300_INSTR_AMP_GAIN;
+        packCurrent = packCurrentAmpsOutput;
     } else {
-        totalPackCurrent = -1.0f
-                           * (voutNeg - HASS300_INSTR_AMP_VREF)
-                           / HASS300_SENSITIVITY
-                           * HASS300_IPN
-                           / HASS300_INSTR_AMP_GAIN;
+        packCurrent = -1 * packCurrentAmpsInput;
     }
 
-    // keeping this here for debug purposes
-    printf(
-        "Current sense Vout Positive: %.3f V  =>  Pack current (out of battery): %.2f \n",
-        voutPos,
-        packCurrentAmpsOutput
-    );
-    printf(
-        "Current sense vout Negative: %.3f V => pack current (into battery) %.2f\n",
-        voutNeg,
-        packCurrentAmpsInput
-    );
-
-    return totalPackCurrent;
+    // Keeping this here for debug purposes
+    // printf(
+    //     "Current sense Vout Positive: %.3f V  =>  Pack current (out of battery): %.2f \n",
+    //     voutPos,
+    //     packCurrentAmpsOutput
+    // );
+    // printf(
+    //     "Current sense vout Negative: %.3f V => pack current (into battery) %.2f\n",
+    //     voutNeg,
+    //     packCurrentAmpsInput
+    // );
 }
 
 void BMS::checkForFaults() {
@@ -293,14 +266,16 @@ void BMS::checkForFaults() {
     }
 
     // Watch pack current. TODO: need to add negative here as well
-    if (std::fabs(packCurrentAmpsOutput) > MAX_PACK_CURRENT_AMPS) {
+    if (std::fabs(packCurrent) > MAX_PACK_CURRENT_AMPS) {
         // currentState = FAULT;
         // nBMS_Fault_3V3 = 0;
-        printf("ERROR: Overcurrent detected: %.2f A (not throwing actual BMS fault)\n", packCurrentAmpsOutput);
+        printf(
+            "ERROR: Overcurrent detected: %.2f A (not throwing actual BMS fault)\n", packCurrent
+        );
     }
 
     // Check bms fault input, only for CAN logging (should really not be owned by BMS)
-    imdFaultStat = IMD_Fault_3V3.read();
+    imdFaultStat = !nIMD_Fault_3V3.read();
 }
 
 // i am undecided wether or not to put the bms into a fault state here - might add a state that
@@ -318,26 +293,43 @@ void BMS::checkForFaults() {
 void BMS::controller() {
 
     if (currentState != FAULT) {
-        // if(balancing == FALSE){
-        readCellVoltages();
-        // }
-        readTemps();
-        checkForFaults();
-        // readPackCurrent();
 
-        // decideBalancing();
-        // if(balancing == TRUE && balancingTimer != 0){
-        //     balancingTimer = Kernel::get_ms_count();
-        //     //set the timer so that we balance for 1 second before checking the voltage again
+        const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
+        if (can_balance) {
+            turnOnBalancing();
+            ThisThread::sleep_for(100ms);
+            turnOffBalancing();
+        }
+
+        readCellVoltages();
+        readTemps();
+
+        // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
+        //     for (int j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
+        //         printf("Voltage: Module %d, Cell %d: %d mv\n", i, j, voltages[i][j]);
+        //     }
         // }
-        // if(Kernel::get_ms_count() > (balancingTimer+1000)){
-        //     //truns off cel balancing after the timeout
-        //     balancingTimer = 0;
-        //     turnOffCellBalancing();
+        // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
+        //     for (int j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
+        //         printf("Temp: Module %d, Sensor %d: %f degC\n", i, j, temps[i][j]);
+        //     }
         // }
+
+        // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
+        //     auto& config = chips[i].getConfig();
+        //     config.gpio1 = LTC6810::GPIOOutputState::kLow;
+        //     chips[i].updateConfig();
+        // }
+
+        checkForFaults();
+        if (currentState == FAULT) return;
+
+        readPackCurrent();
+        printf("Pack current: %f A\n", packCurrent);
+
     } else {
-        printf("BMS: FAULT STATE");
-        turnOffCellBalancing();
+        printf("BMS: FAULT STATE\n");
+        turnOffBalancing();
         nBMS_Fault_3V3 = 0;
         // need to turn on indicator lights as well .....
         TS_READY = 0;
