@@ -41,6 +41,35 @@ LTC681xBus::LTC681xBusStatus LTC681xParallelBus::SendDataCommand(LTC681xBus::Bus
   return LTC681xBus::LTC681xBusStatus::Ok;
 }
 
+
+LTC681xBus::LTC681xBusStatus LTC681xParallelBus::SendDataCommandExtraPulse(LTC681xBus::BusCommand cmd, uint8_t bytesToPulse) {
+  /*this function was made as a result of communication issues with the tmp1075, the ltc will only send out scl pulses 
+  so long as the spiline is being pulsed, if senddDataCommand was used not enough pulses would be sent for 3 bytes of data 
+  (sensor address + 2 bytes of temperature data), this command sends x bytes of dummy data on spi line in order to fix this issue
+  */
+
+  // Create command value array
+
+  uint8_t cmdBytes[4];
+  LTC681xBus::getCommandBytes(cmdBytes, cmd);
+
+  // Create received values array
+  uint8_t dataBytes[8];
+
+  uint8_t dummyData[9] = {0};
+
+  // Grab the bus and send our command
+  m_spiDriver->select();
+  m_spiDriver->write((const char*)cmdBytes, 4, NULL, 0);
+  m_spiDriver->write((const char*)dummyData, bytesToPulse, NULL, 0); //my suspicion is that this keeps everything clocking for longer
+  // m_spiDriver->write(NULL, 0, (char*)dataBytes, 8);
+  m_spiDriver->deselect();
+
+ 
+
+  return LTC681xBus::LTC681xBusStatus::Ok;
+}
+
 LTC681xBus::LTC681xBusStatus LTC681xParallelBus::SendReadCommand(LTC681xBus::BusCommand cmd, uint8_t* data) {
   // Create command value array
   uint8_t cmdBytes[4];

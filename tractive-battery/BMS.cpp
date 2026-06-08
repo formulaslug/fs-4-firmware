@@ -53,7 +53,7 @@ void BMS::readCellVoltages() {
 
         if (stat == LTC681xBus::LTC681xBusStatus::PollTimeout) {
             printf("ADC poll timeout, on Module %d\n", i);
-            voltsConverted = false;
+            //voltsConverted = false;
             ltcTimeoutTimer.start();
             // The rules require that we need to ensure we are getting data and that all sensors are
             // working correctly. If we cannot get an adc conversion in 100ms this will thow a
@@ -78,7 +78,7 @@ void BMS::readCellVoltages() {
 
             uint16_t* castVoltages = (uint16_t*)voltageReading;
             for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-                // printf("%d\n", castVoltages[j]);
+                printf("%d\n", castVoltages[j]);
                 voltages[i][j] = castVoltages[j];
             }
             // printf("\n");
@@ -110,6 +110,7 @@ void BMS::readTemps() {
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
             temps[i][j] = chips[i].readTemperatureTMP1075(&tempSensors[i][j]);
+            printf("temperature ... tems %f\n", temps[i][j]);
         }
     }
 
@@ -295,38 +296,45 @@ void BMS::controller() {
 
     if (currentState != FAULT) {
 
-        const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
-        if (can_balance) {
-            turnOnBalancing();
-            ThisThread::sleep_for(100ms);
-            turnOffBalancing();
-        }
 
-        readCellVoltages();
+
+
+        // readTemps();
+        // readCellVoltages();
+
+        // const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
+        // if (can_balance) {
+        //     turnOnBalancing();
+        //     ThisThread::sleep_for(100ms);
+        //     turnOffBalancing();
+        // }
+
+        // readCellVoltages();
         readTemps();
+        printf("\n\n\n\n\n");
 
         // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
         //     for (int j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
         //         printf("Voltage: Module %d, Cell %d: %d mv\n", i, j, voltages[i][j]);
         //     }
         // }
-        // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
-        //     for (int j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-        //         printf("Temp: Module %d, Sensor %d: %f degC\n", i, j, temps[i][j]);
-        //     }
-        // }
+        // // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
+        // //     for (int j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
+        // //         printf("Temp: Module %d, Sensor %d: %f degC\n", i, j, temps[i][j]);
+        // //     }
+        // // }
 
-        // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
-        //     auto& config = chips[i].getConfig();
-        //     config.gpio1 = LTC6810::GPIOOutputState::kLow;
-        //     chips[i].updateConfig();
-        // }
+        for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
+            auto& config = chips[i].getConfig();
+            config.gpio1 = LTC6810::GPIOOutputState::kLow;
+            chips[i].updateConfig();
+        }
 
-        checkForFaults();
-        if (currentState == FAULT) return;
+        // checkForFaults();
+        // if (currentState == FAULT) return;
 
-        readPackCurrent();
-        printf("Pack current: %f A\n", packCurrent);
+        // readPackCurrent();
+        // printf("Pack current: %f A\n", packCurrent);
 
     } else {
         printf("BMS: FAULT STATE\n");

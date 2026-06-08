@@ -210,7 +210,12 @@ float LTC6810::readTemperatureTMP1075(TMP1075_Handle_t* sensor) {
 
     m_bus.WakeupBus();
     m_bus.SendDataCommand(wrCmd, commData);
-    m_bus.SendDataCommand(stCmd, buf);
+
+
+    // the 72 clock cycles are defined by the 9 bytes of dummy data being sent here 
+    // 72/8 == 9
+    m_bus.SendDataCommandExtraPulse(stCmd, 9); 
+    // m_bus.SendDataCommand(stCmd, buf);
 
     ThisThread::sleep_for(3ms);
 
@@ -226,6 +231,7 @@ float LTC6810::readTemperatureTMP1075(TMP1075_Handle_t* sensor) {
     // LSB is in comm register 3 4 msbs
     uint8_t tempLSB = (rxData[3] & 0xF0)>>4;
 
+  
     // Combine MSB and LSB into 16-bit value
 
     int16_t rawTemp = (tempMSB << 4) | (tempLSB & 0x0f);

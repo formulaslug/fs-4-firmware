@@ -42,7 +42,13 @@ public:
 
   virtual LTC681xBusStatus SendCommand(BusCommand cmd) = 0;
   virtual LTC681xBusStatus SendDataCommand(BusCommand cmd, uint8_t* data) = 0;
+
+
+  virtual LTC681xBusStatus SendDataCommandExtraPulse(BusCommand cmd, uint8_t) = 0;
+
   virtual LTC681xBusStatus SendReadCommand(BusCommand cmd, uint8_t* data) = 0;
+
+
 
   virtual LTC681xBusStatus SendCommandAndPoll(BusCommand cmd, unsigned int timeout = 10) = 0;
   virtual LTC681xBusStatus PollAdcCompletion(BusCommand cmd, unsigned int timeout = 10) = 0;

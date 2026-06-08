@@ -14,6 +14,7 @@ public:
 
   LTC681xBusStatus SendCommand(BusCommand cmd);
   LTC681xBusStatus SendDataCommand(BusCommand cmd, uint8_t* data);
+  LTC681xBusStatus SendDataCommandExtraPulse(BusCommand cmd, uint8_t);
   LTC681xBusStatus SendReadCommand(BusCommand cmd, uint8_t* data);
 
   LTC681xBusStatus SendCommandAndPoll(BusCommand cmd, unsigned int timeout = 10);

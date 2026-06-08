@@ -8,7 +8,7 @@
 #include "mbed.h"
 
 // general config
-inline constexpr uint8_t NUM_BATTERY_MODULES = 5;
+inline constexpr uint8_t NUM_BATTERY_MODULES = 1;
 inline constexpr uint8_t NUM_VOLTAGES_PER_MODULE = 6;
 inline constexpr uint8_t NUM_TEMP_SENSORS_PER_MODULE = 12;
 inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 5;

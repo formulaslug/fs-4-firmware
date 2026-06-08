@@ -230,8 +230,8 @@ bool prechargeComplete() { return dcBusVoltageMv >= 0.9f * BMSInstance.packVolta
 
 // Intented to be called repeatedly during start and until completion of
 // precharge.
-void updatePrecharge() {
-    if (!Data.preChargeActive && prechargeAllowed() && !prechargeComplete()) {
+void updatePrecharge() 
+{    if (!Data.preChargeActive && prechargeAllowed() && !prechargeComplete()) {
         // Start precharge
         nPrechargeControl = 0; // low during precharge!
 
