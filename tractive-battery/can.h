@@ -4,31 +4,30 @@
 #include "mbed.h"
 #include <cstdint>
 
-
-struct TelemetryInfo {
-    bool bmsFaultStatus;
-    bool imdStatus;
-    bool shutdownIn;
-    bool shutdownOut;
-    bool shutdownFinal;
-    bool preChargeActive;
-    bool prechargeDone;
-    bool charging;
-
-    bool balanceStat;
-    bool cellTooLow;
-    bool cellTooHigh;
-    bool tempTooLow;
-    bool tempTooHigh;
-    bool tempTooHighCRG;
-    uint8_t faultModIndex;
-    uint8_t faultSenseIndex;
-    uint8_t battStatFaultIndex; // this is the cell fault num
-    uint16_t glvVoltage;
-    uint8_t pwmFanstat;
-    uint16_t socEstimate;
-};
-
+// struct TelemetryInfo {
+//     bool bmsFaultStatus;
+//     bool imdStatus;
+//     bool shutdownIn;
+//     bool shutdownOut;
+//     bool shutdownFinal;
+//     bool preChargeActive;
+//     bool prechargeDone;
+//     bool charging;
+//
+//     bool balanceStat;
+//     bool cellTooLow;
+//     bool cellTooHigh;
+//     bool tempTooLow;
+//     bool tempTooHigh;
+//     bool tempTooHighCRG;
+//     uint8_t faultModIndex;
+//     uint8_t faultSenseIndex;
+//     uint8_t battStatFaultIndex; // this is the cell fault num
+//     uint16_t glvVoltage;
+//     uint8_t pwmFanstat;
+//     uint16_t socEstimate;
+// };
+//
 
 // voltage messages
 constexpr uint32_t BATT_TPDO_MOD0_VOLTS = 0x494;
@@ -75,29 +74,23 @@ constexpr uint32_t TEMPERATURE_MESSAGE_IDS[NUM_BATTERY_MODULES * 2] = {
     BATT_TPDO_MOD4_TEMPSB
 };
 
-class CanGenerator {
+namespace CanGenerator {
 
-private:
-    const BMS &BMSInstance;
-    CAN &CAN_POWERTRAIN;
-    // Status of the shutdown circuit before BMS & IMD
-    DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
-    // Status of the shutdown circuit after BMS & IMD
-    DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
+CANMessage BuildStatusMessage(
+    BMS& bms,
+    bool imdFault,
+    bool shutdownFinal,
+    bool shutdownIn,
+    bool shutdownOut,
+    bool precharging,
+    bool prechargeDone,
+    uint16_t glvVoltageMv,
+    float fanPwmDuty
+);
+CANMessage BuildTempMessage(BMS& bms, uint8_t modNum, bool AorB);
+CANMessage BuildVoltageMessage(BMS& bms, uint8_t modNum);
+CANMessage BuildCellStatsMessage(BMS& bms);
+CANMessage BuildPowerMessage(BMS& bms, uint16_t socEstimate);
+CANMessage BuildTrayTempMessage(uint8_t traytempsensors[5]);
 
-public:
-
-    
-
-    CanGenerator(const BMS&, CAN&);
-    CANMessage BuildTempMessage(uint8_t modNum, bool AorB);
-    CANMessage BuildVoltageMessage(uint8_t modNum);
-    CANMessage BuildStatusMessage(TelemetryInfo); // i think this one is likely to be a pain, will probably
-                                     // require some changes to the BMS Class.
-
-    CANMessage BuildTrayTempMessage(uint8_t traytempsensors[5]);
-    CANMessage BuildCellStatsMessage();
-    CANMessage BuildPowerMessage(TelemetryInfo &Data);
-    void updateTelemetry(TelemetryInfo &Data);
-    void BuildAndSendMessages(TelemetryInfo &Data);
-};
+}; // namespace CanGenerator

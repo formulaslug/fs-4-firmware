@@ -22,6 +22,6 @@ add_subdirectory(../libraries/ds18b20 ds18b20)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(${PROJECT_NAME} BMS.cpp LTC6810.cpp tempCan.cpp main.cpp)
+add_executable(${PROJECT_NAME} BMS.cpp LTC6810.cpp can.cpp main.cpp)
 target_link_libraries(${PROJECT_NAME} mbed-os lib-mbed-ltc681x onewire-mbed-os ds18b20) # Can also link to mbed-baremetal here
 mbed_set_post_build(${PROJECT_NAME})

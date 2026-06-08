@@ -49,20 +49,16 @@ private:
     void readCellVoltages();
     void readTemps();
     void checkForFaults();
+    void throwFault(int moduleIndex, int sensorIndex);
     void generateStatusMessage();
-    void controlFans();
     void readPackCurrent();
     void turnOffBalancing();
     void telemetryPins();
 
 public:
-
-
-
     BMS(CAN& CAN_POWERTRAIN, bool charging);
 
     void controller();
-
 
     // Thread bmsControllerThread;
     // EventQueue bmsEventQueue;
@@ -81,17 +77,16 @@ public:
     bms_state currentState;
     fault_location faultLoc = NONE;
 
-    bool balancing = 0;
-    bool cellTooHigh = 0;
-    bool cellTooLow = 0;
+    bool balancing = false;
+    bool cellVoltageTooLow = false;
+    bool cellVoltageTooHigh = false;
+    bool packTempTooLow = false;
+    bool packTempTooHigh = false;
+    bool packTempTooHighCrg = false;
 
-    uint8_t faultModIndex = 0;
-    uint8_t faultSenseIndex = 0;
-    uint8_t battStatFaultIndex = 0;
+    uint8_t faultModuleIndex = 0;
+    uint8_t faultSensorIndex = 0;
 
-    uint16_t glvVoltage = 0;
-
-    bool imdFaultStat;
     Timer ltcTimeoutTimer;
     CANMessage msg;
 
@@ -111,13 +106,8 @@ public:
     // current sensors need to be implemented
     AnalogIn V_Out_Positive = AnalogIn(PC_0);
     AnalogIn V_Out_Negative = AnalogIn(PC_1);
-    // Note: IMD_Fault_3V3 is actually fault-low, and should be called nIMD_Fault_3V3
-    DigitalIn nIMD_Fault_3V3 = DigitalIn(PC_4);
     DigitalOut nBMS_Fault_3V3 = DigitalOut(PC_5);
-    // look more into this one (i think its a precharge indicator )
-    DigitalOut TS_READY = DigitalOut(PC_9);
     DigitalIn SH_RESET_3V3 = DigitalIn(PA_2);
-    AnalogIn GLV_Voltage = AnalogIn(PA_7);
     // some configuration for this needs to be done at startup see mbedosce
     // CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
     SPI spiInterface = SPI(PB_5, PB_4, PA_5, PA_4, use_gpio_ssel);

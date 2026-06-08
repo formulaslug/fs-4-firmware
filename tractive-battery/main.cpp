@@ -1,44 +1,40 @@
 #include "mbed.h"
 // #include "BMS.h"
-#include "tempCan.h"
+#include "can.h"
 
+CAN canPowertrain = CAN(PA_11, PA_12, 500000);
 
-Thread bmsControllerThread;
-// #include "kalmanfilter.h"
-
-// need to initialize everything on startup - assume everything is okay at first
-
-CAN CAN_POWERTRAIN = CAN(PA_11, PA_12, 500000);
-
-// assume 1 for charging 0 for not charging
+AnalogIn GLV_Voltage = AnalogIn(PA_7);
+// 1 = charging, 0 = not charging
 DigitalIn Charge_State_Filtered = DigitalIn(PC_2);
-
-// // Status of the shutdown circuit before BMS & IMD
-// DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
-// // Status of the shutdown circuit after BMS & IMD
-// DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
-InterruptIn Shutdown_Final_3V3_Filtered = InterruptIn(PA_6);
+// Status of the shutdown circuit before BMS & IMD
+DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
+// Status of the shutdown circuit after BMS & IMD
+DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
+// // Status of the shutdown circuit after BMS & IMD & HV Interlock & TSMS
+InterruptIn Shutdown_Final_3V3_Filtered_irq = InterruptIn(PA_6);
+DigitalIn Shutdown_Final_3V3_Filtered = DigitalIn(PA_6);
+// Note: IMD_Fault_3V3 is actually fault-low, and should be called nIMD_Fault_3V3
+DigitalIn nIMD_Fault_3V3 = DigitalIn(PC_4);
 
 DigitalOut TS_READY = DigitalOut(PC_9);
-
 PwmOut Fan_PWM = PwmOut(PC_8);
 
-constexpr float PRECHARGE_TIMEOUT = 3.0f;
+bool prechargeDone = false;
+bool precharging = false;
+constexpr float PRECHARGE_TIMEOUT_S = 3.0f;
 DigitalOut nPrechargeControl = DigitalOut(PB_0);
 Timer prechargeTimer;
 int prechargeUpdateEventId;
 
-constexpr bool eMeterPresent = false;
+float fanPwmDuty = 0.0f;
 
 EventQueue queue(64 * EVENTS_EVENT_SIZE);
 
-EventQueue bmsEventQueue(32*EVENTS_EVENT_SIZE);
+Thread bmsControllerThread;
+EventQueue bmsEventQueue(16 * EVENTS_EVENT_SIZE);
 
-
-// EventQueue controllerQueue(32*EVENTS_EVENT_SIZE);
-
-BMS BMSInstance(CAN_POWERTRAIN, Charge_State_Filtered.read());
-CanGenerator cGen(BMSInstance, CAN_POWERTRAIN);
+BMS bms(canPowertrain, Charge_State_Filtered.read());
 
 // the following is test soc code to get soc integrated into tbb firmware
 
@@ -58,8 +54,6 @@ uint8_t trayTemps[NUM_TRAY_TEMP_SENSORS];
 
 uint32_t dcBusVoltageMv;
 
-TelemetryInfo Data;
-
 void processCanRx();
 bool prechargeAllowed();
 bool prechargeComplete();
@@ -68,6 +62,7 @@ void updatePrecharge();
 void controlFans();
 void updateTelemetry();
 void updateSoc();
+void sendCanMessages();
 
 // enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHARGE_COMPLETE };
 // precharge_state prechargeState = PRECHARGE_IDLE;
@@ -99,7 +94,7 @@ int main() {
     //     debug_search_for_ds18b20_address(TS1W);
     // }
 
-    switch (BMSInstance.currentState) {
+    switch (bms.currentState) {
     case BMS::ACTIVE:
         printf("TBB main(): Current State: ACTIVE \n");
         break;
@@ -111,35 +106,29 @@ int main() {
         break;
     }
 
-    if (BMSInstance.currentState == BMS::CHARGING) {
-        CAN_POWERTRAIN.filter(0x190, 0x1ff);
+    if (bms.currentState == BMS::CHARGING) {
+        canPowertrain.filter(0x190, 0x1ff);
     } else {
     }
-    CAN_POWERTRAIN.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
+    canPowertrain.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
 
     // Start updating precharge, and also again whenever shutdown opens
     queue.call_every(10ms, &updatePrecharge);
     // TODO: instead of irq, use polling on an ADC with hysteresis (fall is <0.3, rise is >3.0)
-    Shutdown_Final_3V3_Filtered.fall([&]() {
+    Shutdown_Final_3V3_Filtered_irq.fall([&]() {
         queue.call(printf, "Shutdown_Final: Falling Edge!\n");
-        Data.prechargeDone = false;
-        Data.shutdownFinal = Shutdown_Final_3V3_Filtered.read();
+        prechargeDone = false;
         if (prechargeTimer.elapsed_time().count() == 0) {
             prechargeUpdateEventId = queue.call_every(2ms, &updatePrecharge);
         }
     });
-    // Data.prechargeDone = true;
 
-
-
-
-    // queue.call_every(5ms, &BMSInstance, &BMS::controller);
     // queue.call_every(200ms, controlFans);
 
-    bmsEventQueue.call_every(20ms, &BMSInstance, &BMS::controller);
+    bmsEventQueue.call_every(5ms, &bms, &BMS::controller);
     bmsControllerThread.start(callback(&bmsEventQueue, &EventQueue::dispatch_forever));
-    
-    queue.call_every(100ms, callback(&cGen, &CanGenerator::BuildAndSendMessages), Data);
+
+    queue.call_every(100ms, sendCanMessages);
 
     queue.dispatch_forever();
 
@@ -152,53 +141,30 @@ int main() {
 //     BMSInstance.packVoltageMv);
 // }
 
-// void updateTelemetry(BMS &BMSInstance){
-//     //BMS based telemetry updates
-//     if(BMS.faultLoc == VOLTAGE){
-//         Data.faultModIndex = BMS.faultModIndex * NUM_VOLTAGES_PER_MODULE;
-//     }else if(BMS.faultLoc == TEMPS){
-//         Data.faultModIndex = BMS.faultModIndex * NUM_TRAY_TEMP_SENSORS;
-//     }else{
-//         //we default to temperature index in the edge case....
-//         Data.faultModIndex = BMS.faultModIndex * NUM_TRAY_TEMP_SENSORS;
-//     }
-//     Data.faultModIndex = BMS.faultModIndex;
-//     Data.faultSenseIndex = BMS.faultSenseIndex;
-//     Data.glvVoltage = (uint16_t)(BMSInstance.GLV_Voltage.read() * 3.3 * 21.9 / 3.9 * 1000);
-//     Data.BMSInstance.IMD_Fault_3V3.read();
-//     Data.tempTooLow = BMSInstance.cellTooLow;
-//     Data.tempTooHigh = BMSInstance.cellTooHigh;
-//     Data.shutdownIn = BMSInstance.shutdownIn.read();
-//     Data.shutdownOut = BMSInstance.shutdownOut.read();
-//     Data.shutdownFinal = BMSInstance.shutdownFinal.read();
-
-// }
-
 void controlFans() {
-    if (Data.preChargeActive == true) {
+    if (!precharging) {
         // Linear scaling: 20% at ~20°C, 100% at ~50°C
         // Formula: (2.6667 * temp) - 33.3333, clamped to [20, 100]
-        int raw_percent = (int)((2.6667f * BMSInstance.maxCellTemp) - 33.3333f);
+        int raw_percent = (int)((2.6667f * bms.maxCellTemp) - 33.3333f);
         uint8_t fan_percent = (uint8_t)std::clamp(raw_percent, 20, 100);
-        Fan_PWM.write(fan_percent / 100.0f); // PWM expects 0.0 - 1.0
-        Data.pwmFanstat = fan_percent / 100.0f;
+        fanPwmDuty = fan_percent / 100.0f;
+        Fan_PWM.write(fanPwmDuty);
     } else {
         // Keep fans off until precharge is complete
-        Fan_PWM.write(0.0f);
-        Data.pwmFanstat = 0;
+        fanPwmDuty = 0;
+        Fan_PWM.write(fanPwmDuty);
     }
 }
 
 void processCanRx() {
     CANMessage msg;
-    while (CAN_POWERTRAIN.read(msg)) {
-        switch (BMSInstance.currentState) {
+    while (canPowertrain.read(msg)) {
+        switch (bms.currentState) {
         case BMS::CHARGING: {
             switch (msg.id) {
             case 0x190: // charge status from charger, 180 + node ID (10)
                 dcBusVoltageMv =
-                    (msg.data[2] | (msg.data[3] << 8) | (msg.data[4] << 16) | (msg.data[5] << 24))
-                    / 100.0;
+                    (msg.data[2] | (msg.data[3] << 8) | (msg.data[4] << 16) | (msg.data[5] << 24));
                 printf("dcBusVoltageMv (charger): %d\n", dcBusVoltageMv);
             }
             break;
@@ -216,46 +182,41 @@ void processCanRx() {
     }
 }
 
-bool shutdownClosed() { return Shutdown_Final_3V3_Filtered.read(); }
+bool shutdownClosed() { return Shutdown_Final_3V3_Filtered_irq.read(); }
 
-bool glvOk() {
-    float glvVoltage = (uint16_t)(BMSInstance.GLV_Voltage.read() * 3.3 * 21.9 / 3.9 * 1000);
-    //  BMSInstance->bms_stat_message.glv_voltage = glvVoltage;
-    return (
-        glvVoltage > 11.0f && glvVoltage < 15.0f
-    ); // place holder for 11 to 15 volts? we should find out the limit
-}
+bool glvVoltageV() { return (uint16_t)(GLV_Voltage.read() * 3.3 / (6.8 / (6.8 + 20))); }
 
-bool imdOk() { return BMSInstance.nIMD_Fault_3V3.read(); }
+bool imdOk() { return true || nIMD_Fault_3V3.read(); }
 
 bool prechargeAllowed() {
-    return shutdownClosed()
-           && BMSInstance.currentState != BMS::bms_state::FAULT
-           && glvOk()
+    return !shutdownClosed()
+           && bms.currentState != BMS::bms_state::FAULT
+           && glvVoltageV() > 11.0f
+           && glvVoltageV() < 15.0f
            && imdOk()
-           && (dcBusVoltageMv < 0.2f * BMSInstance.packVoltageMv)
-           && BMSInstance.packVoltageMv > 60; // sanity check
+           && (dcBusVoltageMv < 0.2f * bms.packVoltageMv)
+           && bms.packVoltageMv > 60; // sanity check
 }
 
-bool prechargeComplete() { return dcBusVoltageMv >= 0.9f * BMSInstance.packVoltageMv; }
+bool prechargeComplete() { return dcBusVoltageMv >= 0.9f * bms.packVoltageMv; }
 
 // Intented to be called repeatedly during start and until completion of
 // precharge.
 void updatePrecharge() {
-    if (!Data.preChargeActive && prechargeAllowed() && !prechargeComplete()) {
+    if (!precharging && prechargeAllowed() && !prechargeComplete()) {
         // Start precharge
         nPrechargeControl = 0; // low during precharge!
 
-        Data.preChargeActive = true;
-        Data.prechargeDone = false;
+        precharging = true;
+        prechargeDone = false;
         prechargeTimer.reset();
         prechargeTimer.start();
-    } else if (Data.preChargeActive && prechargeComplete()) {
+    } else if (precharging && prechargeComplete()) {
         // Stop precharge, success
         nPrechargeControl = 1;
 
-        Data.preChargeActive = false;
-        Data.prechargeDone = true;
+        precharging = false;
+        prechargeDone = true;
         TS_READY = 1;
         prechargeTimer.stop();
         prechargeTimer.reset();
@@ -263,14 +224,13 @@ void updatePrecharge() {
         // stop updating precharge, shutdown should be closed now
         queue.cancel(prechargeUpdateEventId);
 
-    } else if (Data.preChargeActive
-               && (!prechargeAllowed() || prechargeTimer.read() > PRECHARGE_TIMEOUT))
+    } else if (precharging && (!prechargeAllowed() || prechargeTimer.read() > PRECHARGE_TIMEOUT_S))
     {
         // Stop precharge, failure
         nPrechargeControl = 1; // high to stop precharge
 
-        Data.preChargeActive = false;
-        Data.prechargeDone = false;
+        precharging = false;
+        prechargeDone = false;
         printf("Precharge failed!\n");
 
         prechargeTimer.stop();
@@ -282,4 +242,34 @@ void updatePrecharge() {
             prechargeUpdateEventId = queue.call_every(2ms, &updatePrecharge);
         });
     }
+}
+
+void sendCanMessages() {
+    CANMessage msg;
+
+    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+        msg = CanGenerator::BuildVoltageMessage(bms, i);
+        canPowertrain.write(msg);
+        msg = CanGenerator::BuildTempMessage(bms, i, true);
+        canPowertrain.write(msg);
+        msg = CanGenerator::BuildTempMessage(bms, i, false);
+        canPowertrain.write(msg);
+        ThisThread::sleep_for(2ms);
+        msg = CanGenerator::BuildPowerMessage(bms, 0);
+        canPowertrain.write(msg);
+        ThisThread::sleep_for(2ms);
+    }
+    msg = CanGenerator::BuildStatusMessage(
+        bms,
+        !nIMD_Fault_3V3.read(),
+        Shutdown_Final_3V3_Filtered.read(),
+        Shutdown_In_3V3_Filtered.read(),
+        Shutdown_Out_3V3_Filtered.read(),
+        precharging,
+        prechargeDone,
+        glvVoltageV(),
+        fanPwmDuty
+    );
+
+    canPowertrain.write(msg);
 }

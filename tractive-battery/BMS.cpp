@@ -25,9 +25,7 @@ BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
 
     nBMS_Fault_3V3 = 1;
     packCurrent = 0;
-
 }
-
 
 void BMS::readCellVoltages() {
     // If PollTimeout is the only thing we've received for 100ms, throw a BMS fault.
@@ -131,30 +129,30 @@ void BMS::readTemps() {
 // way charged. Our balancing threshold is at 85% of maximum cell voltage
 void BMS::turnOnBalancing() {
     if (currentState != FAULT) {
-            for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-                uint8_t dischargeValue = 0x00;
-                LTC6810::Configuration& config = chips[i].getConfig();
-                // uint16_t moduleVolts[NUM_VOLTAGES_PER_MODULE] = voltages[i];
-                uint16_t minModuleVolt = voltages[i][0];
-                uint16_t maxModuleVolt = voltages[i][0];
-                for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-                    // if(voltages[i][j] < minModuleVolt){
-                    //     minModuleVolt = voltages[i][j];
-                    // }
-                    if (voltages[i][j] > maxModuleVolt) {
-                        maxModuleVolt = voltages[i][j];
-                    }
-                    if ((maxModuleVolt - minCelVoltage) >= DIFFERENCE_THRESHOLD) {
-                        dischargeValue |= (0x1 << j); // we balance based on the whole battery
-                        j++; // this ensures that a BMS will not balance adjacent cells
-                    }
-                    // Logic is find lowest voltage cell - go through each module and balance that
-                    // module based on that cell reading so the whole battery is balanced
+        for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+            uint8_t dischargeValue = 0x00;
+            LTC6810::Configuration& config = chips[i].getConfig();
+            // uint16_t moduleVolts[NUM_VOLTAGES_PER_MODULE] = voltages[i];
+            uint16_t minModuleVolt = voltages[i][0];
+            uint16_t maxModuleVolt = voltages[i][0];
+            for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
+                // if(voltages[i][j] < minModuleVolt){
+                //     minModuleVolt = voltages[i][j];
+                // }
+                if (voltages[i][j] > maxModuleVolt) {
+                    maxModuleVolt = voltages[i][j];
                 }
-                config.dischargeState.value = dischargeValue;
-                chips[i].updateConfig();
+                if ((maxModuleVolt - minCelVoltage) >= DIFFERENCE_THRESHOLD) {
+                    dischargeValue |= (0x1 << j); // we balance based on the whole battery
+                    j++; // this ensures that a BMS will not balance adjacent cells
+                }
+                // Logic is find lowest voltage cell - go through each module and balance that
+                // module based on that cell reading so the whole battery is balanced
             }
-        balancing = 1;
+            config.dischargeState.value = dischargeValue;
+            chips[i].updateConfig();
+        }
+        balancing = true;
     }
 }
 
@@ -166,7 +164,7 @@ void BMS::turnOffBalancing() {
         chips[i].updateConfig();
     }
     // printf("Cell balancing deactivated....\n");
-    balancing = 0;
+    balancing = false;
 }
 
 void BMS::readPackCurrent() {
@@ -219,48 +217,39 @@ void BMS::checkForFaults() {
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         // Cell Voltage Faults
         for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-            uint16_t voltVal = voltages[i][j];
-            if (voltVal >= MAX_CELL_VOLTAGE || voltVal <= MIN_CELL_VOLTAGE) {
-                currentState = FAULT;
-                if (faultLoc == NONE) {
-                    faultLoc = VOLTAGE;
+            uint16_t voltage = voltages[i][j];
+            if (voltage >= MAX_CELL_VOLTAGE || voltage <= MIN_CELL_VOLTAGE) {
+                // if (faultLoc == NONE) {
+                //     faultLoc = VOLTAGE;
+                // } else {
+                //     faultLoc = BOTH;
+                // }
+                throwFault(i, j);
+                if (voltage >= MAX_CELL_VOLTAGE) {
+                    cellVoltageTooHigh = 1;
                 } else {
-                    faultLoc = BOTH;
-                }
-                nBMS_Fault_3V3 = 0;
-                faultModIndex = i;
-                faultSenseIndex = j;
-                if (voltVal >= MAX_CELL_VOLTAGE) {
-                    cellTooHigh = 1;
-                } else {
-                    cellTooLow = 1;
+                    cellVoltageTooLow = 1;
                 }
             }
         }
 
         // Cell Temp Faults
-        const int8_t max_temp = currentState == CHARGING ? MAX_CELL_TEMP_CHARGING : MAX_CELL_TEMP;
-        const int8_t min_temp = currentState == CHARGING ? MIN_CELL_TEMP_CHARGING : MIN_CELL_TEMP;
+        const int8_t MAX_TEMP = currentState == CHARGING ? MAX_CELL_TEMP_CHARGING : MAX_CELL_TEMP;
+        const int8_t MIN_TEMP = currentState == CHARGING ? MIN_CELL_TEMP_CHARGING : MIN_CELL_TEMP;
 
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
             int8_t tempReading = temps[i][j];
             if (currentState == CHARGING) {
-                if (tempReading >= max_temp || tempReading <= min_temp) {
-                    currentState = FAULT;
-                    // this is for telemetry purposes
-                    if (faultLoc == NONE) {
-                        faultLoc = TEMPS;
+                if (tempReading >= MAX_TEMP) {
+                    throwFault(i, j);
+                    if (currentState == CHARGING) {
+                        packTempTooHighCrg = 1;
                     } else {
-                        faultLoc = BOTH;
+                        packTempTooHigh = 1;
                     }
-                    nBMS_Fault_3V3 = 0;
-                    faultModIndex = i;
-                    faultSenseIndex = j;
-                    if (tempReading >= max_temp) {
-                        cellTooLow = 1;
-                    } else {
-                        cellTooHigh = 1;
-                    }
+                } else if (tempReading <= MIN_TEMP) {
+                    throwFault(i, j);
+                    packTempTooLow = 1;
                 }
             }
         }
@@ -274,29 +263,25 @@ void BMS::checkForFaults() {
             "ERROR: Overcurrent detected: %.2f A (not throwing actual BMS fault)\n", packCurrent
         );
     }
-
-    // Check bms fault input, only for CAN logging (should really not be owned by BMS)
-    imdFaultStat = !nIMD_Fault_3V3.read();
 }
 
-// i am undecided wether or not to put the bms into a fault state here - might add a state that
-// doesnt turn on any bms indicator lights but essentially stops the bms functions like in a fault
-// state not totally sure whats required of the bms in this case making a best guess
-/*
-    only one we care about is the final shutdown circuit reading - we only care about it for the
-   purposes of precharing again after a shutdown
+// Change BMS State to FAULT, set nBMS_Fault pin, set fault sensor indexes
+void BMS::throwFault(int moduleIndex, int sensorIndex) {
+    currentState = FAULT;
+    nBMS_Fault_3V3 = 0;
+    faultModuleIndex = moduleIndex;
+    faultSensorIndex = sensorIndex;
+}
 
-    the other shutdown circuit inputs should be reported to can 4-4-26
-
-
-*/
-
+// Main controller loop (to be called periodically at high frequency)
 void BMS::controller() {
 
     if (currentState != FAULT) {
 
         const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
         if (can_balance) {
+            // TODO: ask cole about this. is it weird to send oscillating
+            // `balancing` signal over CAN?
             turnOnBalancing();
             ThisThread::sleep_for(100ms);
             turnOffBalancing();
@@ -322,8 +307,7 @@ void BMS::controller() {
         //     chips[i].updateConfig();
         // }
 
-        // TODO: testing
-        //checkForFaults();
+        checkForFaults();
         if (currentState == FAULT) return;
 
         readPackCurrent();
@@ -333,7 +317,5 @@ void BMS::controller() {
         printf("BMS: FAULT STATE\n");
         turnOffBalancing();
         nBMS_Fault_3V3 = 0;
-        // need to turn on indicator lights as well .....
-        TS_READY = 0;
     }
 }
