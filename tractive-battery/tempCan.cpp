@@ -173,6 +173,7 @@ void CanGenerator::updateTelemetry(TelemetryInfo &Data){
     Data.glvVoltage = BMSInstance.glvVoltage;
     Data.bmsFaultStatus = BMSInstance.currentState == BMS::FAULT;
     Data.imdStatus = BMSInstance.imdFaultStat;
+    Data.charging = BMSInstance.currentState == BMS::CHARGING;
     Data.tempTooLow = BMSInstance.cellTooLow;
     Data.tempTooHigh = BMSInstance.cellTooHigh;
     Data.shutdownIn = Shutdown_In_3V3_Filtered.read();

@@ -99,12 +99,21 @@ int main() {
     //     debug_search_for_ds18b20_address(TS1W);
     // }
 
-    printf("Initialization complete\n");
+    switch (BMSInstance.currentState) {
+    case BMS::ACTIVE:
+        printf("TBB main(): Current State: ACTIVE \n");
+        break;
+    case BMS::CHARGING:
+        printf("TBB main(): Current State: CHARGING \n");
+        break;
+    case BMS::FAULT:
+        printf("TBB main(): Current State: FAULT \n");
+        break;
+    }
 
     if (BMSInstance.currentState == BMS::CHARGING) {
         CAN_POWERTRAIN.filter(0x190, 0x1ff);
     } else {
-
     }
     CAN_POWERTRAIN.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
 
@@ -112,12 +121,14 @@ int main() {
     queue.call_every(10ms, &updatePrecharge);
     // TODO: instead of irq, use polling on an ADC with hysteresis (fall is <0.3, rise is >3.0)
     Shutdown_Final_3V3_Filtered.fall([&]() {
+        queue.call(printf, "Shutdown_Final: Falling Edge!\n");
         Data.prechargeDone = false;
         Data.shutdownFinal = Shutdown_Final_3V3_Filtered.read();
         if (prechargeTimer.elapsed_time().count() == 0) {
             prechargeUpdateEventId = queue.call_every(2ms, &updatePrecharge);
         }
     });
+    // Data.prechargeDone = true;
 
 
 

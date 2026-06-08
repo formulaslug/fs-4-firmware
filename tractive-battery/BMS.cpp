@@ -322,7 +322,8 @@ void BMS::controller() {
         //     chips[i].updateConfig();
         // }
 
-        checkForFaults();
+        // TODO: testing
+        //checkForFaults();
         if (currentState == FAULT) return;
 
         readPackCurrent();
