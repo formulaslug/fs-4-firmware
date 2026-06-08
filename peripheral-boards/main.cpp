@@ -1,3 +1,4 @@
+#include "ThisThread.h"
 #include "config.hpp"
 #include "d6t-1a.h"
 #include "d6t-8lh.h"
@@ -20,6 +21,7 @@ CornerConfig cfg;
 EventQueue queue = EventQueue{EVENTS_EVENT_SIZE * 32};
 uint64_t last_sent_temp = 0;
 uint64_t last_sent_tpdo = 0;
+uint8_t i2c_fail_count = 0;
 
 int main() {
     printf("main()\n");
@@ -64,10 +66,19 @@ void sendLastMessageTicks() {
 void sendCANtemp() {
     uint8_t pixels8lh[d6t8.N_PIXEL] = {0};
     // Temp sensor readings for 8 pixel thermal sensor
-    if (ok8 && d6t8.read()) {
-        const double* px8 = d6t8.pixels_c();
-        for (int i = 0; i < d6t8.N_PIXEL; i++) {
-            pixels8lh[i] = (uint8_t)(px8[i]);
+    if (cfg.has_tiretemp_1x8 && i2c_fail_count < 10) {
+        auto read_result = d6t8.read();
+
+        if (read_result) {
+            printf("Read d6t8!\n: ");
+            const double* px8 = d6t8.pixels_c();
+            for (int i = 0; i < d6t8.N_PIXEL; i++) {
+                pixels8lh[i] = (uint8_t)(px8[i]);
+            }
+        } else {
+            printf("Failed reading d6t8 :(\n");
+            pixels8lh[0] = 66;
+            i2c_fail_count++;
         }
     }
 
@@ -131,8 +142,10 @@ void sendCANtpdo() {
     };
 
     CANMessage tpdo_msg(cfg.tpdo_data_id, tpdo_data, 7);
-    can.write(tpdo_msg);
+    printf("%d:: WRITE START \n", canMsgTimer.elapsed_time().count());
+    auto canResult = can.write(tpdo_msg);
+    printf("%d:: WRITE_ERR: %d\n", canMsgTimer.elapsed_time().count(), canResult);
     last_sent_tpdo = canMsgTimer.elapsed_time().count();
 
-    printf("CAN TX ERR CNT: %d", can.tderror());
+    printf("CAN TX ERR CNT: %d\n", can.tderror());
 }
