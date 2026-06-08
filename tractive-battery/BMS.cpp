@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <cmath>
 
-
-
 BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
     : ltcBusInterface(&spiInterface), CAN_POWERTRAIN(CAN_POWERTRAIN) {
 
@@ -12,8 +10,6 @@ BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         chips.emplace_back(ltcBusInterface, i);
     }
-    // CAN_POWERTRAIN = CAN_POWERTRAIN;
-
     // there should also be the startup checks for the ADCS on all the LTC6810s here. not a priority
     // but nice to havce
 
@@ -30,11 +26,6 @@ BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
 
     packCurrentAmpsOutput = 0.0f;
     packCurrentAmpsInput = 0.0f;
-
-    // intialize data - assume everything is good at startup
-
-    // Data = {false, false, false, true, true, true, false, false, false, false, false, false,
-    // false, false, 0,0,0,0,0};
 }
 
 /*
@@ -43,9 +34,6 @@ BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
    reference (in the event queue we would make controller a public function and call that ) make
    changes to precharge ... soon - note ideally precharge runs once per startup we do NOT close the
    precharge relay while the car is running (add real tmp1075 addresses)
-
-
-
 
     note for precharge - precharge should be run once during startup and once after each time the
    shutdown circuit is open
@@ -65,10 +53,11 @@ void BMS::turnOffCellBalancing() {
 }
 
 void BMS::readCellVoltages() {
-    // ltcBusInterface.WakeupBus();
+    // If PollTimeout is the only thing we've received for 100ms, throw a BMS fault.
     if (ltcTimeoutTimer.elapsed_time() >= 100ms) {
-        // currentState = FAULT;
-        // return;
+        currentState = FAULT;
+        printf("ltcTimeoutTimer ran out! >100ms without successful reading! (only PollTimeouts)\n");
+        return;
     }
 
     bool voltsConverted = true;
@@ -86,13 +75,12 @@ void BMS::readCellVoltages() {
         stat = ltcBusInterface.PollAdcCompletion(command, 1);
 
         if (stat == LTC681xBus::LTC681xBusStatus::PollTimeout) {
-            // printf("ADC poll timeout, on Bank %d\n", i);
-            // voltsConverted = false;
+            printf("ADC poll timeout, on Module %d\n", i);
+            voltsConverted = false;
             ltcTimeoutTimer.start();
-            printf("poll timeout occured...\n");
-            // the rules require that we need to ensure we are getting data and that all sensors are
-            // working correctly, if we cannot get an adc conversion in 100ms this will thow a fault
-            // that time period is a little arbitrary and probably should be adjusted
+            // The rules require that we need to ensure we are getting data and that all sensors are
+            // working correctly. If we cannot get an adc conversion in 100ms this will thow a
+            // fault. That time period is a little arbitrary and probably should be adjusted
         }
     }
 
@@ -113,12 +101,11 @@ void BMS::readCellVoltages() {
 
             uint16_t* castVoltages = (uint16_t*)voltageReading;
             for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-                // volt = castVoltages[j];
-                printf("%d\n", castVoltages[j]); // printing the cell voltages for testing purposes
-
+                // printf("%d\n", castVoltages[j]);
                 voltages[i][j] = castVoltages[j];
             }
-            printf("\n");
+            // printf("\n");
+
             // 6 bytes per cell group reading (2 bytes per cell) ... transmitted in little endian
             // casted so that its easier to read
         }
@@ -143,7 +130,6 @@ void BMS::readCellVoltages() {
 }
 
 void BMS::readTemps() {
-
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
             temps[i][j] = chips[i].readTemperatureTMP1075(&tempSensors[i][j]);
@@ -199,7 +185,8 @@ void BMS::decideBalancing() {
 }
 
 float BMS::readPackCurrent() {
-    // HASS 300-S current sensor constants (https://www.lem.com/sites/default/files/products_datasheets/hass-50_600-s-v22.pdf)
+    // HASS 300-S current sensor constants
+    // (https://www.lem.com/sites/default/files/products_datasheets/hass-50_600-s-v22.pdf)
 
     // Nominal primary current (A)
     constexpr float HASS300_IPN = 300.0f;
@@ -212,23 +199,35 @@ float BMS::readPackCurrent() {
     float voutPos = V_Out_Positive.read() * 3.3f; // idk about this one
     float voutNeg = V_Out_Negative.read() * 3.3f;
     // HASS 300-S: I = (Vout - Vref) * IPN / 0.625
-    
 
-
-    packCurrentAmpsOutput = (voutPos - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
-    packCurrentAmpsInput = (voutNeg - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
+    packCurrentAmpsOutput = (voutPos - HASS300_INSTR_AMP_VREF)
+                            / HASS300_SENSITIVITY
+                            * HASS300_IPN
+                            / HASS300_INSTR_AMP_GAIN;
+    packCurrentAmpsInput = (voutNeg - HASS300_INSTR_AMP_VREF)
+                           / HASS300_SENSITIVITY
+                           * HASS300_IPN
+                           / HASS300_INSTR_AMP_GAIN;
     float totalPackCurrent = 0;
     // not sure about the above putting this in here...
 
-    //at very low current values the negative value jumps up crazy so we should return a value of the total current based on the voltage difference
-    if(voutPos >= voutNeg){
-        totalPackCurrent = (voutPos - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
-    }else{
-        totalPackCurrent = -1.0f * (voutNeg - HASS300_INSTR_AMP_VREF) / HASS300_SENSITIVITY * HASS300_IPN / HASS300_INSTR_AMP_GAIN;
+    // at very low current values the negative value jumps up crazy so we should return a value of
+    // the total current based on the voltage difference
+    if (voutPos >= voutNeg) {
+        totalPackCurrent = (voutPos - HASS300_INSTR_AMP_VREF)
+                           / HASS300_SENSITIVITY
+                           * HASS300_IPN
+                           / HASS300_INSTR_AMP_GAIN;
+    } else {
+        totalPackCurrent = -1.0f
+                           * (voutNeg - HASS300_INSTR_AMP_VREF)
+                           / HASS300_SENSITIVITY
+                           * HASS300_IPN
+                           / HASS300_INSTR_AMP_GAIN;
     }
 
-    //keeping this here for debug purposes
-      printf(
+    // keeping this here for debug purposes
+    printf(
         "Current sense Vout Positive: %.3f V  =>  Pack current (out of battery): %.2f \n",
         voutPos,
         packCurrentAmpsOutput
@@ -239,24 +238,19 @@ float BMS::readPackCurrent() {
         packCurrentAmpsInput
     );
 
-
     return totalPackCurrent;
-
 }
 
 void BMS::checkForFaults() {
-
-    // we will need to modify this for telemetry purposes ie which module is faulting which
-    // parrallel group is faulting etccc
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-        // cell voltage based faults...
+        // Cell Voltage Faults
         for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
             uint16_t voltVal = voltages[i][j];
             if (voltVal >= MAX_CELL_VOLTAGE || voltVal <= MIN_CELL_VOLTAGE) {
                 currentState = FAULT;
-                if(faultLoc == NONE){
+                if (faultLoc == NONE) {
                     faultLoc = VOLTAGE;
-                }else{
+                } else {
                     faultLoc = BOTH;
                 }
                 nBMS_Fault_3V3 = 0;
@@ -270,23 +264,25 @@ void BMS::checkForFaults() {
             }
         }
 
-        // cell temp based faults...
+        // Cell Temp Faults
+        const int8_t max_temp = currentState == CHARGING ? MAX_CELL_TEMP_CHARGING : MAX_CELL_TEMP;
+        const int8_t min_temp = currentState == CHARGING ? MIN_CELL_TEMP_CHARGING : MIN_CELL_TEMP;
+
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
             int8_t tempReading = temps[i][j];
             if (currentState == CHARGING) {
-                if (tempReading >= CHARGING_CELL_MAX_TEMP || tempReading <= CHARGING_CELL_MIN_TEMP)
-                {
+                if (tempReading >= max_temp || tempReading <= min_temp) {
                     currentState = FAULT;
-                    //this is for telemetry purposes
-                    if(faultLoc == NONE){
+                    // this is for telemetry purposes
+                    if (faultLoc == NONE) {
                         faultLoc = TEMPS;
-                    }else{
+                    } else {
                         faultLoc = BOTH;
                     }
                     nBMS_Fault_3V3 = 0;
                     faultModIndex = i;
                     faultSenseIndex = j;
-                    if (tempReading >= CHARGING_CELL_MIN_TEMP) {
+                    if (tempReading >= max_temp) {
                         cellTooLow = 1;
                     } else {
                         cellTooHigh = 1;
@@ -296,20 +292,15 @@ void BMS::checkForFaults() {
         }
     }
 
-    // to watch pack current // need to add negative here as well
+    // Watch pack current. TODO: need to add negative here as well
     if (std::fabs(packCurrentAmpsOutput) > MAX_PACK_CURRENT_AMPS) {
-        currentState = FAULT;
-        nBMS_Fault_3V3 = 0;
-        printf("FAULT: overcurrent detected: %.2f A\n", packCurrentAmpsOutput);
+        // currentState = FAULT;
+        // nBMS_Fault_3V3 = 0;
+        printf("ERROR: Overcurrent detected: %.2f A (not throwing actual BMS fault)\n", packCurrentAmpsOutput);
     }
 
-    // to check IMDStatus.....
-    //  faults on high reading i think - double check
-    //  i believe this opens the shutdown cirtui
-
-    // if (currentState == FAULT) {
-    //     bmsFault = 1;
-    // }
+    // Check bms fault input, only for CAN logging (should really not be owned by BMS)
+    imdFaultStat = IMD_Fault_3V3.read();
 }
 
 // i am undecided wether or not to put the bms into a fault state here - might add a state that
@@ -324,44 +315,31 @@ void BMS::checkForFaults() {
 
 */
 
-// void BMS::telemetryPins() {
-//     Data.shutdownIn = Shutdown_In_3V3_Filtered.read();
-//     Data.shutdownOut = Shutdown_Out_3V3_Filtered.read();
-//     Data.shutdownFinal = Shutdown_Final_3V3_Filtered.read();
-//     Data.imdStatus = IMD_Fault_3V3.read();
-// }
-
-
-
 void BMS::controller() {
 
     if (currentState != FAULT) {
-        if(balancing == FALSE){
-            readCellVoltages();
-        }
+        // if(balancing == FALSE){
+        readCellVoltages();
+        // }
         readTemps();
         checkForFaults();
-        readPackCurrent();
-        decideBalancing();
-        if(balancing == TRUE && balancingTimer != 0){
-            balancingTimer = Kernel::get_ms_count();
-            //set the timer so that we balance for 1 second before checking the voltage again
-        }
-        if(Kernel::get_ms_count() > (balancingTimer+1000)){
-            //truns off cel balancing after the timeout
-            balancingTimer = 0;
-            turnOffCellBalancing();
-        }
+        // readPackCurrent();
 
-
-
-
+        // decideBalancing();
+        // if(balancing == TRUE && balancingTimer != 0){
+        //     balancingTimer = Kernel::get_ms_count();
+        //     //set the timer so that we balance for 1 second before checking the voltage again
+        // }
+        // if(Kernel::get_ms_count() > (balancingTimer+1000)){
+        //     //truns off cel balancing after the timeout
+        //     balancingTimer = 0;
+        //     turnOffCellBalancing();
+        // }
     } else {
-        printf("WE ARE IN FAULT");
+        printf("BMS: FAULT STATE");
         turnOffCellBalancing();
         nBMS_Fault_3V3 = 0;
         // need to turn on indicator lights as well .....
         TS_READY = 0;
-
     }
 }

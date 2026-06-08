@@ -26,10 +26,10 @@ inline constexpr uint64_t TRAYTEMP_SENSOR_ADDRESSES[NUM_TRAY_TEMP_SENSORS] = {
 };
 
 // battery cell info for inr-18650-p30b - based on datasheet
-inline constexpr int8_t CHARGING_CELL_MAX_TEMP = 60;
-inline constexpr int8_t CHARGING_CELL_MIN_TEMP = 0;
-inline constexpr int8_t CELL_MAX = 60;
-inline constexpr int8_t CELL_MIN = -40;
+inline constexpr int8_t MAX_CELL_TEMP_CHARGING = 60;
+inline constexpr int8_t MIN_CELL_TEMP_CHARGING = 0;
+inline constexpr int8_t MAX_CELL_TEMP = 60;
+inline constexpr int8_t MIN_CELL_TEMP = -40;
 
 inline constexpr uint16_t MAX_CELL_VOLTAGE = 42000; // 4.2 volts
 inline constexpr uint16_t MIN_CELL_VOLTAGE = 25000; // 2.5 volts
@@ -77,9 +77,6 @@ public:
     bool balancing = 0;
     bool cellTooHigh = 0;
     bool cellTooLow = 0;
-    
-    // bool bmsFault = 0;
-
 
     uint8_t faultModIndex = 0;
     uint8_t faultSenseIndex = 0;
