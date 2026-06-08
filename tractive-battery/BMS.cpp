@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
-BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
-    : ltcBusInterface(&spiInterface), CAN_POWERTRAIN(CAN_POWERTRAIN) {
+BMS::BMS(CAN& CAN_POWERTRAIN, bool charging, Mutex& mainMutex)
+    : ltcBusInterface(&spiInterface), CAN_POWERTRAIN(CAN_POWERTRAIN), TelemetryLock(mainMutex) {
 
     chips.reserve(NUM_BATTERY_MODULES);
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
@@ -277,7 +277,7 @@ void BMS::throwFault(int moduleIndex, int sensorIndex) {
 void BMS::controller() {
 
     if (currentState != FAULT) {
-
+        TelemetryLock.lock();
         const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
         if (can_balance) {
             // TODO: ask cole about this. is it weird to send oscillating
@@ -311,6 +311,7 @@ void BMS::controller() {
         if (currentState == FAULT) return;
 
         readPackCurrent();
+        TelemetryLock.unlock();
         printf("Pack current: %f A\n", packCurrent);
 
     } else {

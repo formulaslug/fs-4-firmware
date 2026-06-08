@@ -2,6 +2,10 @@
 // #include "BMS.h"
 #include "can.h"
 
+
+Mutex TelemetryLock;
+
+
 CAN canPowertrain = CAN(PA_11, PA_12, 500000);
 
 AnalogIn GLV_Voltage = AnalogIn(PA_7);
@@ -12,8 +16,8 @@ DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
 // Status of the shutdown circuit after BMS & IMD
 DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
 // // Status of the shutdown circuit after BMS & IMD & HV Interlock & TSMS
-InterruptIn Shutdown_Final_3V3_Filtered_irq = InterruptIn(PA_6);
 DigitalIn Shutdown_Final_3V3_Filtered = DigitalIn(PA_6);
+// DigitalIn Shutdown_Final_3V3_Filtered = DigitalIn(PA_6);
 // Note: IMD_Fault_3V3 is actually fault-low, and should be called nIMD_Fault_3V3
 DigitalIn nIMD_Fault_3V3 = DigitalIn(PC_4);
 
@@ -34,7 +38,7 @@ EventQueue queue(64 * EVENTS_EVENT_SIZE);
 Thread bmsControllerThread;
 EventQueue bmsEventQueue(16 * EVENTS_EVENT_SIZE);
 
-BMS bms(canPowertrain, Charge_State_Filtered.read());
+BMS bms(canPowertrain, Charge_State_Filtered.read(), TelemetryLock);
 
 // the following is test soc code to get soc integrated into tbb firmware
 
@@ -63,6 +67,7 @@ void controlFans();
 void updateTelemetry();
 void updateSoc();
 void sendCanMessages();
+void sampleShutdownFinal();
 
 // enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHARGE_COMPLETE };
 // precharge_state prechargeState = PRECHARGE_IDLE;
@@ -115,13 +120,16 @@ int main() {
     // Start updating precharge, and also again whenever shutdown opens
     queue.call_every(10ms, &updatePrecharge);
     // TODO: instead of irq, use polling on an ADC with hysteresis (fall is <0.3, rise is >3.0)
-    Shutdown_Final_3V3_Filtered_irq.fall([&]() {
-        queue.call(printf, "Shutdown_Final: Falling Edge!\n");
-        prechargeDone = false;
-        if (prechargeTimer.elapsed_time().count() == 0) {
-            prechargeUpdateEventId = queue.call_every(2ms, &updatePrecharge);
-        }
-    });
+    // Shutdown_Final_3V3_Filtered_irq.fall([&]() {
+    //     queue.call(printf, "Shutdown_Final: Falling Edge!\n");
+    //     prechargeDone = false;
+    //     if (prechargeTimer.elapsed_time().count() == 0) {
+    //         prechargeUpdateEventId = queue.call_every(2ms, &updatePrecharge);
+    //     }
+    // });
+
+
+
 
     // queue.call_every(200ms, controlFans);
 
@@ -129,6 +137,8 @@ int main() {
     bmsControllerThread.start(callback(&bmsEventQueue, &EventQueue::dispatch_forever));
 
     queue.call_every(100ms, sendCanMessages);
+    queue.call_every(1000ms, sampleShutdownFinal);
+
 
     queue.dispatch_forever();
 
@@ -140,6 +150,17 @@ int main() {
 //     socEstimator.update((BMSInstance.packCurrentAmpsOutput-BMSInstance.packCurrentAmpsInput),
 //     BMSInstance.packVoltageMv);
 // }
+
+
+void sampleShutdownFinal(){
+    if(Shutdown_Final_3V3_Filtered.read()==0){
+        printf("shutdown open detected, restarting precharge ... \n");
+        prechargeDone = false;
+        if (prechargeTimer.elapsed_time().count() == 0) {
+            prechargeUpdateEventId = queue.call_every(2ms, &updatePrecharge);
+        }
+    }
+}
 
 void controlFans() {
     if (!precharging) {
@@ -182,7 +203,7 @@ void processCanRx() {
     }
 }
 
-bool shutdownClosed() { return Shutdown_Final_3V3_Filtered_irq.read(); }
+bool shutdownClosed() { return Shutdown_Final_3V3_Filtered.read(); }
 
 bool glvVoltageV() { return (uint16_t)(GLV_Voltage.read() * 3.3 / (6.8 / (6.8 + 20))); }
 
@@ -245,6 +266,7 @@ void updatePrecharge() {
 }
 
 void sendCanMessages() {
+    TelemetryLock.lock();
     CANMessage msg;
 
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
@@ -272,4 +294,5 @@ void sendCanMessages() {
     );
 
     canPowertrain.write(msg);
+    TelemetryLock.unlock();
 }

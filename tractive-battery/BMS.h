@@ -56,7 +56,7 @@ private:
     void telemetryPins();
 
 public:
-    BMS(CAN& CAN_POWERTRAIN, bool charging);
+    BMS(CAN& CAN_POWERTRAIN, bool charging, Mutex& mainMutex);
 
     void controller();
 
@@ -73,6 +73,8 @@ public:
 
     // Current in Amps. Positive for discharge, negative for regen
     float packCurrent;
+
+    Mutex& TelemetryLock; 
 
     bms_state currentState;
     fault_location faultLoc = NONE;
