@@ -11,7 +11,7 @@ set(CUSTOM_UPLOAD_CFG_PATH ../custom_targets/UploadMethods.cmake)
 
 add_subdirectory(../custom_targets custom_targets)
 
-set(MBED_TARGET PERIPHERAL_BOARD) # We never made a custom target for the Charger board...
+set(MBED_TARGET CHARGER_BOARD) # We never made a custom target for the Charger board...
 
 include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
 project(Charger

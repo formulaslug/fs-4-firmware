@@ -15,11 +15,11 @@
 #endif
 
 #ifndef PIN_CONTROL_PILOT
-#define PIN_CONTROL_PILOT PA_7
+#define PIN_CONTROL_PILOT PA_0
 #endif
 
 #ifndef PIN_PROXIMITY_PILOT
-#define PIN_PROXIMITY_PILOT PA_6
+#define PIN_PROXIMITY_PILOT PA_1
 #endif
 
 #ifndef CAN_FREQUENCY

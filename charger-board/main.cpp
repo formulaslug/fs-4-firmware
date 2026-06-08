@@ -114,16 +114,16 @@ int main() {
 
         // printf("pp: %f\n",proximity_pilot.read());
 
-        // Duty cycle is 31 times voltage on control pilot
-        // Duty cycle times 0.6 is max allowed continuous current draw
-        // control pilot voltage times 18.5 is the max allowed current
+        // From our charger board schematic's voltage divider, CP Duty Cycle (as a percentage) is 31 times voltage on our control pilot pin.
+        // From the J1772 spec, the max allowed continuous AC current draw is the CP duty cycle (percentage) times 0.6 (in Amps).
+        // So, our control pilot voltage reading times 18.5 is the max allowed AC current.
         int max_ac_current_CP = std::floor(control_pilot.read() * 3.3 * 19);
 
         // printf ("proximity pilot: %x\n", proximity_pilot_ready);
 
         // printf("cp: %f\n", control_pilot.read());
         //
-        // printf("max ac current: %d\n", max_ac_current_CP);
+        printf("max ac current: %d\n", max_ac_current_CP);
 
         max_ac_current_A = std::min(max_ac_current_CP, MAX_AC_CURRENT);
 
@@ -217,6 +217,10 @@ void initChargerCAN() {
 }
 
 void sendCAN() {
+    const uint8_t sync_data = {0};
+    CANMessage sync{0x80, &sync_data, 0};
+    can.write(sync);
+
     // send charge limits
     uint8_t charge_limits_data[8] = {
         0x10,
