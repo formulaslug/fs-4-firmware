@@ -24,20 +24,20 @@ Corner readCorner() {
 // Could probably just make a lookup table for this
 CornerConfig getCornerConfig(Corner pos) {
     switch (pos) {
-    case Corner::FR:
-        return {0x1A3, 0x2A2, false, false};
-
     case Corner::FL:
-        return {0x1A2, 0x2A1, true, false};
+        return {0x1A5, 0x2A5, false, false};
 
-    case Corner::BR:
-        return {0x1A5, 0x2A4, false, false};
+    case Corner::FR:
+        return {0x1A6, 0x2A6, false, false};
 
     case Corner::BL:
-        return {0x1A4, 0x2A3, true, false};
+        return {0x1A7, 0x2A7, false, false};
+
+    case Corner::BR:
+        return {0x1A8, 0x2A8, false, false};
 
     default:
-        return {0x1A3, 0x2A2, false, false};
+        return {0x1A6, 0x2A6, false, false};
         // Defaulting to FR, Not sure what to do for an error
         // FS-3 #error "WHEEL_POSITION must be one of BR/BL/FR/FL!"
     }

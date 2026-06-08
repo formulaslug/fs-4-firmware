@@ -9,10 +9,10 @@ Corner that the current board is in, determined by dip switches
 Just for organization in determining the board location
 */
 enum class Corner : uint8_t {
-    FR,
     FL,
-    BR,
-    BL
+    FR,
+    BL,
+    BR
 };
 
 /*

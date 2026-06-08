@@ -12,9 +12,9 @@ AnalogIn sus{PIN_SUSPENSION};
 I2C i2c{PIN_I2C2_SDA, PIN_I2C2_SCL};
 D6T8LH d6t8{i2c};
 D6T1A d6t1{i2c};
-//StrainGauge235SL sg{PIN_STRAIN}; // TODO: Uncomment when StrainGuage PR is merged
-//Suggestion: Set the output to also include ticks since the last can message was sent
-// Not really sure what to do with this output yet
+// StrainGauge235SL sg{PIN_STRAIN}; // TODO: Uncomment when StrainGuage PR is merged
+// Suggestion: Set the output to also include ticks since the last can message was sent
+//  Not really sure what to do with this output yet
 Timer canMsgTimer;
 CornerConfig cfg;
 EventQueue queue = EventQueue{EVENTS_EVENT_SIZE * 32};
@@ -35,30 +35,30 @@ int main() {
     // sg.tare(500, 200);
     // //apply calibration slope
     // //again this is a fake number, we'd have to calculate this
-    // sg.set_calibration(2500.0f, 0.0f);           
+    // sg.set_calibration(2500.0f, 0.0f);
     // //End of Strain Guage Setup
     canMsgTimer.start();
-    queue.call_every(10ms, &sendCANtpdo); //100Hz
-    queue.call_every(100ms, &sendCANtemp); //10Hz
+    queue.call_every(10ms, &sendCANtpdo);  // 100Hz
+    queue.call_every(100ms, &sendCANtemp); // 10Hz
     queue.call_every(100ms, &sendLastMessageTicks);
     queue.dispatch_forever();
-    
+
     return 0;
 }
-void sendLastMessageTicks(){
+void sendLastMessageTicks() {
     uint64_t last_temp = canMsgTimer.elapsed_time().count() - last_sent_temp;
     uint64_t last_tpdo = canMsgTimer.elapsed_time().count() - last_sent_tpdo;
-    //convert microsecond difference to ticks
-    //8 bits 0-256
-    //Can probably be a 1 byte message
-    //microseconds to 100hz
-    uint64_t temp_ticks = (last_temp/10000 > 15) ? 15 : last_temp/10000;
-    uint64_t tpdo_ticks = (last_tpdo/10000 > 15) ? 15 : last_tpdo/10000;
-    //printf("Temp Ticks: %d\n Tpdo Ticks: %d\n", last_temp, last_tpdo);
-    //Not sure how I would want to keep track of the ticks since last message
-    //Right now it's in the same queue loop as everything else and I wonder if this is fine
-    //Write and send this CAN Message
-    //NOT FINISHED YET
+    // convert microsecond difference to ticks
+    // 8 bits 0-256
+    // Can probably be a 1 byte message
+    // microseconds to 100hz
+    uint64_t temp_ticks = (last_temp / 10000 > 15) ? 15 : last_temp / 10000;
+    uint64_t tpdo_ticks = (last_tpdo / 10000 > 15) ? 15 : last_tpdo / 10000;
+    // printf("Temp Ticks: %d\n Tpdo Ticks: %d\n", last_temp, last_tpdo);
+    // Not sure how I would want to keep track of the ticks since last message
+    // Right now it's in the same queue loop as everything else and I wonder if this is fine
+    // Write and send this CAN Message
+    // NOT FINISHED YET
 }
 
 void sendCANtemp() {
@@ -82,7 +82,7 @@ void sendCANtpdo() {
     uint16_t sus_travel_raw = 0;
     uint8_t px0 = 0;
 
-    // Side temp readings 
+    // Side temp readings
     if (ok1 && d6t1.read()) {
         // 1 pixel temp sensor, DATA_SIDE_TIRE_TEMP
         px0 = (uint8_t)d6t1.pixel_c(); // pixel temp
@@ -95,7 +95,21 @@ void sendCANtpdo() {
     sus_travel_raw = ((1.0 - sus.read()) * 5000);
     printf("Sus Travel: %d, ", sus_travel_raw);
     printf("Sus Raw: %.4f \n ", sus.read());
-    printf("readCorner(): %d\n", static_cast<int>(readCorner()));
+
+    switch (readCorner()) {
+    case Corner::FR:
+        printf("readCorner: FR\n");
+        break;
+    case Corner::FL:
+        printf("readCorner: FL\n");
+        break;
+    case Corner::BR:
+        printf("readCorner: BR\n");
+        break;
+    case Corner::BL:
+        printf("readCorner: BL\n");
+        break;
+    }
     // // TODO: Uncomment when StrainGuage PR is merged
     // // //Strain Guage Readings
     // // float force = sg.read_units();
