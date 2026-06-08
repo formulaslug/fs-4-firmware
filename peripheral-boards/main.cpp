@@ -133,4 +133,6 @@ void sendCANtpdo() {
     CANMessage tpdo_msg(cfg.tpdo_data_id, tpdo_data, 7);
     can.write(tpdo_msg);
     last_sent_tpdo = canMsgTimer.elapsed_time().count();
+
+    printf("CAN TX ERR CNT: %d", can.tderror());
 }

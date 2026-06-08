@@ -34,4 +34,6 @@ private:
     uint32_t start_us;
     volatile uint8_t teeth_passed; // Sampled at 100hz, doubt that there would be more than 256 teeth passed in 0.1 seconds
     float rpm;
+    volatile uint64_t time_last_cycle;
+    volatile uint64_t time_recent_tooth;
 };

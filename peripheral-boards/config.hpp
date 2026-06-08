@@ -47,8 +47,8 @@ void sendCANtpdo();
 void sendLastMessageTicks();
 
 constexpr PinName PIN_STRAIN = PB_0;
-constexpr PinName PIN_DIP_1 = PA_0;
-constexpr PinName PIN_DIP_2 = PA_1;
+constexpr PinName PIN_DIP_0 = PA_0;
+constexpr PinName PIN_DIP_1 = PA_1;
 constexpr PinName PIN_WHEEL_SENSOR = PA_5;
 constexpr PinName PIN_SUSPENSION = PA_7;
 constexpr PinName PIN_I2C2_SDA = PA_8;
