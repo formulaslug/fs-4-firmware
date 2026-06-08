@@ -56,9 +56,16 @@ private:
     void telemetryPins();
 
 public:
+
+
+
     BMS(CAN& CAN_POWERTRAIN, bool charging);
 
     void controller();
+
+
+    // Thread bmsControllerThread;
+    // EventQueue bmsEventQueue;
 
     struct TMP1075_Handle_t {
         uint8_t i2c_address;

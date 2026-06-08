@@ -1,6 +1,9 @@
 #include "mbed.h"
 // #include "BMS.h"
 #include "tempCan.h"
+
+
+Thread bmsControllerThread;
 // #include "kalmanfilter.h"
 
 // need to initialize everything on startup - assume everything is okay at first
@@ -28,6 +31,11 @@ int prechargeUpdateEventId;
 constexpr bool eMeterPresent = false;
 
 EventQueue queue(64 * EVENTS_EVENT_SIZE);
+
+EventQueue bmsEventQueue(32*EVENTS_EVENT_SIZE);
+
+
+// EventQueue controllerQueue(32*EVENTS_EVENT_SIZE);
 
 BMS BMSInstance(CAN_POWERTRAIN, Charge_State_Filtered.read());
 CanGenerator cGen(BMSInstance, CAN_POWERTRAIN);
@@ -111,8 +119,15 @@ int main() {
         }
     });
 
-    queue.call_every(5ms, &BMSInstance, &BMS::controller);
+
+
+
+    // queue.call_every(5ms, &BMSInstance, &BMS::controller);
     // queue.call_every(200ms, controlFans);
+
+    bmsEventQueue.call_every(20ms, &BMSInstance, &BMS::controller);
+    bmsControllerThread.start(callback(&bmsEventQueue, &EventQueue::dispatch_forever));
+    
     queue.call_every(100ms, callback(&cGen, &CanGenerator::BuildAndSendMessages), Data);
 
     queue.dispatch_forever();

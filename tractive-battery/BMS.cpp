@@ -25,6 +25,7 @@ BMS::BMS(CAN& CAN_POWERTRAIN, bool charging)
 
     nBMS_Fault_3V3 = 1;
     packCurrent = 0;
+
 }
 
 
