@@ -12,6 +12,7 @@ inline constexpr uint8_t NUM_BATTERY_MODULES = 5;
 inline constexpr uint8_t NUM_VOLTAGES_PER_MODULE = 6;
 inline constexpr uint8_t NUM_TEMP_SENSORS_PER_MODULE = 12;
 inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 5;
+inline constexpr uint8_t FAULT_LIMIT = 4; // this is the total number of times we detect a fault state before we actually throw a fault
 // okay so ive looked at the kicad and these have not been wired differently so 11/12 sensors have
 // the address of 0x48 (based on the data sheet) based on how they are wired
 //  i assume this is a wip and will be updated later
@@ -78,6 +79,9 @@ public:
 
     bms_state currentState;
     fault_location faultLoc = NONE;
+
+
+    uint8_t faultCounter = 0;
 
     bool balancing = false;
     bool cellVoltageTooLow = false;

@@ -219,6 +219,9 @@ void BMS::readPackCurrent() {
 }
 
 void BMS::checkForFaults() {
+    bool faultPresent = false;
+    uint8_t modFaultIndex = 0;
+    uint8_t componentFaultIndex = 0;
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         // Cell Voltage Faults
         for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
@@ -229,7 +232,10 @@ void BMS::checkForFaults() {
                 // } else {
                 //     faultLoc = BOTH;
                 // }
-                throwFault(i, j);
+                // throwFault(i, j);
+                modFaultIndex = i;
+                componentFaultIndex = j;
+                faultPresent = true;
                 if (voltage >= MAX_CELL_VOLTAGE_MV) {
                     cellVoltageTooHigh = 1;
                 } else {
@@ -246,18 +252,34 @@ void BMS::checkForFaults() {
             int8_t tempReading = temps[i][j];
             if (currentState == CHARGING) {
                 if (tempReading >= MAX_TEMP) {
-                    throwFault(i, j);
+                    // throwFault(i, j);
+                    modFaultIndex = i;
+                    componentFaultIndex = j;
+                    faultPresent = true;
                     if (currentState == CHARGING) {
                         packTempTooHighCrg = 1;
                     } else {
                         packTempTooHigh = 1;
                     }
                 } else if (tempReading <= MIN_TEMP) {
-                    throwFault(i, j);
+                    // throwFault(i, j);
+                    modFaultIndex = i;
+                    componentFaultIndex = j;
+                    faultPresent = true;
                     packTempTooLow = 1;
                 }
             }
         }
+    }
+
+    if(faultPresent){
+        faultCounter++;
+    }else{
+        faultCounter=0;
+    }
+
+    if(faultCounter>=FAULT_LIMIT){
+        throwFault(faultModuleIndex,componentFaultIndex);
     }
 
     // Watch pack current. TODO: need to add negative here as well
