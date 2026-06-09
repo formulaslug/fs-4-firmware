@@ -36,7 +36,8 @@
 
 // in centiamps (0.01 amps)
 #ifndef CURRENT_MAX_CA
-#define CURRENT_MAX_CA 5200 // 52 amps is 1C for now, battery can support up to 120 amps according to datasheet, note that due to charger errors
+// #define CURRENT_MAX_CA 5200 // 52 amps is 1C for now, battery can support up to 120 amps according to datasheet, note that due to charger errors
+#define CURRENT_MAX_CA 400 // TESTING: 4A (400cA)
 #endif
 
 

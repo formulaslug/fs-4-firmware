@@ -66,7 +66,8 @@ int main() {
     bool prechargeDone = false;
     bool fault = false;
     bool shutdown_closed = false;
-    bool cell_temps_fine = false;
+    bool cell_temps_too_low = false;
+    bool cell_temps_too_high_crg = false;
 
     while (true) {
         CANMessage msg;
@@ -74,31 +75,34 @@ int main() {
         while (can.read(msg)) {
 
             switch (msg.id) {
-            case 0x188: // ACC_TPDO_STATUS
-                prechargeDone = msg.data[0] & 0b00001000;
-                fault = msg.data[0] & 0b00000011;
+            case 0x391: // BATT_TPDO_STATUS
+                prechargeDone = msg.data[0] & 0b01000000;
+                // fault = msg.data[0] & 0b00000011;
+                fault = false;
                 shutdown_closed = msg.data[0] & 0b00000100;
-                cell_temps_fine = !(msg.data[1] & 0b00010000);
+                // cell_temps_too_low = msg.data[1] & 0b00001000;
+                // cell_temps_too_high_crg = msg.data[1] & 0b00100000;
+                cell_temps_too_low = 0;
+                cell_temps_too_high_crg = 0;
                 break;
-            case 0x288: // ACC_TPDO_POWER
+            case 0x392: // BATT_TPDO_POWER
                 pack_voltage = msg.data[0] + (msg.data[1] << 8);
                 soc = msg.data[2];
                 pack_current = (static_cast<int16_t>(msg.data[3] | (msg.data[4] << 8))) * 0.1f;
 
                 break;
-
-            case 0x388: //ACC_TDPO_CELL_TEMPS (placeholder id)
+            case 0x393: // BATT_TPDO_CELL_STATS
                 min_temp_C = static_cast<float>(static_cast<int8_t>(msg.data[0]));
                 avg_temp_C = static_cast<float>(static_cast<int8_t>(msg.data[1]));
                 max_temp_C = static_cast<float>(static_cast<int8_t>(msg.data[2]));
 
                 break;
-            case 0x488:// Energy usage stuff potentially? (placeholder id)
-                energy_used = static_cast<float>(msg.data[0]
-                                    | (msg.data[1] << 8)
-                                    | (msg.data[2] << 16)
-                                    | (msg.data[3] << 24));
-                break;
+            // case 0x488:// Energy usage stuff potentially? (placeholder id)
+            //     energy_used = static_cast<float>(msg.data[0]
+            //                         | (msg.data[1] << 8)
+            //                         | (msg.data[2] << 16)
+            //                         | (msg.data[3] << 24));
+            //     break;
             default:
                 break;
             }
@@ -109,8 +113,7 @@ int main() {
         // if proximity pilot is about 1.7v then EVSE connected and button pressed
         // if proximity pilot is about 0.9v then EVSE connected and button not pressed
         bool proximity_pilot_ready = (proximity_pilot.read() * 3.3 < 1.2);
-        enable = proximity_pilot_ready && prechargeDone && !fault && shutdown_closed && cell_temps_fine;
-
+        enable = proximity_pilot_ready && prechargeDone && !fault && shutdown_closed && !cell_temps_too_low && !cell_temps_too_high_crg;
 
         // printf("pp: %f\n",proximity_pilot.read());
 
@@ -134,7 +137,7 @@ int main() {
             prechargeDone, 
             fault,
             shutdown_closed,
-            cell_temps_fine);
+            !cell_temps_too_low && !cell_temps_too_high_crg);
 
         if (enable && !charging) {
             charge_timer.reset();
