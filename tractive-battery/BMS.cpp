@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 BMS::BMS(CAN& CAN_POWERTRAIN, bool charging, Mutex& mainMutex)
     : ltcBusInterface(&spiInterface), CAN_POWERTRAIN(CAN_POWERTRAIN), TelemetryLock(mainMutex) {
@@ -85,23 +86,26 @@ void BMS::readCellVoltages() {
             // casted so that its easier to read
         }
 
-        minCelVoltage = voltages[0][0];
-        maxCellVoltage = voltages[0][0];
-        packVoltageMv = 0;
+        uint16_t temp_minCelVoltage = 0;
+        uint16_t temp_maxCellVoltage = 0;
+        uint32_t temp_packVoltageMv = 0;
 
         for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
             for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-                packVoltageMv += voltages[i][j];
-                printf("Cell (%d, %d) v: %d\n", i, j, packVoltageMv);
+                temp_packVoltageMv += voltages[i][j];
 
                 if (voltages[i][j] < minCelVoltage) {
-                    minCelVoltage = voltages[i][j];
+                    temp_minCelVoltage = voltages[i][j];
                 }
                 if (voltages[i][j] > maxCellVoltage) {
-                    maxCellVoltage = voltages[i][j];
+                    temp_maxCellVoltage = voltages[i][j];
                 }
             }
         }
+
+        minCelVoltage = temp_minCelVoltage;
+        maxCellVoltage = temp_maxCellVoltage;
+        packVoltageMv = temp_packVoltageMv;
     }
 }
 
