@@ -71,9 +71,6 @@ void controlFans();
 void sendCanMessages();
 void sampleShutdownFinal();
 
-// enum precharge_state { PRECHARGE_IDLE, PRECHARGE_ACTIVE, PRECHARGE_FAULT, PRECHARGE_COMPLETE };
-// precharge_state prechargeState = PRECHARGE_IDLE;
-
 int main() {
     TS_READY = 0;
 
