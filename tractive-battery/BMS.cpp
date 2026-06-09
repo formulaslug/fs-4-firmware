@@ -77,7 +77,7 @@ void BMS::readCellVoltages() {
             uint16_t* castVoltages = (uint16_t*)voltageReading;
             for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
                 // printf("%d\n", castVoltages[j]);
-                voltages[i][j] = castVoltages[j];
+                voltages[i][j] = castVoltages[j]/10;
             }
             // printf("\n");
 
@@ -218,14 +218,14 @@ void BMS::checkForFaults() {
         // Cell Voltage Faults
         for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
             uint16_t voltage = voltages[i][j];
-            if (voltage >= MAX_CELL_VOLTAGE || voltage <= MIN_CELL_VOLTAGE) {
+            if (voltage >= MAX_CELL_VOLTAGE_MV || voltage <= MIN_CELL_VOLTAGE_MV) {
                 // if (faultLoc == NONE) {
                 //     faultLoc = VOLTAGE;
                 // } else {
                 //     faultLoc = BOTH;
                 // }
                 throwFault(i, j);
-                if (voltage >= MAX_CELL_VOLTAGE) {
+                if (voltage >= MAX_CELL_VOLTAGE_MV) {
                     cellVoltageTooHigh = 1;
                 } else {
                     cellVoltageTooLow = 1;
@@ -277,11 +277,12 @@ void BMS::throwFault(int moduleIndex, int sensorIndex) {
 void BMS::controller() {
 
     if (currentState != FAULT) {
-        TelemetryLock.lock();
+        // TelemetryLock.lock();
         const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
-        if (can_balance) {
+        if (can_balance && false) {
             // TODO: ask cole about this. is it weird to send oscillating
-            // `balancing` signal over CAN?
+            // `balancing` signal over CAN? Answer: keep oscillating but send a
+            // constant signal
             turnOnBalancing();
             ThisThread::sleep_for(100ms);
             turnOffBalancing();
@@ -311,7 +312,7 @@ void BMS::controller() {
         if (currentState == FAULT) return;
 
         readPackCurrent();
-        TelemetryLock.unlock();
+        // TelemetryLock.unlock();
         printf("Pack current: %f A\n", packCurrent);
 
     } else {

@@ -70,20 +70,20 @@ CANMessage BuildStatusMessage(
     uint8_t data[8] = {0};
 
     data[0] = ((bms.currentState == BMS::FAULT) << 0)
-              | (imdFault << 1)
-              | (shutdownFinal << 2)
-              | (shutdownIn << 3)
-              | (shutdownOut << 4)
-              | (precharging << 5)
-              | (prechargeDone << 6)
-              | ((bms.currentState == BMS::CHARGING) << 7);
+              + (imdFault << 1) // LUCA: replace this with (0 << 1)
+              + (shutdownFinal << 2)
+              + (shutdownIn << 3)
+              + (shutdownOut << 4)
+              + (precharging << 5)
+              + (prechargeDone << 6)
+              + ((bms.currentState == BMS::CHARGING) << 7);
 
     data[1] = (bms.balancing << 0)
-              | (bms.cellVoltageTooLow << 1)
-              | (bms.cellVoltageTooHigh << 2)
-              | (bms.packTempTooLow << 3)
-              | (bms.packTempTooHigh << 4)
-              | (bms.packTempTooHighCrg << 5);
+              + (bms.cellVoltageTooLow << 1)
+              + (bms.cellVoltageTooHigh << 2)
+              + (bms.packTempTooLow << 3)
+              + (bms.packTempTooHigh << 4)
+              + (bms.packTempTooHighCrg << 5);
 
     // we need to add updates here
     data[2] = bms.faultModuleIndex;
@@ -145,12 +145,12 @@ CANMessage BuildPowerMessage(BMS& bms, uint16_t socEstimate) {
     uint16_t packVolts = (uint16_t)(bms.packVoltageMv / 10);
     // scale of 0.1
 
-    data[0] = (uint8_t)(packVolts >> 8);
-    data[1] = (uint8_t)(packVolts);
+    data[0] = (uint8_t)(packVolts);
+    data[1] = (uint8_t)(packVolts >> 8);
 
     int16_t curr = (uint16_t)(bms.packCurrent * 10);
-    data[2] = (uint8_t)(curr >> 8);
-    data[3] = (uint8_t)(curr);
+    data[2] = (uint8_t)(curr);
+    data[3] = (uint8_t)(curr >> 8);
 
     // again scale of 0.1
 

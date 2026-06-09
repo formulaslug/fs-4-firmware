@@ -31,8 +31,8 @@ inline constexpr int8_t MIN_CELL_TEMP_CHARGING = 0;
 inline constexpr int8_t MAX_CELL_TEMP = 60;
 inline constexpr int8_t MIN_CELL_TEMP = -40;
 
-inline constexpr uint16_t MAX_CELL_VOLTAGE = 42000; // 4.2 volts
-inline constexpr uint16_t MIN_CELL_VOLTAGE = 25000; // 2.5 volts
+inline constexpr uint16_t MAX_CELL_VOLTAGE_MV = 4200; // 4.2 volts
+inline constexpr uint16_t MIN_CELL_VOLTAGE_MV = 2500; // 2.5 volts
 
 // inline constexpr uint16_t BALANCING_THRESHOLD = 0.85 * MAX_CELL_VOLTAGE; // 0.85*4.2v = 3.57v
 inline constexpr uint16_t BALANCING_THRESHOLD = 30000;  // temporary balancing threshold
