@@ -3,6 +3,10 @@
 #include "PinNamesTypes.h"
 #include "can.h"
 
+
+inline constexpr uint16_t analogInThreshold = 3.3*1000;
+inline constexpr uint16_t glvVoltageScaling = 3.3 * 1000 * 3.94 * 2;
+
 Mutex TelemetryLock;
 
 CAN canPowertrain = CAN(PA_11, PA_12, 500000);
@@ -181,9 +185,9 @@ void processCanRx() {
     }
 }
 
-bool shutdownClosed() { return ((Shutdown_Final_3V3_Filtered.read()*3.3*1000)>700); }
+bool shutdownClosed() { return ((Shutdown_Final_3V3_Filtered.read()*analogInThreshold)>700); }
 
-uint16_t glvVoltageMv() { return (uint16_t)(GLV_Voltage.read() * 3.3 * 1000 * 3.94 * 2); }
+uint16_t glvVoltageMv() { return (uint16_t)(GLV_Voltage.read() * glvVoltageScaling); }
 
 // Intented to be called repeatedly during start and until completion of
 // precharge.
@@ -195,8 +199,10 @@ void updatePrecharge() {
         precharging = false;
         if (shutdownClosed()) {
             prechargeDone = true;
+            TS_READY = 1;
         } else {
             prechargeDone = false;
+            TS_READY = 0;
         }
     }
     if (dcBusVoltageMv < 0.2 * bms.packVoltageMv) {
@@ -204,6 +210,7 @@ void updatePrecharge() {
         nPrechargeControl = 0;
         precharging = true;
         prechargeDone = false;
+        TS_READY = 0;
     }
 
 }
@@ -226,10 +233,10 @@ void sendCanMessages() {
     }
     msg = CanGenerator::BuildStatusMessage(
         bms,
-        ((nIMD_Fault_3V3.read()*3.3*1000)<700),
-        ((Shutdown_Final_3V3_Filtered.read()*3.3*1000)>700),
-        ((Shutdown_In_3V3_Filtered.read()*3.3*1000)>700),
-        ((Shutdown_Out_3V3_Filtered.read()*3.3*1000)>700),
+        ((nIMD_Fault_3V3.read()*analogInThreshold)<700),
+        ((Shutdown_Final_3V3_Filtered.read()*analogInThreshold)>700),
+        ((Shutdown_In_3V3_Filtered.read()*analogInThreshold)>700),
+        ((Shutdown_Out_3V3_Filtered.read()*analogInThreshold)>700),
         precharging,
         prechargeDone,
         glvVoltageMv(),
