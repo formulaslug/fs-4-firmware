@@ -92,6 +92,7 @@ void BMS::readCellVoltages() {
         for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
             for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
                 packVoltageMv += voltages[i][j];
+                printf("Cell (%d, %d) v: %d\n", i, j, packVoltageMv);
 
                 if (voltages[i][j] < minCelVoltage) {
                     minCelVoltage = voltages[i][j];
@@ -276,6 +277,9 @@ void BMS::throwFault(int moduleIndex, int sensorIndex) {
 // Main controller loop (to be called periodically at high frequency)
 void BMS::controller() {
 
+    readCellVoltages();
+    readTemps();
+
     if (currentState != FAULT) {
         // TelemetryLock.lock();
         const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
@@ -288,8 +292,7 @@ void BMS::controller() {
             turnOffBalancing();
         }
 
-        readCellVoltages();
-        readTemps();
+
 
         // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
         //     for (int j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {

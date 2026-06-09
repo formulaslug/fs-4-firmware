@@ -1,3 +1,6 @@
+#include "AnalogIn.h"
+#include "PeripheralNames.h"
+#include "PinNamesTypes.h"
 #include "can.h"
 
 Mutex TelemetryLock;
@@ -6,16 +9,16 @@ CAN canPowertrain = CAN(PA_11, PA_12, 500000);
 
 AnalogIn GLV_Voltage = AnalogIn(PA_7);
 // 1 = charging, 0 = not charging
-DigitalIn Charge_State_Filtered = DigitalIn(PC_2);
+AnalogIn Charge_State_Filtered = AnalogIn(PC_2);
 // Status of the shutdown circuit before BMS & IMD
-DigitalIn Shutdown_In_3V3_Filtered = DigitalIn(PA_0);
+AnalogIn Shutdown_In_3V3_Filtered = AnalogIn(PA_0);
 // Status of the shutdown circuit after BMS & IMD
-DigitalIn Shutdown_Out_3V3_Filtered = DigitalIn(PA_1);
+AnalogIn Shutdown_Out_3V3_Filtered = AnalogIn(PA_1);
 // // Status of the shutdown circuit after BMS & IMD & HV Interlock & TSMS
-DigitalIn Shutdown_Final_3V3_Filtered = DigitalIn(PA_6);
+AnalogIn Shutdown_Final_3V3_Filtered = AnalogIn(PA_6);
 // DigitalIn Shutdown_Final_3V3_Filtered = DigitalIn(PA_6);
 // Note: IMD_Fault_3V3 is actually fault-low, and should be called nIMD_Fault_3V3
-DigitalIn nIMD_Fault_3V3 = DigitalIn(PC_4);
+AnalogIn nIMD_Fault_3V3 = AnalogIn(PC_4);
 
 DigitalOut TS_READY = DigitalOut(PC_9);
 PwmOut Fan_PWM = PwmOut(PC_8);
@@ -176,9 +179,9 @@ void processCanRx() {
     }
 }
 
-bool shutdownClosed() { return Shutdown_Final_3V3_Filtered.read(); }
+bool shutdownClosed() { return ((Shutdown_Final_3V3_Filtered.read()*3.3*1000)>700); }
 
-uint16_t glvVoltageMv() { return (uint16_t)(GLV_Voltage.read() * 3.3 * 1000 / (6.8 / (6.8 + 20))); }
+uint16_t glvVoltageMv() { return (uint16_t)(GLV_Voltage.read() * 3.3 * 1000 * 3.94 * 2); }
 
 // Intented to be called repeatedly during start and until completion of
 // precharge.
@@ -221,16 +224,20 @@ void sendCanMessages() {
     }
     msg = CanGenerator::BuildStatusMessage(
         bms,
-        !nIMD_Fault_3V3.read(),
-        Shutdown_Final_3V3_Filtered.read(),
-        Shutdown_In_3V3_Filtered.read(),
-        Shutdown_Out_3V3_Filtered.read(),
+        ((nIMD_Fault_3V3.read()*3.3*1000)<700),
+        ((Shutdown_Final_3V3_Filtered.read()*3.3*1000)>700),
+        ((Shutdown_In_3V3_Filtered.read()*3.3*1000)>700),
+        ((Shutdown_Out_3V3_Filtered.read()*3.3*1000)>700),
         precharging,
         prechargeDone,
         glvVoltageMv(),
         fanPwmDuty
     );
 
-    canPowertrain.write(msg);
+    //printf("\033[2J");
+    printf("IMD fault voltage (normally high): %f\n", nIMD_Fault_3V3.read()*3.3);
+    printf("CAN    RTRN: %d, TDERRCNT: %d, RDERRCNT: %d\n", canPowertrain.write(msg), canPowertrain.tderror(), canPowertrain.rderror());
+
+    canPowertrain.reset();
     // TelemetryLock.unlock();
 }
