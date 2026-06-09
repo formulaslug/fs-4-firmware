@@ -141,7 +141,7 @@ int main() {
 // }
 
 void controlFans() {
-    if (!precharging) {
+    if (prechargeDone) {
         // Linear scalinbms.packVoltageMvg: 20% at ~20°C, 100% at ~50°C
         // Formula: (2.6667 * temp) - 33.3333, clamped to [20, 100]
         int raw_percent = (int)((2.6667f * bms.maxCellTemp) - 33.3333f);
