@@ -37,7 +37,7 @@ EventQueue queue(64 * EVENTS_EVENT_SIZE);
 Thread bmsControllerThread{osPriorityHigh};
 EventQueue bmsEventQueue(16 * EVENTS_EVENT_SIZE);
 
-BMS bms(canPowertrain, Charge_State_Filtered.read(), TelemetryLock);
+BMS bms(canPowertrain, ((Charge_State_Filtered.read() * 3.3 * 100) > 700), TelemetryLock);
 
 // the following is test soc code to get soc integrated into tbb firmware
 
@@ -111,6 +111,7 @@ int main() {
     if (bms.currentState == BMS::CHARGING) {
         canPowertrain.filter(0x190, 0x1ff);
     } else {
+        canPowertrain.filter(0x682, 0xfff);
     }
     //canPowertrain.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
 
@@ -170,7 +171,7 @@ void processCanRx() {
         case BMS::ACTIVE: {
             switch (msg.id) {
             case 0x682: // SME_TPDO_Temperature
-                dcBusVoltageMv = (msg.data[2] | (msg.data[3] << 8));
+                dcBusVoltageMv = (msg.data[2] | (msg.data[3] << 8))*100;
             }
             break;
         }
