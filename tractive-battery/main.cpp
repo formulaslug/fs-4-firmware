@@ -112,10 +112,11 @@ int main() {
         canPowertrain.filter(0x190, 0x1ff);
     } else {
     }
-    canPowertrain.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
+    //canPowertrain.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
 
     // Start updating precharge, and also again whenever shutdown opens
     queue.call_every(10ms, &updatePrecharge);
+    queue.call_every(5ms, &processCanRx);
 
     // TODO: Verify and uncoment
     // queue.call_every(500ms, sampleShutdownFinal);
@@ -162,7 +163,7 @@ void processCanRx() {
             case 0x190: // charge status from charger, 180 + node ID (10)
                 dcBusVoltageMv =
                     (msg.data[2] | (msg.data[3] << 8) | (msg.data[4] << 16) | (msg.data[5] << 24));
-                // printf("dcBusVoltageMv (charger): %d\n", dcBusVoltageMv);
+                printf("dcBusVoltageMv (charger): %d\n", dcBusVoltageMv);
             }
             break;
         }
@@ -235,8 +236,9 @@ void sendCanMessages() {
     );
 
     //printf("\033[2J");
-    printf("IMD fault voltage (normally high): %f\n", nIMD_Fault_3V3.read()*3.3);
-    printf("CAN    RTRN: %d, TDERRCNT: %d, RDERRCNT: %d\n", canPowertrain.write(msg), canPowertrain.tderror(), canPowertrain.rderror());
+    //printf("IMD fault voltage (normally high): %f\n", nIMD_Fault_3V3.read()*3.3);
+    //printf("CAN    RTRN: %d, TDERRCNT: %d, RDERRCNT: %d\n", canPowertrain.write(msg), canPowertrain.tderror(), canPowertrain.rderror());
+    canPowertrain.write(msg);
 
     canPowertrain.reset();
     // TelemetryLock.unlock();
