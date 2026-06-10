@@ -1,7 +1,7 @@
 VERSION ""
 
 
-NS_ : 
+NS_ :
 	NS_DESC_
 	CM_
 	BA_DEF_
@@ -484,7 +484,7 @@ BO_ 977 VCU_VN_BODY_GYRO: 6 VCU
  SG_ VCU_VN_BODY_WP : 16|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
  SG_ VCU_VN_BODY_WR : 32|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
 
-BO_ 722 VCU_VN_VEL_BODY: 6 VCU
+BO_ 722 VCU_VN_BODY_VEL: 6 VCU
  SG_ VCU_VN_BODY_VX : 0|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
  SG_ VCU_VN_BODY_VY : 16|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
  SG_ VCU_VN_BODY_VZ : 32|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
@@ -509,4 +509,3 @@ CM_ BO_ 2020 "Layer Setting Services (LSS) Response message. Sent by the Zero SM
 BA_DEF_  "BusType" STRING ;
 BA_DEF_DEF_  "BusType" "";
 BA_ "BusType" "CAN";
-

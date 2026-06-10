@@ -16,19 +16,19 @@ inline void check_vn_error(const char* file, int line, VN::Error err) {
 #define CHECK_VN_ERR(err) check_vn_error(__FILE__, __LINE__, err)
 
 struct VectornavState {
-    // m/s^2
-    VN::Vec3f accel{0,0,0};
-    // rad/s
+    /// Acceleration in body-frame. [ms^-2]
+    VN::Vec3f accelBody{0,0,0};
+
+    /// Angular rate in body-frame (Gyro) [rad/s]
     VN::Vec3f angRate{0,0,0};
 
-    VN::Vec3f mag{0,0,0};
-
-    // deg
+    /// Yaw Pitch Roll 3-2-1 Euler angles with respect to NED. [deg]
     VN::Ypr ypr{0,0,0};
 
+    /// Position: Latitude [deg], Longitude [deg], Altitude []
     VN::Lla pos{0,0,0};
 
-    // m/s
+    /// Velocity in Body-Frame [m/s]
     VN::Vec3f velBody{0,0,0};
 };
 
@@ -95,6 +95,23 @@ class VectorNavIMU {
     VN::Registers::System::BinaryOutput1 raw_imu_reg; // Raw IMU register
     VN::Registers::System::BinaryOutput2 nav_reg; // Nav register
     VN::Registers::System::BinaryOutput3 time_reg; // Time register
+
+    /// Wraps Yaw Pitch Roll to [-180, 180)
+    inline VN::Ypr wrap_ypr(VN::Ypr ypr) {
+        ypr.yaw = wrap_angle(ypr.yaw);
+        ypr.pitch = wrap_angle(ypr.pitch);
+        ypr.roll = wrap_angle(ypr.roll);
+        return ypr;
+    }
+
+    /// Wraps angle to [-180, 180)
+    inline float wrap_angle(float angle) {
+        if (angle >= 180.0) {
+            return angle - 360.0;
+        } else if (angle < -180.0) {
+            return  angle + 360.0;
+        }
+    }
 };
 
 #endif

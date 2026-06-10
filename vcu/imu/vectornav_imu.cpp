@@ -22,7 +22,7 @@ VN::Error VectorNavIMU::connect() {
 
         ThisThread::sleep_for(100ms);
     }
-    
+
     err = sensor.connect(
             tx, rx, VN::Registers::System::BaudRate::BaudRates::Baud921600
     );
@@ -62,7 +62,8 @@ VN::Error VectorNavIMU::init() {
     // Measured in meters from the IMU to antenna, AFAIK
     // measured in actual coordinates AFTER the transform
     VN::Registers::GNSS::GnssAOffset antenna_offset;
-    antenna_offset.position(VN::Vec3f{0.0f, 0.0f, 0.0f});
+    // Measured offset at 19.0" in x and y
+    antenna_offset.position(VN::Vec3f{19.0f * 2.54f * .01f, -19.0f * 2.54f * .01f, 0.0f});
 
     // rot frame needs to be written persistently to imu
     VN::Registers::IMU::RefFrameRot current_mounting_rotation;
@@ -187,7 +188,7 @@ void VectorNavIMU::refreshDataToState(VectornavState &state) {
 
     if (navData.has_value()) {
         if (navData->attitude.ypr.has_value()) {
-            state.ypr = navData->attitude.ypr.value();
+            state.ypr = wrap_ypr(navData->attitude.ypr.value());
         }
         if (navData->ins.posLla.has_value()) {
             state.pos = navData->ins.posLla.value();
