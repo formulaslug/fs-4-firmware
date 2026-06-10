@@ -6,7 +6,7 @@ add_library(mbed-tractive-battery-board INTERFACE)
 target_sources(mbed-tractive-battery-board
     INTERFACE
         PeripheralPins.c
-        system_clock.c
+        system_clock_24mhz.c
 )
 
 target_include_directories(mbed-tractive-battery-board
