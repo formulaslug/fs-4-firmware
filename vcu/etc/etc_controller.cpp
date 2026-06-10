@@ -33,8 +33,8 @@ ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_
     rtd_button.rise(callback(this, &ETCController::toggle_rtd));
 
     // spawns new thread for imu listener
-    CHECK_VN_ERR(vn_imu.connect());
-    CHECK_VN_ERR(vn_imu.init());
+    // CHECK_VN_ERR(vn_imu.connect());
+    // CHECK_VN_ERR(vn_imu.init());
 }
 
 float ETCController::clamp(float value) {
@@ -73,7 +73,7 @@ void ETCController::update_state() {
     state.solenoid_open = SOLENOID_FORCE_CLOSED ? false : state.regen_allowed;
     solenoid.write(state.solenoid_open);
 
-    state.rtd_button_pressed = 0; //rtd_button.read();
+    state.rtd_button_pressed = rtd_button.read();
 
     state.mbb_alive = state.mbb_alive >= 15 ? 0 : state.mbb_alive + 1;
     
@@ -143,7 +143,7 @@ void ETCController::toggle_rtd() {
 
         if (ts_ready && state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT) {
             state.ready_to_drive = true;
-            rtd_light.write(false);
+            rtd_light.write(true);
             rtd_buzzer.write(1);
             rtd_buzzer_timeout.attach([this]{ rtd_buzzer.write(0); }, RTD_BUZZER_DURATION);
         }

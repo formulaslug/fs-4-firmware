@@ -40,7 +40,7 @@ struct ETCState {
     bool solenoid_open = false; 
     bool reversing = false; // CURRENTLY ISN'T IMPLEMENTED
     bool brakelight_enabled = false;
-    VectornavState vectornav;
+    // VectornavState vectornav;
 };
 
 class ETCController {
@@ -89,13 +89,13 @@ private:
 
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
 
-    static constexpr float APPS1_MIN_VOLTAGE = 0.3125f;
-    static constexpr float APPS1_MAX_VOLTAGE = 2.8125f;
+    static constexpr float APPS1_MIN_VOLTAGE = 0.370f;
+    static constexpr float APPS1_MAX_VOLTAGE = 1.040f;
 
-    static constexpr float APPS2_MIN_VOLTAGE = 0.1875f;
-    static constexpr float APPS2_MAX_VOLTAGE = 1.6875f;
+    static constexpr float APPS2_MIN_VOLTAGE = 0.430f;
+    static constexpr float APPS2_MAX_VOLTAGE = 1.067f;
 
-    static constexpr float BPPS_MIN_VOLTAGE = 0.3125f;
+    static constexpr float BPPS_MIN_VOLTAGE = 0.570f;
     static constexpr float BPPS_MAX_VOLTAGE = 2.8125f;
 
     static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
@@ -108,7 +108,7 @@ private:
     static constexpr float REAR_BSE_ACTIVATION_VOLTAGE = 0.5f;
     static constexpr float BPPS_MAX_NON_REGEN_BRAKING = 0.9f;
     
-    static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.1f;
+    static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.12f;
     static constexpr float MAX_APPS_POSITION_DEVIATION = 0.10f;
 
     static constexpr int16_t MAX_TORQUE = 32767;

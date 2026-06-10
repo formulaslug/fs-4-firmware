@@ -176,13 +176,10 @@ void VectorNavIMU::refreshDataToState(VectornavState &state) {
 
     if (rawImuData.has_value()) {
         if (rawImuData->imu.accel.has_value()) {
-            state.accel = rawImuData->imu.accel.value();
+            state.accelBody = rawImuData->imu.accel.value();
         }
         if (rawImuData->imu.angularRate.has_value()) {
             state.angRate = rawImuData->imu.angularRate.value();
-        }
-        if (rawImuData->imu.mag.has_value()) {
-            state.mag = rawImuData->imu.mag.value();
         }
     }
 
