@@ -12,7 +12,7 @@ DigitalIn wheelPin{PIN_WHEEL_SENSOR};
 AnalogIn sus{PIN_SUSPENSION};
 I2C i2c{PIN_I2C2_SDA, PIN_I2C2_SCL};
 D6T8LH d6t8{i2c};
-D6T1A d6t1{i2c};
+//D6T1A d6t1{i2c};
 // StrainGauge235SL sg{PIN_STRAIN}; // TODO: Uncomment when StrainGuage PR is merged
 // Suggestion: Set the output to also include ticks since the last can message was sent
 //  Not really sure what to do with this output yet
@@ -28,7 +28,7 @@ int main() {
     wheelPin.mode(PullUp);
     cfg = getCornerConfig(readCorner());
     d6t8.setup();
-    d6t1.setup();
+    //d6t1.setup();
 
     // TODO: Uncomment when StrainGuage PR is merged
     // //Strain Guage Setup
@@ -93,11 +93,11 @@ void sendCANtpdo() {
     uint16_t sus_travel_raw = 0;
     uint8_t px0 = 0;
 
-    // Side temp readings
-    if (ok1 && d6t1.read()) {
-        // 1 pixel temp sensor, DATA_SIDE_TIRE_TEMP
-        px0 = (uint8_t)d6t1.pixel_c(); // pixel temp
-    }
+    // // Side temp readings
+    // if (ok1 && d6t1.read()) {
+    //     // 1 pixel temp sensor, DATA_SIDE_TIRE_TEMP
+    //     px0 = (uint8_t)d6t1.pixel_c(); // pixel temp
+    // }
 
     // Wheel Speed Readings
     wheel_speed_raw = (int16_t)(wheelSensor.update() * 10); // scaled according to CAN.dbc values
