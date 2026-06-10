@@ -41,7 +41,7 @@ EventQueue queue(64 * EVENTS_EVENT_SIZE);
 Thread bmsControllerThread{osPriorityHigh};
 EventQueue bmsEventQueue(16 * EVENTS_EVENT_SIZE);
 
-BMS bms(canPowertrain, ((Charge_State_Filtered.read() * 3.3 * 100) > 700), TelemetryLock);
+BMS bms(canPowertrain, ((Charge_State_Filtered.read() * 3.3 * 1000) > 700), TelemetryLock);
 
 // the following is test soc code to get soc integrated into tbb firmware
 
@@ -73,6 +73,7 @@ void sampleShutdownFinal();
 
 int main() {
     TS_READY = 0;
+    printf("%f v\n", Charge_State_Filtered.read() * 3.3);
 
     // TODO: uncommenct once we have tray temp sensors installed
     // for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) {
@@ -191,7 +192,7 @@ uint16_t glvVoltageMv() { return (uint16_t)(GLV_Voltage.read() * glvVoltageScali
 void updatePrecharge() {
     printf("dcBusVoltageMv %d mv, packVoltageMv %d mv\n", dcBusVoltageMv, bms.packVoltageMv);
     if (dcBusVoltageMv > 0.9 * bms.packVoltageMv) {
-        printf("Precharge Finished!\n");
+        // printf("Precharge Finished!\n");
         nPrechargeControl = 1;
         precharging = false;
         if (shutdownClosed()) {
@@ -203,7 +204,7 @@ void updatePrecharge() {
         }
     }
     if (dcBusVoltageMv < 0.2 * bms.packVoltageMv) {
-        printf("Precharge Starting!\n");
+        // printf("Precharge Starting!\n");
         nPrechargeControl = 0;
         precharging = true;
         prechargeDone = false;
