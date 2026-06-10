@@ -225,10 +225,9 @@ void sendCanMessages() {
         msg = CanGenerator::BuildTempMessage(bms, i, false);
         canPowertrain.write(msg);
         ThisThread::sleep_for(2ms);
-        msg = CanGenerator::BuildPowerMessage(bms, 0);
-        canPowertrain.write(msg);
-        ThisThread::sleep_for(2ms);
     }
+    msg = CanGenerator::BuildPowerMessage(bms, 0);
+    canPowertrain.write(msg);
     msg = CanGenerator::BuildStatusMessage(
         bms,
         ((nIMD_Fault_3V3.read()*analogInThreshold)<700),
@@ -240,11 +239,11 @@ void sendCanMessages() {
         glvVoltageMv(),
         fanPwmDuty
     );
+    canPowertrain.write(msg);
 
     //printf("\033[2J");
     //printf("IMD fault voltage (normally high): %f\n", nIMD_Fault_3V3.read()*3.3);
     //printf("CAN    RTRN: %d, TDERRCNT: %d, RDERRCNT: %d\n", canPowertrain.write(msg), canPowertrain.tderror(), canPowertrain.rderror());
-    canPowertrain.write(msg);
 
     canPowertrain.reset();
     // TelemetryLock.unlock();
