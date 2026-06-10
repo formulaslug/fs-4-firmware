@@ -36,4 +36,5 @@ private:
     float rpm;
     volatile uint64_t time_last_cycle;
     volatile uint64_t time_recent_tooth;
+    volatile bool do_timer_wheelspeed;
 };

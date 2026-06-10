@@ -27,7 +27,11 @@ int main() {
     printf("main()\n");
     wheelPin.mode(PullUp);
     cfg = getCornerConfig(readCorner());
-    d6t8.setup();
+    if (!d6t8.setup()){
+        printf("d68t init fail!!\n");
+    } else {
+        printf("d68t init success!!");
+    }
     //d6t1.setup();
 
     // TODO: Uncomment when StrainGuage PR is merged
@@ -42,7 +46,7 @@ int main() {
     canMsgTimer.start();
     queue.call_every(10ms, &sendCANtpdo);  // 100Hz
     queue.call_every(100ms, &sendCANtemp); // 10Hz
-    queue.call_every(100ms, &sendLastMessageTicks);
+    //queue.call_every(100ms, &sendLastMessageTicks);
     queue.dispatch_forever();
 
     return 0;
@@ -69,14 +73,14 @@ void sendCANtemp() {
     if (cfg.has_tiretemp_1x8 && i2c_fail_count < 10) {
         auto read_result = d6t8.read();
 
-        if (read_result) {
-            printf("Read d6t8!\n: ");
+        if (!read_result) {
+            //printf("Read d6t8!\n: ");
             const double* px8 = d6t8.pixels_c();
             for (int i = 0; i < d6t8.N_PIXEL; i++) {
                 pixels8lh[i] = (uint8_t)(px8[i]);
             }
         } else {
-            printf("Failed reading d6t8 :(\n");
+            printf("Failed reading d6t8 : %d\n", read_result);
             pixels8lh[0] = 66;
             i2c_fail_count++;
         }
@@ -104,23 +108,23 @@ void sendCANtpdo() {
 
     // Suspension Travel Readings
     sus_travel_raw = ((1.0 - sus.read()) * 5000);
-    printf("Sus Travel: %d, ", sus_travel_raw);
-    printf("Sus Raw: %.4f \n ", sus.read());
+    // printf("Sus Travel: %d, ", sus_travel_raw);
+    // printf("Sus Raw: %.4f \n ", sus.read());
 
-    switch (readCorner()) {
-    case Corner::FR:
-        printf("readCorner: FR\n");
-        break;
-    case Corner::FL:
-        printf("readCorner: FL\n");
-        break;
-    case Corner::BR:
-        printf("readCorner: BR\n");
-        break;
-    case Corner::BL:
-        printf("readCorner: BL\n");
-        break;
-    }
+    // switch (readCorner()) {
+    // case Corner::FR:
+    //     printf("FR\n");
+    //     break;
+    // case Corner::FL:
+    //     printf("FL\n");
+    //     break;
+    // case Corner::BR:
+    //     printf("BR\n");
+    //     break;
+    // case Corner::BL:
+    //     printf("BL\n");
+    //     break;
+    // }
     // // TODO: Uncomment when StrainGuage PR is merged
     // // //Strain Guage Readings
     // // float force = sg.read_units();
@@ -142,10 +146,10 @@ void sendCANtpdo() {
     };
 
     CANMessage tpdo_msg(cfg.tpdo_data_id, tpdo_data, 7);
-    printf("%d:: WRITE START \n", canMsgTimer.elapsed_time().count());
+    // printf("%d:: WRITE START \n", canMsgTimer.elapsed_time().count());
     auto canResult = can.write(tpdo_msg);
-    printf("%d:: WRITE_ERR: %d\n", canMsgTimer.elapsed_time().count(), canResult);
+    // printf("%d:: WRITE_ERR: %d\n", canMsgTimer.elapsed_time().count(), canResult);
     last_sent_tpdo = canMsgTimer.elapsed_time().count();
 
-    printf("CAN TX ERR CNT: %d\n", can.tderror());
+    //printf("CAN TX ERR CNT: %d\n", can.tderror());
 }

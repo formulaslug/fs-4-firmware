@@ -15,9 +15,11 @@ void WheelSpeed::onRiseISR() {
     teeth_passed_read++;
     teeth_passed = teeth_passed_read;
 
-    uint64_t _time_rise = timer.elapsed_time().count();
-    time_last_cycle = _time_rise - time_recent_tooth;
-    time_recent_tooth = _time_rise;
+    if (do_timer_wheelspeed){
+        uint64_t _time_rise = timer.elapsed_time().count();
+        time_last_cycle = _time_rise - time_recent_tooth;
+        time_recent_tooth = _time_rise;
+    }
 }
 
 // Gets current RPM
@@ -53,9 +55,16 @@ float WheelSpeed::update() {
         return 0.0;
     }
 
-    printf("Teeth Passed: %d\n", local_teeth_passed);
+    if (local_teeth_passed < 20) {
+        do_timer_wheelspeed = true;
+    } else {
+        do_timer_wheelspeed = false;
+    }
+
+    //printf("Teeth Passed: %d\n", local_teeth_passed);
     if (local_teeth_passed < 10){
-        printf("Time last cycle us: %d/n", local_time_last_cycle);
+        //printf("Time last cycle us: %d/n", local_time_last_cycle);
+
         return (60000000.0 / (local_time_last_cycle *  teeth_per_rev));
     }
 
