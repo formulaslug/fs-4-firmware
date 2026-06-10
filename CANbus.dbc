@@ -471,18 +471,18 @@ BO_ 720 VCU_VN_BODY_ACCEL: 6 VCU
  SG_ VCU_VN_BODY_AD : 32|16@1- (0.01,0) [-327.68|327.67] "m/s^2" Vector__XXX
 
 BO_ 976 VCU_VN_YPR: 6 VCU
- SG_ VCU_VN_NED_R : 0|16@1- (0.01,0) [-327.68|327.67] "deg" Vector__XXX
+ SG_ VCU_VN_NED_Y : 0|16@1- (0.01,0) [-327.68|327.67] "deg" Vector__XXX
  SG_ VCU_VN_NED_P : 16|16@1- (0.01,0) [-327.68|327.67] "deg" Vector__XXX
- SG_ VCU_VN_NED_Y : 32|16@1- (0.01,0) [-327.68|327.67] "deg" Vector__XXX
+ SG_ VCU_VN_NED_R : 32|16@1- (0.01,0) [-327.68|327.67] "deg" Vector__XXX
 
 BO_ 721 VCU_VN_LATLON: 8 VCU
  SG_ VCU_VN_LAT : 0|32@1- (1e-07,0) [-214.748|214.748] "" Vector__XXX
  SG_ VCU_VN_LON : 32|32@1- (1e-07,0) [-214.748|214.748] "" Vector__XXX
 
 BO_ 977 VCU_VN_BODY_GYRO: 6 VCU
- SG_ VCU_VN_BODY_WR : 0|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
+ SG_ VCU_VN_BODY_WY : 0|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
  SG_ VCU_VN_BODY_WP : 16|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
- SG_ VCU_VN_BODY_WY : 32|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
+ SG_ VCU_VN_BODY_WR : 32|16@1- (0.1,0) [-3276.8|3276.7] "deg/s" Vector__XXX
 
 BO_ 722 VCU_VN_VEL_BODY: 6 VCU
  SG_ VCU_VN_BODY_VX : 0|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
