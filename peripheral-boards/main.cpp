@@ -90,6 +90,7 @@ void sendCANtemp() {
     CANMessage tpdo_tiretemp_msg(cfg.tpdo_tiretemp_id, pixels8lh, 8);
     can.write(tpdo_tiretemp_msg);
     last_sent_temp = canMsgTimer.elapsed_time().count();
+    can.reset();
 }
 
 void sendCANtpdo() {

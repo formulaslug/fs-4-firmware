@@ -62,4 +62,4 @@ constexpr bool ok8 = true; // true; // To manually disable temp sensor if they f
 constexpr bool ok1 = false; // true;
 
 constexpr uint32_t CAN_FREQUENCY = 1000000; //2Mhz
-constexpr uint8_t TEETH_PER_REV = 60; // Double check this
+constexpr uint8_t TEETH_PER_REV = 24; // Double check this

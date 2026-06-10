@@ -15,7 +15,7 @@ void WheelSpeed::onRiseISR() {
     teeth_passed_read++;
     teeth_passed = teeth_passed_read;
 
-    if (do_timer_wheelspeed){
+    if (do_timer_wheelspeed) {
         uint64_t _time_rise = timer.elapsed_time().count();
         time_last_cycle = _time_rise - time_recent_tooth;
         time_recent_tooth = _time_rise;
@@ -32,13 +32,13 @@ float WheelSpeed::update() {
     // If the number of counted teeth is small, we return a speed based on the time between the last
     // two teeth
 
-    uint32_t now_us = timer.elapsed_time().count();
+    uint64_t now_us = timer.elapsed_time().count();
     if (start_us == 0) {
         start_us = now_us;
         teeth_passed = 0;
         return 0.0;
     }
-    uint32_t delta_us = now_us - start_us;
+    uint64_t delta_us = now_us - start_us;
     start_us = now_us;
 
     // Is running and should be called every 100hz
@@ -50,18 +50,20 @@ float WheelSpeed::update() {
     teeth_passed = 0;
     core_util_critical_section_exit();
 
-
-    if (now_us - local_recent_tooth > 200000) {
-        return 0.0;
-    }
-
     if (local_teeth_passed < 20) {
         do_timer_wheelspeed = true;
     } else {
         do_timer_wheelspeed = false;
     }
 
-    //printf("Teeth Passed: %d\n", local_teeth_passed);
+    if (!(local_recent_tooth > now_us) && now_us - local_recent_tooth > 200000) {
+        //printf("Nt %d %llu %llu %llu\n",local_teeth_passed, now_us, local_recent_tooth, now_us - local_recent_tooth);
+        return 0.0;
+    }
+
+
+
+    // printf("Tp: %d\n", local_teeth_passed);
     if (local_teeth_passed < 10){
         //printf("Time last cycle us: %d/n", local_time_last_cycle);
 
