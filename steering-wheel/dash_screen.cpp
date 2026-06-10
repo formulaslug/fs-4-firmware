@@ -361,11 +361,11 @@ void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, 
     // acc temp box
     drawRect(Point{100, 70}, Point{400, 170}, cellTempToColor(acc_temp), 32);
     setMainColor(black);
-    drawFormattedText(250, 120, "%d'C", 31, OPT_CENTER, acc_temp);
+    drawFormattedText(250, 120, "%d'C", 2, OPT_CENTER, acc_temp);
 
     // acc pack volt box
     // 	choose color
-    Color volt_box_color = blue;
+    Color volt_box_color = green;
     if (acc_volt < PACK_FLASH_VOLT) {
         if (tick % 2 == 0) volt_box_color = red;
         else
@@ -376,7 +376,7 @@ void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, 
         volt_box_color = yellow;
     //	draw box
     drawRect(Point{400, 70}, Point{700, 170}, volt_box_color, 32);
-    drawFormattedText(550, 120, "%d.%dV", 31, OPT_CENTER, acc_volt / 100, acc_volt % 100);
+    drawFormattedText(550, 120, "%d.%dV", 2, OPT_CENTER, acc_volt / 100, acc_volt % 100);
 
     // speedometer: convert motor RPM to km/h (gear ratio 11:40, wheel radius 0.190 m)
     float ground_speed = (11.0f / 40.0f) * (2.0f * M_PI * 0.190f) * speed * (60.0f / 1000.0f);
@@ -534,10 +534,7 @@ Color DashScreen::cellTempToColor(uint8_t temp) {
     if (temp > CELL_WARNING_TEMP) return red;
     else if (temp > CELL_NORMAL_TEMP)
         return yellow;
-    else if (temp > CELL_LOW_TEMP)
-        return green;
-    else
-        return blue;
+    else return green;
 }
 
 Color DashScreen::cellVoltToColor(uint16_t volt) {
