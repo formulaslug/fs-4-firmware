@@ -5,11 +5,6 @@
 #include "mbed.h"
 #include "pin_config.hpp"
 #include "vehicle_state.hpp"
-// I had to move these lines
-// BA_DEF_ "BusType" STRING ;
-// BA_DEF_DEF_ "BusType" "";
-// BA_ "BusType" "CAN";
-// Below the BO_
 
 DashScreen screen{
     PIN_MOSI, PIN_MISO, PIN_SCK, PIN_CS, PIN_PDN, PIN_IRQ, EvePresets::CFAF800480H0
@@ -18,7 +13,7 @@ CAN can{PIN_CAN_RX, PIN_CAN_TX, CAN_FREQUENCY};
 CANMessage msg;
 DigitalIn layoutBtn{PIN_LAYOUT};
 bool lastLayoutBtnState;
-DebouncedDigitalIn debouncedLayoutBtn{layoutBtn, 5};
+//DebouncedDigitalIn debouncedLayoutBtn{layoutBtn, 5};
 uint8_t currentScreen = 0;
 EventQueue queue = EventQueue{EVENTS_EVENT_SIZE * 32};
 AnalogIn driveDial{PIN_MODE};
@@ -55,7 +50,7 @@ int main() {
     can.attach(&canISR, CAN::RxIrq); // callback function to handle CAN interrupts
     queue.call_every(10ms, &readLayoutButton);
     queue.call_every(10ms, &readDials);
-    queue.call_every(10ms, &drawScreenLayout);
+    queue.call_every(10ms, &drawScreenLayout); //100hz
     queue.call_every(100ms, []() { tick++; }); //Lambda expression to increase ticks every 100ms, or I hope it runs every 100ms
     queue.call_every(1s, &readFPS);
     queue.dispatch_forever();
@@ -180,13 +175,16 @@ void drawScreenLayout() {
             (float)vsm_state.vcu_etc_brake_pressure_front,
             (float)vsm_state.vcu_etc_brake_pressure_rear
         );
+        printf("In thermal Screen");
         break;
     }
     case 2:
         screen.debugCellTemps(vsm_state.batt_mod_temps);
+        printf("In batt temps ");
         break;
     case 3:
         screen.debugCellVolts(vsm_state.batt_mod_volts);
+        printf("In batt volts ");
         break;
     case 4:
         printf("In Faults Display \n");
@@ -339,8 +337,8 @@ void processCANMessage() {
                 // vsm_state.batt_power_current             = t.BATT_POWER_CURRENT;
                 // vsm_state.batt_power_instantaneous_power = t.BATT_POWER_INSTANTANEOUS_POWER;
             } else if (msg.id == 0x393) { // BATT_TPDO_CELL_STATS
-                // raw has 0.2 scaling, divide by 5 to get °C
-                vsm_state.batt_stat_high_cell_temp = (uint8_t)(g_dbcc_state.can_0x393_BATT_TPDO_CELL_STATS.BATT_STAT_HIGH_CELL_TEMP / 5);
+                // raw has 0.25 scaling, divide by 4 to get °C
+                vsm_state.batt_stat_high_cell_temp = (uint8_t)(g_dbcc_state.can_0x393_BATT_TPDO_CELL_STATS.BATT_STAT_HIGH_CELL_TEMP / 4);
             } else if (msg.id == 0xa0001) { // VDM_GPS_DATA
                 vsm_state.vdm_gps_speed = g_dbcc_state.can_0xa0001_VDM_GPS_DATA.VDM_GPS_SPEED;
                 // vsm_state.vdm_gps_altitude          = g_dbcc_state.can_0xa0001_VDM_GPS_DATA.VDM_GPS_ALTITUDE;
@@ -441,47 +439,47 @@ void processCANMessage() {
                 vsm_state.batt_mod_volts[4][4] = m.BATT_MOD0_VOLTS_CELL4;
                 vsm_state.batt_mod_volts[4][5] = m.BATT_MOD0_VOLTS_CELL5;
             }
-            // Battery module temps (raw * 0.2 scaling, divide by 5 for °C, TEMPS_A only)
+            // Battery module temps (raw * 0.25 scaling, divide by 4 for °C, TEMPS_A only)
             else if (msg.id == 0x495) {
                 auto& m = g_dbcc_state.can_0x495_BATT_TPDO_MOD0_TEMPS_A;
-                vsm_state.batt_mod_temps[0][0] = m.BATT_MOD0_TEMPS_CELL0 / 5;
-                vsm_state.batt_mod_temps[0][1] = m.BATT_MOD0_TEMPS_CELL1 / 5;
-                vsm_state.batt_mod_temps[0][2] = m.BATT_MOD0_TEMPS_CELL2 / 5;
-                vsm_state.batt_mod_temps[0][3] = m.BATT_MOD0_TEMPS_CELL3 / 5;
-                vsm_state.batt_mod_temps[0][4] = m.BATT_MOD0_TEMPS_CELL4 / 5;
-                vsm_state.batt_mod_temps[0][5] = m.BATT_MOD0_TEMPS_CELL5 / 5;
+                vsm_state.batt_mod_temps[0][0] = m.BATT_MOD0_TEMPS_CELL0 / 4;
+                vsm_state.batt_mod_temps[0][1] = m.BATT_MOD0_TEMPS_CELL1 / 4;
+                vsm_state.batt_mod_temps[0][2] = m.BATT_MOD0_TEMPS_CELL2 / 4;
+                vsm_state.batt_mod_temps[0][3] = m.BATT_MOD0_TEMPS_CELL3 / 4;
+                vsm_state.batt_mod_temps[0][4] = m.BATT_MOD0_TEMPS_CELL4 / 4;
+                vsm_state.batt_mod_temps[0][5] = m.BATT_MOD0_TEMPS_CELL5 / 4;
             } else if (msg.id == 0x498) {
                 auto& m = g_dbcc_state.can_0x498_BATT_TPDO_MOD1_TEMPS_A;
-                vsm_state.batt_mod_temps[1][0] = m.BATT_MOD0_TEMPS_CELL0 / 5;
-                vsm_state.batt_mod_temps[1][1] = m.BATT_MOD0_TEMPS_CELL1 / 5;
-                vsm_state.batt_mod_temps[1][2] = m.BATT_MOD0_TEMPS_CELL2 / 5;
-                vsm_state.batt_mod_temps[1][3] = m.BATT_MOD0_TEMPS_CELL3 / 5;
-                vsm_state.batt_mod_temps[1][4] = m.BATT_MOD0_TEMPS_CELL4 / 5;
-                vsm_state.batt_mod_temps[1][5] = m.BATT_MOD0_TEMPS_CELL5 / 5;
+                vsm_state.batt_mod_temps[1][0] = m.BATT_MOD0_TEMPS_CELL0 / 4;
+                vsm_state.batt_mod_temps[1][1] = m.BATT_MOD0_TEMPS_CELL1 / 4;
+                vsm_state.batt_mod_temps[1][2] = m.BATT_MOD0_TEMPS_CELL2 / 4;
+                vsm_state.batt_mod_temps[1][3] = m.BATT_MOD0_TEMPS_CELL3 / 4;
+                vsm_state.batt_mod_temps[1][4] = m.BATT_MOD0_TEMPS_CELL4 / 4;
+                vsm_state.batt_mod_temps[1][5] = m.BATT_MOD0_TEMPS_CELL5 / 4;
             } else if (msg.id == 0x49b) {
                 auto& m = g_dbcc_state.can_0x49b_BATT_TPDO_MOD2_TEMPS_A;
-                vsm_state.batt_mod_temps[2][0] = m.BATT_MOD0_TEMPS_CELL0 / 5;
-                vsm_state.batt_mod_temps[2][1] = m.BATT_MOD0_TEMPS_CELL1 / 5;
-                vsm_state.batt_mod_temps[2][2] = m.BATT_MOD0_TEMPS_CELL2 / 5;
-                vsm_state.batt_mod_temps[2][3] = m.BATT_MOD0_TEMPS_CELL3 / 5;
-                vsm_state.batt_mod_temps[2][4] = m.BATT_MOD0_TEMPS_CELL4 / 5;
-                vsm_state.batt_mod_temps[2][5] = m.BATT_MOD0_TEMPS_CELL5 / 5;
+                vsm_state.batt_mod_temps[2][0] = m.BATT_MOD0_TEMPS_CELL0 / 4;
+                vsm_state.batt_mod_temps[2][1] = m.BATT_MOD0_TEMPS_CELL1 / 4;
+                vsm_state.batt_mod_temps[2][2] = m.BATT_MOD0_TEMPS_CELL2 / 4;
+                vsm_state.batt_mod_temps[2][3] = m.BATT_MOD0_TEMPS_CELL3 / 4;
+                vsm_state.batt_mod_temps[2][4] = m.BATT_MOD0_TEMPS_CELL4 / 4;
+                vsm_state.batt_mod_temps[2][5] = m.BATT_MOD0_TEMPS_CELL5 / 4;
             } else if (msg.id == 0x49e) {
                 auto& m = g_dbcc_state.can_0x49e_BATT_TPDO_MOD3_TEMPS_A;
-                vsm_state.batt_mod_temps[3][0] = m.BATT_MOD0_TEMPS_CELL0 / 5;
-                vsm_state.batt_mod_temps[3][1] = m.BATT_MOD0_TEMPS_CELL1 / 5;
-                vsm_state.batt_mod_temps[3][2] = m.BATT_MOD0_TEMPS_CELL2 / 5;
-                vsm_state.batt_mod_temps[3][3] = m.BATT_MOD0_TEMPS_CELL3 / 5;
-                vsm_state.batt_mod_temps[3][4] = m.BATT_MOD0_TEMPS_CELL4 / 5;
-                vsm_state.batt_mod_temps[3][5] = m.BATT_MOD0_TEMPS_CELL5 / 5;
+                vsm_state.batt_mod_temps[3][0] = m.BATT_MOD0_TEMPS_CELL0 / 4;
+                vsm_state.batt_mod_temps[3][1] = m.BATT_MOD0_TEMPS_CELL1 / 4;
+                vsm_state.batt_mod_temps[3][2] = m.BATT_MOD0_TEMPS_CELL2 / 4;
+                vsm_state.batt_mod_temps[3][3] = m.BATT_MOD0_TEMPS_CELL3 / 4;
+                vsm_state.batt_mod_temps[3][4] = m.BATT_MOD0_TEMPS_CELL4 / 4;
+                vsm_state.batt_mod_temps[3][5] = m.BATT_MOD0_TEMPS_CELL5 / 4;
             } else if (msg.id == 0x4a1) {
                 auto& m = g_dbcc_state.can_0x4a1_BATT_TPDO_MOD4_TEMPS_A;
-                vsm_state.batt_mod_temps[4][0] = m.BATT_MOD0_TEMPS_CELL0 / 5;
-                vsm_state.batt_mod_temps[4][1] = m.BATT_MOD0_TEMPS_CELL1 / 5;
-                vsm_state.batt_mod_temps[4][2] = m.BATT_MOD0_TEMPS_CELL2 / 5;
-                vsm_state.batt_mod_temps[4][3] = m.BATT_MOD0_TEMPS_CELL3 / 5;
-                vsm_state.batt_mod_temps[4][4] = m.BATT_MOD0_TEMPS_CELL4 / 5;
-                vsm_state.batt_mod_temps[4][5] = m.BATT_MOD0_TEMPS_CELL5 / 5;
+                vsm_state.batt_mod_temps[4][0] = m.BATT_MOD0_TEMPS_CELL0 / 4;
+                vsm_state.batt_mod_temps[4][1] = m.BATT_MOD0_TEMPS_CELL1 / 4;
+                vsm_state.batt_mod_temps[4][2] = m.BATT_MOD0_TEMPS_CELL2 / 4;
+                vsm_state.batt_mod_temps[4][3] = m.BATT_MOD0_TEMPS_CELL3 / 4;
+                vsm_state.batt_mod_temps[4][4] = m.BATT_MOD0_TEMPS_CELL4 / 4;
+                vsm_state.batt_mod_temps[4][5] = m.BATT_MOD0_TEMPS_CELL5 / 4;
             }
             // IZZE brake disc temps: raw * 0.1 - 100 = C
             // CH assignment: CH1=FL, CH5=FR, CH9=RL, CH13=RR (NOT SURE ABOUT THIS)
@@ -517,6 +515,7 @@ void sendCANMessage() {
     };
 
     CANMessage steering_msg{0x378u, steering_data, 1};
+    printf("sending CAN message");
     // can.write(steering_msg);
 }
 
