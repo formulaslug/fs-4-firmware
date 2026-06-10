@@ -361,11 +361,11 @@ void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, 
     // acc temp box
     drawRect(Point{100, 70}, Point{400, 170}, cellTempToColor(acc_temp), 32);
     setMainColor(black);
-    drawFormattedText(250, 120, "%d'C", 31, OPT_CENTER, acc_temp);
+    drawFormattedText(250, 120, "%d'C", 2, OPT_CENTER, acc_temp);
 
     // acc pack volt box
     // 	choose color
-    Color volt_box_color = blue;
+    Color volt_box_color = green;
     if (acc_volt < PACK_FLASH_VOLT) {
         if (tick % 2 == 0) volt_box_color = red;
         else
@@ -376,7 +376,7 @@ void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, 
         volt_box_color = yellow;
     //	draw box
     drawRect(Point{400, 70}, Point{700, 170}, volt_box_color, 32);
-    drawFormattedText(550, 120, "%d.%dV", 31, OPT_CENTER, acc_volt / 100, acc_volt % 100);
+    drawFormattedText(550, 120, "%d.%dV", 2, OPT_CENTER, acc_volt / 100, acc_volt % 100);
 
     // speedometer: convert motor RPM to km/h (gear ratio 11:40, wheel radius 0.190 m)
     float ground_speed = (11.0f / 40.0f) * (2.0f * M_PI * 0.190f) * speed * (60.0f / 1000.0f);
@@ -434,7 +434,7 @@ void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, 
     endFrame();
 }
 
-void DashScreen::debugCellTemps(const uint8_t seg_temps[5][6]) {
+void DashScreen::debugCellTemps(const uint8_t seg_temps_A[5][6], const uint8_t seg_temps_B[5][6]) {
     // initialize frame
     if (!startFrame()) return;
     clear(white.red, white.green, white.blue);
@@ -445,24 +445,32 @@ void DashScreen::debugCellTemps(const uint8_t seg_temps[5][6]) {
 
     // cell labels
     setMainColor(black);
-    int16_t x = 150;
-    for (uint8_t cell = 0; cell < 6; cell++) {
-        drawFormattedText(x, 84, "CELL%u", CELL_FONT, OPT_CENTER, cell);
-        x += CELL_WIDTH;
+    int16_t x = 125;
+    for (uint8_t cell = 0; cell < 12; cell++) {
+        drawFormattedText(x, 84, "C%u", CELL_FONT, OPT_CENTER, cell);
+        x += CELL_WIDTH / 2;
     }
 
     // draw grid
     uint16_t y = 118;
     for (uint8_t seg = 0; seg < 5; seg++) {
         // segment label
-        drawFormattedText(50, y + (CELL_HEIGHT / 2), "SEG%u", CELL_FONT, OPT_CENTER, seg);
+        drawFormattedText(50, y + (CELL_HEIGHT / 2), "MOD%u", CELL_FONT, OPT_CENTER, seg);
         // cells
-        drawTempCell(100, y, seg_temps[seg][0]);
-        drawTempCell(200, y, seg_temps[seg][1]);
-        drawTempCell(300, y, seg_temps[seg][2]);
-        drawTempCell(400, y, seg_temps[seg][3]);
-        drawTempCell(500, y, seg_temps[seg][4]);
-        drawTempCell(600, y, seg_temps[seg][5]);
+        drawTempCell(100, y, seg_temps_A[seg][0]);
+        drawTempCell(150, y, seg_temps_A[seg][1]);
+        drawTempCell(200, y, seg_temps_A[seg][2]);
+        drawTempCell(250, y, seg_temps_A[seg][3]);
+        drawTempCell(300, y, seg_temps_A[seg][4]);
+        drawTempCell(350, y, seg_temps_A[seg][5]);
+
+        drawTempCell(400, y, seg_temps_B[seg][0]);
+        drawTempCell(450, y, seg_temps_B[seg][1]);
+        drawTempCell(500, y, seg_temps_B[seg][2]);
+        drawTempCell(550, y, seg_temps_B[seg][3]);
+        drawTempCell(600, y, seg_temps_B[seg][4]);
+        drawTempCell(650, y, seg_temps_B[seg][5]);
+
         y += CELL_HEIGHT;
     }
 
@@ -490,7 +498,7 @@ void DashScreen::debugCellVolts(const uint8_t seg_volts[5][6]) {
     uint16_t y = 118;
     for (uint8_t seg = 0; seg < 5; seg++) {
         // segment label
-        drawFormattedText(50, y + (CELL_HEIGHT / 2), "SEG%u", CELL_FONT, OPT_CENTER, seg);
+        drawFormattedText(50, y + (CELL_HEIGHT / 2), "MOD%u", CELL_FONT, OPT_CENTER, seg);
         // cells
         drawVoltCell(100, y, (seg_volts[seg][0] * 2550 / 255) + 2000);
         drawVoltCell(200, y, (seg_volts[seg][1] * 2550 / 255) + 2000);
@@ -505,12 +513,12 @@ void DashScreen::debugCellVolts(const uint8_t seg_volts[5][6]) {
 }
 
 void DashScreen::drawTempCell(uint16_t x, uint16_t y, uint8_t temp) {
-    uint16_t br_x = x + CELL_WIDTH, br_y = y + CELL_HEIGHT;
+    uint16_t br_x = x + (CELL_WIDTH / 2), br_y = y + CELL_HEIGHT;
     // draw cell
     drawRect(Point{x, y}, Point{br_x, br_y}, cellTempToColor(temp), 32);
     // draw cell text
     setMainColor(black);
-    drawFormattedText(x + (CELL_WIDTH / 2), y + (CELL_HEIGHT / 2), "%u", CELL_FONT, OPT_CENTER, temp);
+    drawFormattedText(x + (CELL_WIDTH / 4), y + (CELL_HEIGHT / 2), "%u", CELL_FONT, OPT_CENTER, temp);
 }
 
 void DashScreen::drawVoltCell(uint16_t x, uint16_t y, uint16_t volt) {
@@ -526,10 +534,7 @@ Color DashScreen::cellTempToColor(uint8_t temp) {
     if (temp > CELL_WARNING_TEMP) return red;
     else if (temp > CELL_NORMAL_TEMP)
         return yellow;
-    else if (temp > CELL_LOW_TEMP)
-        return green;
-    else
-        return blue;
+    else return green;
 }
 
 Color DashScreen::cellVoltToColor(uint16_t volt) {
