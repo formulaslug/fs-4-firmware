@@ -1,17 +1,15 @@
-#include "mbed.h"
 #include "etc_controller.h"
+#include "mbed.h"
 
 EventQueue etc_queue;
-EventQueue sme_queue;
 EventQueue imu_queue;
-Thread etc_queue_thread;
-Thread sme_queue_thread;
+Thread etc_thread;
 Thread imu_queue_thread;
 
 CAN canP{PB_8, PB_9, 500000};
-CAN canD{PB_5, PB_6, 2000000}; // using both by sending the messages in parallel, but not sure if this is correct usage
+// CAN canD{PB_5, PB_6, 1000000}; // using both by sending the messages in parallel, but not sure if this is correct usage
 ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4, PC_12, PD_2};
-const ETCState &etc_state = etc.state;
+const ETCState& etc_state = etc.state;
 
 void send_etc_CAN_messages();
 void send_sme_CAN_messages();
@@ -23,35 +21,35 @@ constexpr float RAD_TO_DEG = 57.2957795f;
 }
 
 int main() {
+
     printf("Hello World!!\n");
 
     etc_queue.call_every(50ms, &send_etc_CAN_messages);
-    sme_queue.call_every(40ms, &send_sme_CAN_messages);
-    imu_queue.call_every(10ms, &send_imu_CAN_messages_fast); // 100Hz
-    imu_queue.call_every(20ms, &send_imu_CAN_messages_slow); // 50Hz
-    etc_queue_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
-    sme_queue_thread.start(callback(&sme_queue, &EventQueue::dispatch_forever));
-    imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
+    etc_queue.call_every(40ms, &send_sme_CAN_messages);
+    // imu_queue.call_every(10ms, &send_imu_CAN_messages_fast); // 100Hz
+    // imu_queue.call_every(20ms, &send_imu_CAN_messages_slow); // 50Hz
+    etc_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
+    // imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
 
     CANMessage rx;
     while (true) {
         if (canP.read(rx)) { // currently just reads from 1, but maybe make this both for possible optimization?
             switch (rx.id) {
-                case 392: {
-                    etc.battery_precharged = rx.data[0] & 0b00000010; 
-                    etc.shutdown_closed = rx.data[0] & 0b00100000; 
-                    break;
-                }
-                case 1154: {
-                    uint16_t wheel_rpm = rx.data[0] | (rx.data[1] << 8); 
-                    float wheel_radius = 0.190f;
-                    float ground_speed = (11 / 40.0f) * ( 2 * M_PI * wheel_radius); // gear ratio * circumference
-                    ground_speed *= wheel_rpm; // meters / minute
-                    ground_speed *= 60.0f / 1000.0f; // km / hr
+            case 913: { // BATT_TPDO_STATUS
+                etc.battery_precharged = rx.data[0] & 0b01000000;
+                etc.shutdown_closed = rx.data[0] & 0b00000100;
+                break;
+            }
+            case 1154: { // SME_TPDO_Torque_speed
+                uint16_t wheel_rpm = rx.data[0] | (rx.data[1] << 8);
+                float wheel_radius = 0.190f;
+                float ground_speed = (11 / 40.0f) * (2 * M_PI * wheel_radius); // gear ratio * circumference
+                ground_speed *= wheel_rpm;                                     // meters / minute
+                ground_speed *= 60.0f / 1000.0f;                               // km / hr
 
-                    etc.update_regen_state(ground_speed);
-                    break;
-                }
+                etc.update_regen_state(ground_speed);
+                break;
+            }
             }
         }
 
@@ -62,68 +60,67 @@ int main() {
 }
 
 void send_etc_CAN_messages() {
-    uint8_t buf0[8];
+    uint8_t tpdo_pedal_travel[8];
     uint16_t APPS1_scaled_voltage = static_cast<uint16_t>(etc_state.APPS1_voltage * 1000);
     uint16_t APPS2_scaled_voltage = static_cast<uint16_t>(etc_state.APPS2_voltage * 1000);
     uint16_t BPPS_scaled_voltage = static_cast<uint16_t>(etc_state.BPPS_voltage * 1000);
-    buf0[0] = APPS1_scaled_voltage & 0xFF;
-    buf0[1] = APPS1_scaled_voltage >> 8;
-    buf0[2] = APPS2_scaled_voltage & 0xFF;
-    buf0[3] = APPS2_scaled_voltage >> 8;
-    buf0[4] = BPPS_scaled_voltage & 0xFF;
-    buf0[5] = BPPS_scaled_voltage >> 8;
-    buf0[6] = static_cast<uint8_t>(etc_state.APPS_position_avg * 100);
-    buf0[7] = static_cast<uint8_t>(etc_state.BPPS_position * 100);
+    tpdo_pedal_travel[0] = APPS1_scaled_voltage & 0xFF;
+    tpdo_pedal_travel[1] = APPS1_scaled_voltage >> 8;
+    tpdo_pedal_travel[2] = APPS2_scaled_voltage & 0xFF;
+    tpdo_pedal_travel[3] = APPS2_scaled_voltage >> 8;
+    tpdo_pedal_travel[4] = BPPS_scaled_voltage & 0xFF;
+    tpdo_pedal_travel[5] = BPPS_scaled_voltage >> 8;
+    tpdo_pedal_travel[6] = static_cast<uint8_t>(etc_state.APPS_position_avg * 100);
+    tpdo_pedal_travel[7] = static_cast<uint8_t>(etc_state.BPPS_position * 100);
 
-    uint8_t buf1[8];
+    uint8_t tpdo_status[8];
     uint16_t front_BSE_scaled_voltage = static_cast<uint16_t>(etc_state.front_BSE_voltage * 1000);
     uint16_t rear_BSE_scaled_voltage = static_cast<uint16_t>(etc_state.rear_BSE_voltage * 1000);
-    buf1[0] = front_BSE_scaled_voltage & 0xFF;
-    buf1[1] = front_BSE_scaled_voltage >> 8;
-    buf1[2] = rear_BSE_scaled_voltage & 0xFF;
-    buf1[3] = rear_BSE_scaled_voltage >> 8;
-    buf1[4] = etc_state.ready_to_drive |
-        (etc_state.motor_enabled << 1) |
-        (etc_state.rtd_button_pressed << 2) |
-        (etc.battery_precharged << 3) |
-        (etc_state.implaus_APPS_range << 4) |
-        (etc_state.implaus_BPPS_range << 5) |
-        (etc_state.implaus_APPS_deviation << 6) |
-        (etc_state.implaus_BSE_range << 7);
-    buf1[5] = etc_state.implaus_brake_and_accel |
-        (etc_state.reversing << 1) | // NEED REVERSE
-        (etc_state.brakelight_enabled << 2) |
-        (etc_state.can_regen << 3) |
-        (etc_state.must_use_hydraulic_brakes << 4);
+    tpdo_status[0] = front_BSE_scaled_voltage & 0xFF;
+    tpdo_status[1] = front_BSE_scaled_voltage >> 8;
+    tpdo_status[2] = rear_BSE_scaled_voltage & 0xFF;
+    tpdo_status[3] = rear_BSE_scaled_voltage >> 8;
+    tpdo_status[4] = etc_state.ready_to_drive |
+                     (etc_state.motor_enabled << 1) |
+                     0 /*(etc_state.rtd_button_pressed << 2)*/ |
+                     (etc.battery_precharged << 3) |
+                     (etc_state.implaus_APPS_range << 4) |
+                     (etc_state.implaus_BPPS_range << 5) |
+                     (etc_state.implaus_APPS_deviation << 6) |
+                     (etc_state.implaus_BSE_range << 7);
+    tpdo_status[5] = etc_state.implaus_brake_and_accel |
+                     (etc_state.reversing << 1) | // NEED REVERSE
+                     (etc_state.brakelight_enabled << 2) |
+                     (etc_state.regen_allowed << 3) |
+                     (etc_state.solenoid_open << 4);
 
-    CANMessage status1_msg{393, buf0, 8};
-    CANMessage status2_msg{394, buf1, 6};
-    canD.write(status1_msg);
-    canD.write(status2_msg);
+    CANMessage msg1{402, tpdo_pedal_travel, 8};
+    CANMessage msg2{403, tpdo_status, 8};
+    canP.write(msg1);
+    canP.write(msg2);
 }
 
 void send_sme_CAN_messages() {
     etc.update_mbb_alive();
 
-    uint8_t buf0[8];
-    buf0[0] = etc_state.motor_torque & 0xFF;
-    buf0[1] = etc_state.motor_torque >> 8;
-    buf0[2] = etc_state.MAX_SPEED & 0xFF;
-    buf0[3] = etc_state.MAX_SPEED >> 8;
-    buf0[4] = !etc_state.reversing |
-        (etc_state.reversing << 1) |
-        (etc_state.motor_enabled << 3);
-    buf0[5] = etc_state.mbb_alive;
+    uint8_t tpdo_throttle_demand[8];
+    tpdo_throttle_demand[0] = etc_state.motor_torque & 0xFF;
+    tpdo_throttle_demand[1] = etc_state.motor_torque >> 8;
+    tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
+    tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
+    tpdo_throttle_demand[4] = !etc_state.reversing |
+                              (etc_state.reversing << 1) |
+                              (etc_state.motor_enabled << 3);
+    tpdo_throttle_demand[5] = etc_state.mbb_alive;
 
-    uint8_t buf1[8];
-    buf1[0] = etc_state.CHARGE_CURRENT_LIMIT & 0xFF;
-    buf1[1] = etc_state.CHARGE_CURRENT_LIMIT >> 8;
-    buf1[2] = etc_state.DISCHARGE_CURRENT_LIMIT & 0xFF;
-    buf1[3] = etc_state.DISCHARGE_CURRENT_LIMIT >> 8;
+    uint8_t tpdo_max_currents[8];
+    tpdo_max_currents[0] = etc_state.CHARGE_CURRENT_LIMIT & 0xFF;
+    tpdo_max_currents[1] = etc_state.CHARGE_CURRENT_LIMIT >> 8;
+    tpdo_max_currents[2] = etc_state.DISCHARGE_CURRENT_LIMIT & 0xFF;
+    tpdo_max_currents[3] = etc_state.DISCHARGE_CURRENT_LIMIT >> 8;
 
-
-    CANMessage throttle_msg{390, buf0, 8};
-    CANMessage currents_msg{646, buf1, 8};
+    CANMessage throttle_msg{390, tpdo_throttle_demand, 8};
+    CANMessage currents_msg{646, tpdo_max_currents, 8};
 
     canP.write(throttle_msg);
     canP.write(currents_msg);
@@ -131,9 +128,9 @@ void send_sme_CAN_messages() {
 
 void send_imu_CAN_messages_slow() {
     uint8_t buf_ypr[6];
-    int16_t yaw   = static_cast<int16_t>(etc_state.vectornav.ypr.yaw   * 100);
+    int16_t yaw = static_cast<int16_t>(etc_state.vectornav.ypr.yaw * 100);
     int16_t pitch = static_cast<int16_t>(etc_state.vectornav.ypr.pitch * 100);
-    int16_t roll  = static_cast<int16_t>(etc_state.vectornav.ypr.roll  * 100);
+    int16_t roll = static_cast<int16_t>(etc_state.vectornav.ypr.roll * 100);
     buf_ypr[0] = yaw & 0xFF;
     buf_ypr[1] = yaw >> 8;
     buf_ypr[2] = pitch & 0xFF;
@@ -155,31 +152,31 @@ void send_imu_CAN_messages_slow() {
     uint8_t buf_latlon[8];
     int32_t lat = static_cast<int32_t>(etc_state.vectornav.pos.lat * 1e7);
     int32_t lon = static_cast<int32_t>(etc_state.vectornav.pos.lon * 1e7);
-    buf_latlon[0] =  lat        & 0xFF;
-    buf_latlon[1] = (lat >> 8)  & 0xFF;
+    buf_latlon[0] = lat & 0xFF;
+    buf_latlon[1] = (lat >> 8) & 0xFF;
     buf_latlon[2] = (lat >> 16) & 0xFF;
     buf_latlon[3] = (lat >> 24) & 0xFF;
-    buf_latlon[4] =  lon        & 0xFF;
-    buf_latlon[5] = (lon >> 8)  & 0xFF;
+    buf_latlon[4] = lon & 0xFF;
+    buf_latlon[5] = (lon >> 8) & 0xFF;
     buf_latlon[6] = (lon >> 16) & 0xFF;
     buf_latlon[7] = (lon >> 24) & 0xFF;
 
     uint8_t buf_alt[4];
     int32_t alt = static_cast<int32_t>(etc_state.vectornav.pos.alt * 1000);
-    buf_alt[0] =  alt        & 0xFF;
-    buf_alt[1] = (alt >> 8)  & 0xFF;
+    buf_alt[0] = alt & 0xFF;
+    buf_alt[1] = (alt >> 8) & 0xFF;
     buf_alt[2] = (alt >> 16) & 0xFF;
     buf_alt[3] = (alt >> 24) & 0xFF;
 
-    CANMessage ypr_msg    {0x3D0, buf_ypr,    6};
-    CANMessage vel_msg    {0x2D2, buf_vel,     6};
-    CANMessage latlon_msg {0x2D1, buf_latlon,  8};
-    CANMessage alt_msg    {0x3D2, buf_alt,     4};
+    CANMessage ypr_msg{0x3D0, buf_ypr, 6};
+    CANMessage vel_msg{0x2D2, buf_vel, 6};
+    CANMessage latlon_msg{0x2D1, buf_latlon, 8};
+    CANMessage alt_msg{0x3D2, buf_alt, 4};
 
-    canD.write(ypr_msg);
-    canD.write(vel_msg);
-    canD.write(latlon_msg);
-    canD.write(alt_msg);
+    // canD.write(ypr_msg);
+    // canD.write(vel_msg);
+    // canD.write(latlon_msg);
+    // canD.write(alt_msg);
 }
 
 void send_imu_CAN_messages_fast() {
@@ -205,9 +202,13 @@ void send_imu_CAN_messages_fast() {
     buf_gyro[4] = wz & 0xFF;
     buf_gyro[5] = wz >> 8;
 
-    CANMessage accel_msg  {0x2D0, buf_accel,  6};
-    CANMessage gyro_msg   {0x3D1, buf_gyro,   6};
+    CANMessage accel_msg{0x2D0, buf_accel, 6};
+    CANMessage gyro_msg{0x3D1, buf_gyro, 6};
 
-    canD.write(accel_msg);
-    canD.write(gyro_msg);
-}   
+    // canD.write(accel_msg);
+    // canD.write(gyro_msg);
+}
+
+void send_sync() {
+    canP.write(CANMessage{0x80, (uint8_t*)nullptr, 0});
+}
