@@ -67,7 +67,7 @@ void ETCController::update_state() {
         state.motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
     }
 
-    if (state.traction_mode != 0 && state.motor_torque > 0) {
+    if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.motor_torque > 0) {
       state.motor_torque = static_cast<int16_t>(state.motor_torque * state.tc_torque_reduction_factor);
     }
 

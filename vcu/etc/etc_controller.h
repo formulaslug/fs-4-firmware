@@ -128,6 +128,7 @@ private:
     static constexpr int16_t MAX_REGEN_TORQUE = 32767;
 
     static constexpr bool REGEN_FORCE_DISABLE = true;
+    static constexpr bool TRACTION_CONTROL_FORCE_DISABLE = true;
     static constexpr bool SOLENOID_FORCE_CLOSED = true; // closed = brake fluid can flow = default state
 
     Timer implaus_APPS_deviation_timer;
