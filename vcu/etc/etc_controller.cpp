@@ -30,7 +30,7 @@ ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_
     solenoid.write(0);
     brakelight.write(0);
 
-    rtd_button.rise(callback(this, &ETCController::toggle_rtd));
+    //rtd_button.rise(callback(this, &ETCController::toggle_rtd));
 
     // spawns new thread for imu listener
     // CHECK_VN_ERR(vn_imu.connect());
@@ -54,8 +54,8 @@ void ETCController::update_state() {
     state.front_BSE_voltage = front_BSE_input.read_voltage();
     state.rear_BSE_voltage = rear_BSE_input.read_voltage();
 
-    state.APPS1_position = clamp((state.APPS1_voltage - APPS1_MIN_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE));
-    state.APPS2_position = clamp((state.APPS2_voltage - APPS2_MIN_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE));
+    state.APPS1_position = clamp((state.APPS1_voltage - APPS1_DEADZONE_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE));
+    state.APPS2_position = clamp((state.APPS2_voltage - APPS2_DEADZONE_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE));
     state.BPPS_position = clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
 
@@ -73,14 +73,16 @@ void ETCController::update_state() {
     state.solenoid_open = SOLENOID_FORCE_CLOSED ? false : state.regen_allowed;
     solenoid.write(state.solenoid_open);
 
+    bool _rtd_state = state.rtd_button_pressed;
     state.rtd_button_pressed = rtd_button.read();
+    if(_rtd_state == 0 && state.rtd_button_pressed == 1) {
+        toggle_rtd();
+    }
 
-    state.mbb_alive = state.mbb_alive >= 15 ? 0 : state.mbb_alive + 1;
-    
     // vn_imu.refreshDataToState(state.vectornav);
 }
 
-void ETCController::update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus) { 
+void ETCController::update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus) {
     if (implaus_state) {
         if (etc_implaus) { return; }
 
@@ -136,12 +138,14 @@ void ETCController::update_implaus() {
 
 // Called in the rise irq for rtd_button
 void ETCController::toggle_rtd() {
+    printf("RTD EVAL %d\n", state.ready_to_drive);
     if (!state.ready_to_drive) {
         // TS_READY determined by battery CAN messages saying that precharge is done
         // and shutdown closed
-        ts_ready = true || (battery_precharged && shutdown_closed);
-
+        ts_ready = (battery_precharged && shutdown_closed);
+        printf("BPPS: %f\n", state.BPPS_position);
         if (ts_ready && state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT) {
+            printf("RTD Should be actve...?\n");
             state.ready_to_drive = true;
             rtd_light.write(true);
             rtd_buzzer.write(1);

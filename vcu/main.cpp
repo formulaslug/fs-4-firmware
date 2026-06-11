@@ -43,14 +43,10 @@ int main() {
                 rx
             )) { // currently just reads from 1, but maybe make this both for possible optimization?
             switch (rx.id) {
-            case 392: {
-                etc.battery_precharged = rx.data[0] & 0b00000010;
-                etc.shutdown_closed = rx.data[0] & 0b00100000;
-                break;
-            }
-            case 913: { // BATT_TPDO_STATUS
+            case 0x391: {
                 etc.battery_precharged = rx.data[0] & 0b01000000;
                 etc.shutdown_closed = rx.data[0] & 0b00000100;
+                //printf("battery precharged: %d, shutdown closed: %d\n", etc.battery_precharged, etc.shutdown_closed);
                 break;
             }
             case 1154: { // SME_TPDO_Torque_speed

@@ -37,7 +37,7 @@ struct ETCState {
     // solenoid_open: false means the solenoid will be closed (default state)
     // and lets hydraulic brake pressure pass, but true means the solenoid will
     // open and NOT let hydraulic brake pressure through
-    bool solenoid_open = false; 
+    bool solenoid_open = false;
     bool reversing = false; // CURRENTLY ISN'T IMPLEMENTED
     bool brakelight_enabled = false;
     // VectornavState vectornav;
@@ -90,9 +90,11 @@ private:
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
 
     static constexpr float APPS1_MIN_VOLTAGE = 0.370f;
+    static constexpr float APPS1_DEADZONE_VOLTAGE = 0.410f;
     static constexpr float APPS1_MAX_VOLTAGE = 1.040f;
 
     static constexpr float APPS2_MIN_VOLTAGE = 0.430f;
+    static constexpr float APPS2_DEADZONE_VOLTAGE = 0.45f;
     static constexpr float APPS2_MAX_VOLTAGE = 1.067f;
 
     static constexpr float BPPS_MIN_VOLTAGE = 0.570f;
@@ -107,8 +109,8 @@ private:
     static constexpr float FRONT_BSE_ACTIVATION_VOLTAGE = 0.5f;
     static constexpr float REAR_BSE_ACTIVATION_VOLTAGE = 0.5f;
     static constexpr float BPPS_MAX_NON_REGEN_BRAKING = 0.9f;
-    
-    static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.12f;
+
+    static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.08f;
     static constexpr float MAX_APPS_POSITION_DEVIATION = 0.10f;
 
     static constexpr int16_t MAX_TORQUE = 32767;
@@ -136,7 +138,7 @@ private:
 
     void update_implaus();
 
-    void update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus); 
+    void update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus);
 
     void toggle_rtd();
 };
