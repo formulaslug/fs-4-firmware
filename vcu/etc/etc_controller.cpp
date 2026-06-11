@@ -73,9 +73,9 @@ void ETCController::update_state() {
     state.solenoid_open = SOLENOID_FORCE_CLOSED ? false : state.regen_allowed;
     solenoid.write(state.solenoid_open);
 
-    bool _rtd_state = state.rtd_button_pressed;
+    bool _rtd_button_state = state.rtd_button_pressed;
     state.rtd_button_pressed = rtd_button.read();
-    if(_rtd_state == 0 && state.rtd_button_pressed == 1) {
+    if(_rtd_button_state == 0 && state.rtd_button_pressed == 1) {
         toggle_rtd();
     }
 
@@ -126,6 +126,11 @@ void ETCController::update_implaus() {
     if (state.implaus_brake_and_accel && state.APPS_position_avg < 0.05f) {
         state.implaus_brake_and_accel = false;
     }
+
+    if (!state.ready_to_drive) {
+        state.motor_enabled = false;
+    }
+
     if (implaus_brake_and_accel) {
         state.implaus_brake_and_accel = true;
         state.motor_enabled = false;
