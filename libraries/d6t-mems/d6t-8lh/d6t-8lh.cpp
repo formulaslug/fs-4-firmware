@@ -19,17 +19,22 @@ int16_t D6T8LH::le_s16(const uint8_t *buf, int n) {
 }
 
 // PEC check
-bool D6T8LH::pec_ok(const uint8_t* buf, int payload_len) {
-    // start CRC using I2C read address byte
-    uint8_t crc = calc_crc((ADDR7 << 1) | 1);
-    // fold in payload bytes
+bool D6T8LH::pec_ok(const uint8_t* buf, int payload_len)
+{
+    uint8_t crc;
+
+    crc = calc_crc((ADDR7 << 1) | 0);      // write address
+    crc = calc_crc(CMD ^ crc);             // command (0x4C)
+    crc = calc_crc((ADDR7 << 1) | 1 ^ crc);// read address
+
     for (int i = 0; i < payload_len; i++) {
         crc = calc_crc(buf[i] ^ crc);
     }
-    return (crc == buf[payload_len]);
+
+    return crc == buf[payload_len];
 }
 
-bool D6T8LH::setup() {
+int D6T8LH::setup() {
     // mbed I2C needs 8-bit address
     const int addr8 = (ADDR7 << 1);
 
@@ -53,15 +58,15 @@ bool D6T8LH::read() {
     // write the command byte, then repeated-start read
     char cmd = (char)CMD;
     if (_i2c.write(addr8, &cmd, 1, true) != 0) {
-        return false;
+        return 1;
     }
     //read the full packet into rbuf
     if (_i2c.read(addr8, (char*)_rbuf, N_READ, false) != 0) {
-        return false;
+        return 2;
     }
     //PEC check (payload is N_READ-1 bytes)
     if (!pec_ok(_rbuf, N_READ - 1)) {
-        return false;
+        return 3;
     }
 
     _ptat_c = (double)le_s16(_rbuf, 0) / 10.0;
@@ -71,5 +76,5 @@ bool D6T8LH::read() {
         _pix_c[i] = (double)raw / 5.0;
     }
 
-    return true;
+    return 0;
 }
