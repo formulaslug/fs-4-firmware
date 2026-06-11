@@ -21,8 +21,7 @@ struct ETCState {
     float BPPS_position = 0.0f; // 0 to 1
     float front_BSE_voltage = 0.0f;
     float rear_BSE_voltage = 0.0f;
-    int16_t regen_torque = 0.0f;
-    int16_t motor_torque = 0.0f;
+    int16_t motor_torque = 0.0f; // -32767 to 32768
     int16_t MAX_SPEED = 7500;
     uint16_t CHARGE_CURRENT_LIMIT = 150;
     uint16_t DISCHARGE_CURRENT_LIMIT = 600;
@@ -30,32 +29,32 @@ struct ETCState {
     bool rtd_button_pressed = false;
     bool ready_to_drive = false;
     bool motor_enabled = false;
-    bool ts_active = false;
     bool implaus_APPS_deviation = false;
     bool implaus_APPS_range = false;
     bool implaus_BPPS_range = false;
     bool implaus_BSE_range = false;
     bool implaus_brake_and_accel = false;
-    bool can_regen = false;
-    bool is_regening = false;
-    bool solenoid_open = false; // false means the solenoid will be closed (default state) and lets hydraulic brake pressure pass, but true means the solenoid will open and NOT let hydraulic brake pressure through
-    bool must_use_hydraulic_brakes = false;
+    bool regen_allowed = false;
+    // solenoid_open: false means the solenoid will be closed (default state)
+    // and lets hydraulic brake pressure pass, but true means the solenoid will
+    // open and NOT let hydraulic brake pressure through
+    bool solenoid_open = false;
     bool reversing = false; // CURRENTLY ISN'T IMPLEMENTED
     bool brakelight_enabled = false;
     float wheel_rpm_fl = 0.0f;
     float wheel_rpm_fr = 0.0f;
     float wheel_rpm_bl = 0.0f;
     float wheel_rpm_br = 0.0f;
-    VectornavState vectornav;
+    //VectornavState vectornav;
     uint8_t drive_mode = 0;
     uint8_t traction_mode = 0;
     uint8_t regen_mode = 0;
-
 };
 
 class ETCController {
 public:
     ETCState state;
+    // Set during CAN reads in main
     bool battery_precharged = false;
     bool shutdown_closed = false;
     TractionController traction_controller;
@@ -64,13 +63,13 @@ public:
 
     void update_state();
 
-    void update_rtd();
-
     void update_regen_state(float speed);
 
     void set_regen_torque(bool is_regening, bool solenoid_open, int16_t regen_torque);
 
     void update_mbb_alive();
+    
+    DigitalOut rtd_light;
 
 private:
     AnalogIn unfiltered_APPS1_input;
@@ -84,25 +83,31 @@ private:
     AnalogIn unfiltered_rear_BSE_input;
     FilteredAnalogIn rear_BSE_input;
 
-    DigitalIn unfiltered_rtd_button;
-    DebouncedDigitalIn rtd_button;
+    // DigitalIn unfiltered_rtd_button;
+    // DebouncedDigitalIn rtd_button;
+    InterruptIn rtd_button;
 
-    DigitalOut rtd_light;
     DigitalOut rtd_buzzer;
     DigitalOut solenoid;
     DigitalOut brakelight;
 
     Timeout rtd_buzzer_timeout;
+    // Makes it so that update_rtd only occurs on every rise
+    bool rtd_button_last_state = false;
+
+    bool ts_ready = false;
 
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
 
-    static constexpr float APPS1_MIN_VOLTAGE = 0.3125f;
-    static constexpr float APPS1_MAX_VOLTAGE = 2.8125f;
+    static constexpr float APPS1_MIN_VOLTAGE = 0.370f;
+    static constexpr float APPS1_DEADZONE_VOLTAGE = 0.410f;
+    static constexpr float APPS1_MAX_VOLTAGE = 1.040f;
 
-    static constexpr float APPS2_MIN_VOLTAGE = 0.1875f;
-    static constexpr float APPS2_MAX_VOLTAGE = 1.6875f;
+    static constexpr float APPS2_MIN_VOLTAGE = 0.430f;
+    static constexpr float APPS2_DEADZONE_VOLTAGE = 0.45f;
+    static constexpr float APPS2_MAX_VOLTAGE = 1.067f;
 
-    static constexpr float BPPS_MIN_VOLTAGE = 0.3125f;
+    static constexpr float BPPS_MIN_VOLTAGE = 0.570f;
     static constexpr float BPPS_MAX_VOLTAGE = 2.8125f;
 
     static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
@@ -114,13 +119,15 @@ private:
     static constexpr float FRONT_BSE_ACTIVATION_VOLTAGE = 0.5f;
     static constexpr float REAR_BSE_ACTIVATION_VOLTAGE = 0.5f;
     static constexpr float BPPS_MAX_NON_REGEN_BRAKING = 0.9f;
-    
-    static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.1f;
+
+    static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.08f;
     static constexpr float MAX_APPS_POSITION_DEVIATION = 0.10f;
 
-    static constexpr int16_t MAX_TORQUE = 30000;
+    static constexpr int16_t MAX_TORQUE = 32767;
+    static constexpr int16_t MAX_REGEN_TORQUE = 32767;
 
-    bool rtd_button_rise = false; // makes it so that update_rtd only occurs on every rise
+    static constexpr bool REGEN_FORCE_DISABLE = true;
+    static constexpr bool SOLENOID_FORCE_CLOSED = true; // closed = brake fluid can flow = default state
 
     Timer implaus_APPS_deviation_timer;
     Timer implaus_APPS_range_timer;
@@ -141,9 +148,9 @@ private:
 
     void update_implaus();
 
-    void update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus); 
+    void update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus);
 
-    void toggle_rtd(bool rtd_state);
+    void toggle_rtd();
 };
 
 #endif

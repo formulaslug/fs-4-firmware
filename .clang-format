@@ -1,9 +1,17 @@
 IndentWidth: 4
 BasedOnStyle: LLVM
-ColumnLimit: 0
-AllowShortIfStatementsOnASingleLine: Always
-AllowShortBlocksOnASingleLine: Always
+ColumnLimit: 100
 IndentAccessModifiers: false
 AccessModifierOffset: -4
-AlignAfterOpenBracket: BlockIndent # DontAlign
 PointerAlignment: Left
+BinPackParameters: false
+BinPackArguments: false
+PackConstructorInitializers: NextLineOnly
+AlignAfterOpenBracket: BlockIndent # DontAlign
+AllowShortIfStatementsOnASingleLine: true
+AllowShortBlocksOnASingleLine: false
+BreakBinaryOperations: RespectPrecedence
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterControlStatement: MultiLine

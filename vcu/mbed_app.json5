@@ -7,6 +7,7 @@
       // Uncomment to use mbed-baremetal instead of mbed-os
       //"target.application-profile": "bare-metal",
       "rtos.thread-stack-size": 16384,
+      "target.default-adc-vref": 3.3,
     },
   }
 }

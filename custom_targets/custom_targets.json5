@@ -44,11 +44,11 @@
     "device_name": "STM32F446RETx",
 
     "overrides": {
-      "stdio_uart_tx": "PB_6",
-      "stdio_uart_rx": "PB_7",
+      "stdio_uart_tx": "PA_9",
+      "stdio_uart_rx": "PA_10",
       "clock_source": "USE_PLL_HSE_XTAL",
       "lse_available": 0,
-       "hse_value": 24000000,
+      "hse_value": 24000000,
     },
 
     // NOTE: For some reason mbed's MCU_STM32F4 target in targets.json does
@@ -107,14 +107,6 @@
       }
     },
 
-    //// NOTE: 
-    //"config": {
-    //  "hse_value": {
-    //    "help": "HSE default value is 8MHz in stm32f4xx_hal_conf.h",
-    //    "value": "24000000",
-    //    "macro_name": "HSE_VALUE"
-    //  }
-    //},
   },
 
   // hse_value defined as a config bc STM32F446xE in targets.json has no HSE config

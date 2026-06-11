@@ -32,8 +32,9 @@ if (MBED_TARGET STREQUAL "PERIPHERAL_BOARD" OR
     MBED_TARGET STREQUAL "STM32_TEST_BOARD_V1")
 
     set(OPENOCD_CHIP_CONFIG_COMMANDS
-        -f interface/stlink.cfg
-        -c "transport select hla_swd"
+        -f interface/stlink-dap.cfg
+        -c "transport select dapdirect_swd"
+        -c "reset_config srst_only srst_nogate connect_assert_srst"
         -f target/stm32g4x.cfg
         )
     set(PYOCD_TARGET_NAME STM32G441KBT6)
@@ -47,6 +48,7 @@ if (MBED_TARGET STREQUAL "TRACTIVE_BATTERY_BOARD" OR
     set(OPENOCD_CHIP_CONFIG_COMMANDS
         -f interface/stlink-dap.cfg
         -c "transport select dapdirect_swd"
+        -c "reset_config srst_only srst_nogate connect_assert_srst"
         -f target/stm32f4x.cfg
         )
     set(PYOCD_TARGET_NAME STM32F446RET6)
@@ -58,6 +60,7 @@ if (MBED_TARGET STREQUAL "NUCLEO_L432KC")
     set(OPENOCD_CHIP_CONFIG_COMMANDS
         -f interface/stlink-dap.cfg
         -c "transport select dapdirect_swd"
+        -c "reset_config srst_only srst_nogate connect_assert_srst"
         -f target/stm32l4x.cfg
         )
     set(PYOCD_TARGET_NAME STM32L432KC)
