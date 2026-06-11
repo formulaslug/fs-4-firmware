@@ -26,25 +26,37 @@ set(CMAKE_CXX_STANDARD 20)
 # Generated output files placed in build directory
 # Was building off the add-can-dbc library
 set(DBC_FILE     ${CMAKE_CURRENT_SOURCE_DIR}/../CANbus.dbc)
-set(GENERATED_C  ${CMAKE_CURRENT_BINARY_DIR}/CANbus.c)
-set(GENERATED_H  ${CMAKE_CURRENT_BINARY_DIR}/CANbus.h)
 
-add_custom_command(
-    OUTPUT  ${GENERATED_C} ${GENERATED_H}
-    COMMAND dbcc ${DBC_FILE}
-    DEPENDS ${DBC_FILE}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating CANbus.c and CANbus.h from CANbus.dbc"
-)
+find_program(DBCC_EXE dbcc)
+if(DBCC_EXE)
+        set(GENERATED_C  ${CMAKE_CURRENT_BINARY_DIR}/CANbus.c)
+        set(GENERATED_H  ${CMAKE_CURRENT_BINARY_DIR}/CANbus.h)
+
+        add_custom_command(
+                OUTPUT  ${GENERATED_C} ${GENERATED_H}
+                COMMAND dbcc ${DBC_FILE}
+                DEPENDS ${DBC_FILE}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMENT "Generating CANbus.c and CANbus.h from CANbus.dbc"
+        )
+        add_custom_target(generate_canbus DEPENDS ${GENERATED_C} ${GENERATED_H})
+else()
+        message(WARNING "DBCC executable by Howerj not found, using already generated CANbus.c and CANbus.h instead")
+        set(GENERATED_C  ${CMAKE_CURRENT_SOURCE_DIR}/dbccNotInstalled/CANbus.c)
+        set(GENERATED_H  ${CMAKE_CURRENT_SOURCE_DIR}/dbccNotInstalled/CANbus.h)
+endif()
 
 add_executable(${PROJECT_NAME}
         main.cpp
         dash_screen.cpp
         ${GENERATED_C}  
 )
-add_custom_target(generate_canbus DEPENDS ${GENERATED_C} ${GENERATED_H})
-add_dependencies(${PROJECT_NAME} generate_canbus)
+if(DBCC_EXE)
+    add_dependencies(${PROJECT_NAME} generate_canbus)
+endif()
 
-target_include_directories(${PROJECT_NAME} PUBLIC . ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(${PROJECT_NAME} mbed-os bt817q filter_utils)
+
+target_include_directories(${PROJECT_NAME} PUBLIC . ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/dbccNotInstalled)
+#removed filter_utils since buttons already contains hardware filtering
+target_link_libraries(${PROJECT_NAME} mbed-os bt817q)
 mbed_set_post_build(${PROJECT_NAME})
