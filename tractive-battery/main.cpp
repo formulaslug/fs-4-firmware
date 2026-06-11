@@ -166,7 +166,7 @@ void processCanRx() {
             case 0x190: // charge status from charger, 180 + node ID (10)
                 dcBusVoltageMv =
                     (msg.data[2] | (msg.data[3] << 8) | (msg.data[4] << 16) | (msg.data[5] << 24));
-                printf("dcBusVoltageMv (charger): %d\n", dcBusVoltageMv);
+                // printf("dcBusVoltageMv (charger): %d\n", dcBusVoltageMv);
             }
             break;
         }
@@ -190,7 +190,7 @@ uint16_t glvVoltageMv() { return (uint16_t)(GLV_Voltage.read() * glvVoltageScali
 // Intented to be called repeatedly during start and until completion of
 // precharge.
 void updatePrecharge() {
-    printf("dcBusVoltageMv %d mv, packVoltageMv %d mv\n", dcBusVoltageMv, bms.packVoltageMv);
+    // printf("dcBusVoltageMv %d mv, packVoltageMv %d mv\n", dcBusVoltageMv, bms.packVoltageMv);
     if (dcBusVoltageMv > 0.9 * bms.packVoltageMv) {
         // printf("Precharge Finished!\n");
         nPrechargeControl = 1;

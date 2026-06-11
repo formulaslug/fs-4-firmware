@@ -226,7 +226,7 @@ void BMS::turnOnBalancing() {
             uint8_t dischargeValue = 0x00;
             LTC6810::Configuration& config = chips[i].getConfig();
             // uint16_t moduleVolts[NUM_VOLTAGES_PER_MODULE] = voltages[i];
-            uint16_t minModuleVolt = voltages[i][0];
+            // uint16_t minModuleVolt = voltages[i][0];
             uint16_t maxModuleVolt = voltages[i][0];
             for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
                 // if(voltages[i][j] < minModuleVolt){
@@ -315,6 +315,7 @@ void BMS::checkForFaults() {
         for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
             uint16_t voltage = voltages[i][j];
             if (voltage >= MAX_CELL_VOLTAGE_MV || voltage <= MIN_CELL_VOLTAGE_MV) {
+                printf("voltage fault: (%d, %d): %d\n", i, j, voltage);
                 // if (faultLoc == NONE) {
                 //     faultLoc = VOLTAGE;
                 // } else {
@@ -338,24 +339,24 @@ void BMS::checkForFaults() {
 
         for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
             int8_t tempReading = temps[i][j];
-            if (currentState == CHARGING) {
-                if (tempReading >= MAX_TEMP) {
-                    // throwFault(i, j);
-                    modFaultIndex = i;
-                    componentFaultIndex = j;
-                    faultPresent = true;
-                    if (currentState == CHARGING) {
-                        packTempTooHighCrg = 1;
-                    } else {
-                        packTempTooHigh = 1;
-                    }
-                } else if (tempReading <= MIN_TEMP) {
-                    // throwFault(i, j);
-                    modFaultIndex = i;
-                    componentFaultIndex = j;
-                    faultPresent = true;
-                    packTempTooLow = 1;
+            if (tempReading >= MAX_TEMP) {
+                // throwFault(i, j);
+                printf("overtemp: (%d, %d): %d\n", i, j, tempReading);
+                modFaultIndex = i;
+                componentFaultIndex = j;
+                faultPresent = true;
+                if (currentState == CHARGING) {
+                    packTempTooHighCrg = 1;
+                } else {
+                    packTempTooHigh = 1;
                 }
+            } else if (tempReading <= MIN_TEMP) {
+                // throwFault(i, j);
+                printf("undertemp: (%d, %d): %d\n", i, j, tempReading);
+                modFaultIndex = i;
+                componentFaultIndex = j;
+                faultPresent = true;
+                packTempTooLow = 1;
             }
         }
     }
@@ -367,7 +368,7 @@ void BMS::checkForFaults() {
     }
 
     if(faultCounter>=FAULT_LIMIT){
-        throwFault(faultModuleIndex,componentFaultIndex);
+        throwFault(modFaultIndex,componentFaultIndex);
     }
 
     // Watch pack current. TODO: need to add negative here as well
@@ -393,6 +394,8 @@ void BMS::controller() {
 
     readCellVoltages();
     readTemps();
+    checkForFaults();
+    readPackCurrent();
 
     if (currentState != FAULT) {
         // TelemetryLock.lock();
@@ -425,12 +428,9 @@ void BMS::controller() {
         //     chips[i].updateConfig();
         // }
 
-        checkForFaults();
-        if (currentState == FAULT) return;
 
-        readPackCurrent();
         // TelemetryLock.unlock();
-        printf("Pack current: %f A\n", packCurrent);
+        // printf("Pack current: %f A\n", packCurrent);
 
     } else {
         printf("BMS: FAULT STATE\n");
