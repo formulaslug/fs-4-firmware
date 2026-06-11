@@ -30,7 +30,7 @@ BMS::BMS(CAN& CAN_POWERTRAIN, bool charging, Mutex& mainMutex)
 
 void BMS::readCellVoltages() {
     // If PollTimeout is the only thing we've received for 100ms, throw a BMS fault.
-    if (ltcTimeoutTimer.elapsed_time() >= 100ms) {
+    if (ltcTimeoutTimer.elapsed_time() >= 500ms) {
         currentState = FAULT;
         printf("ltcTimeoutTimer ran out! >100ms without successful reading! (only PollTimeouts)\n");
         return;
@@ -110,10 +110,98 @@ void BMS::readCellVoltages() {
 }
 
 void BMS::readTemps() {
-    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-        for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-            temps[i][j] = chips[i].readTemperatureTMP1075(&tempSensors[i][j]);
+
+    for (uint8_t j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
+        uint8_t commData[6] = {0};
+
+        uint8_t temp_sense_address = tempSensors[0][j].i2c_address;
+        uint8_t temp_sense_reg = tempSensors[0][j].temp_reg;
+
+        // STEP 1: Write register pointer (tell sensor which register to read)
+        // I2C Sequence: START -> [ADDR+W] -> ACK -> [REG] -> STOP
+        
+        // BYTE 0: Address with Write bit (ADDR << 1|0)
+        commData[0] = (0x6 << 4) | ((((temp_sense_address << 1) | 0x00) >> 4) & 0x0F);
+        commData[1] = ((((temp_sense_address << 1) | 0x00) & 0x0F) << 4) | 0x0;
+
+        // BYTE 1: Register address (0x00 for temperature register)
+        // FCOM 0X9 (Master NACK + STOP)
+        commData[2] = (0x1 << 4) | (((temp_sense_reg) >> 4) & 0x0F);
+        commData[3] = (((temp_sense_reg) & 0x0F) << 4) | 0x9;
+
+        // BYTE 2: Dummy (not used)
+        commData[4] = (0x7 << 4) | ((0x00 >> 4) & 0x0F);
+        commData[5] = ((0x00 & 0x0F) << 4) | 0x0;
+
+        ltcBusInterface.WakeupBus();
+        LTC681xParallelBus::BusCommand wrCmd = LTC681xParallelBus::BuildBroadcastBusCommand(
+            WriteCommGroup()
+        );
+        ltcBusInterface.SendDataCommand(wrCmd, commData);
+
+        ThisThread::sleep_for(3ms);
+
+        // The STCOMM command is to be followed by 24 clock
+        // cycles for each byte of data to be transmitted to the slave
+        // device while holding CSB low. For example, to transmit 3
+        // bytes of data to the slave, send STCOMM command and
+        // its PEC followed by 72 clock cycles. Pull CSB high at the
+        // end of the 72 clock cycles of STCOMM command.
+        ltcBusInterface.WakeupBus();
+        LTC681xParallelBus::BusCommand stCmd = LTC681xParallelBus::BuildBroadcastBusCommand(
+            StartComm()
+        );
+        static uint8_t buf[6] = {};
+        ltcBusInterface.SendDataCommand(stCmd, buf);
+
+        ThisThread::sleep_for(3ms);
+
+        // STEP 2: Read 2 bytes from temperature register
+        // I2C Sequence: START -> [ADDR+R] -> ACK -> [READ MSB] -> ACK -> [READ LSB] -> NACK+STOP
+        // BYTE 0: Address with Read bit (ADDR << 1 |1)
+        commData[0] = (0x6 << 4) | ((((temp_sense_address << 1) | 0x01) >> 4) & 0x0F);
+        commData[1] = ((((temp_sense_address << 1) | 0x01) & 0x0F) << 4) | 0x0;
+
+        // BYTE 1: Read MSB (master sends 0xFF as dummy, master ACKs)
+        commData[2] = (0x0 << 4) | ((0xFF >> 4) & 0x0F);
+        commData[3] = ((0XFF & 0x0F) << 4) | 0x0;
+
+        // BYTE 2: Read LSB (master sends 0xFF as dummy, master NACKs and STOP)
+        commData[4] = (0x0 << 4) | ((0xFF >> 4) & 0x0F);
+        commData[5] = ((0XFF & 0x0F) << 4) | 0x9;
+
+        ltcBusInterface.WakeupBus();
+        ltcBusInterface.SendDataCommand(wrCmd, commData);
+        ltcBusInterface.SendDataCommand(stCmd, buf);
+
+        ThisThread::sleep_for(3ms);
+
+        for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
+            uint8_t rxData[8] = {0};
+
+            ltcBusInterface.WakeupBus();
+            auto rdCmd = LTC681xBus::BuildAddressedBusCommand(ReadCommGroup(), i);
+            ltcBusInterface.SendReadCommand(rdCmd, rxData);
+
+            // STEP 3: Extract Temperature Data from COMM register
+            // MSB is in D1 (rxData[2] upper nibble, rxData[3] lower nibble)
+
+            uint8_t tempMSB = ((rxData[2] & 0x0F) << 4) | ((rxData[3] >> 4) & 0x0F);
+
+            // LSB is in comm register 3 4 msbs
+            uint8_t tempLSB = (rxData[3] & 0xF0)>>4;
+
+            // Combine MSB and LSB into 16-bit value
+
+            int16_t rawTemp = (tempMSB << 4) | (tempLSB & 0x0f);
+
+            // STEP 4: Convert to Celsius
+            // TMP1075-specific conversion:
+            // 12-bit temperature value stored in bits 15-4
+            // Each LSB = 0.0625°C
+            temps[i][j] = ((float)rawTemp) * 0.0625f;
         }
+
     }
 
     int8_t maxTemp = 0;

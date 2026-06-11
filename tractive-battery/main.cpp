@@ -126,7 +126,7 @@ int main() {
 
     // queue.call_every(200ms, controlFans);
 
-    bmsEventQueue.call_every(20ms, &bms, &BMS::controller);
+    bmsEventQueue.call_every(200ms, &bms, &BMS::controller);
     bmsControllerThread.start(callback(&bmsEventQueue, &EventQueue::dispatch_forever));
 
     queue.call_every(100ms, sendCanMessages);
