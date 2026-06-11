@@ -171,6 +171,7 @@ void DashScreen::drawDebugFaultLayout(
     uint8_t faultcode,     // FAULT CODE
     uint8_t faultlevel,    // FAULT LEVEL
     uint16_t fps,
+    //uint8_t wheelSpeedFL,
     int tick
 ) {
 
@@ -346,10 +347,12 @@ void DashScreen::drawDebugFaultLayout(
         drawText(xPos, yPos, "RPDO Timeout", 23, OPT_CENTERY);
     else
         drawText(530, 470, "String interpretation not added", 23, OPT_CENTERY);
-    endFrame();
 
     //fps 
+    //drawFormattedText(20, 450, "wheelSpeed FL: %d", 23, OPT_CENTERY, wheelSpeedFL); testing if this works
     drawFormattedText(20, 400, "fps: %d", 23, OPT_CENTERY, fps);
+    endFrame();
+
      
 
 }

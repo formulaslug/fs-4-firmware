@@ -77,20 +77,20 @@ void readDials() {
     // 0 - 4096, each volt is 1241
     // ADC is 12 Bits ADC12_IN1
     uint16_t rawDriveVal = driveDial.read_u16() >> 4;
-    if (rawDriveVal >= 3351) driveState = 2; // > 2.7V
+    if (rawDriveVal >= 3351) driveState = 3; // > 2.7V
     else if (rawDriveVal >= 2110)
-        driveState = 1; // > 1.7V
+        driveState = 2; // > 1.7V
     else if (rawDriveVal >= 744)
-        driveState = 0; // > 0.6V
+        driveState = 1; // > 0.6V
     else
         driveState = 0; // ground, idk what to do here
 
     uint16_t rawTractionVal = tractionDial.read_u16() >> 4;
-    if (rawTractionVal >= 3351) tractionState = 2; // > 2.7V
+    if (rawTractionVal >= 3351) tractionState = 3; // > 2.7V
     else if (rawTractionVal >= 2110)
-        tractionState = 1; // > 1.7V
+        tractionState = 2; // > 1.7V
     else if (rawTractionVal >= 744)
-        tractionState = 0; // > 0.6V
+        tractionState = 1; // > 0.6V
     else
         tractionState = 0; // ground
 
@@ -202,6 +202,7 @@ void drawScreenLayout() {
             vsm_state.sme_temp_faultcode,
             vsm_state.sme_temp_faultlevel,
             fps,
+            //vsm_state.tperiph_fl_data_wheelspeed,
             tick
         );
         break;
@@ -339,13 +340,21 @@ void processCANMessage() {
             }
             // Tire peripheral side temps
             else if (msg.id == 0x1a5) {
-                vsm_state.tperiph_fl_side_temp = g_dbcc_state.can_0x1a5_TPERIPH_FL_TPDO_DATA.TPERIPH_FL_DATA_SIDE_TIRE_TEMP;
+                auto& t = g_dbcc_state.can_0x1a5_TPERIPH_FL_TPDO_DATA;
+                vsm_state.tperiph_fl_side_temp = t.TPERIPH_FL_DATA_SIDE_TIRE_TEMP;
+                vsm_state.tperiph_fl_data_wheelspeed = t.TPERIPH_FL_DATA_WHEELSPEED;
             } else if (msg.id == 0x1a6) {
-                vsm_state.tperiph_fr_side_temp = g_dbcc_state.can_0x1a6_TPERIPH_FR_TPDO_DATA.TPERIPH_FR_DATA_SIDE_TIRE_TEMP;
+                auto& t = g_dbcc_state.can_0x1a6_TPERIPH_FR_TPDO_DATA;
+                vsm_state.tperiph_fr_side_temp = t.TPERIPH_FR_DATA_SIDE_TIRE_TEMP;
+                vsm_state.tperiph_fr_data_wheelspeed = t.TPERIPH_FR_DATA_WHEELSPEED;
             } else if (msg.id == 0x1a7) {
-                vsm_state.tperiph_bl_side_temp = g_dbcc_state.can_0x1a7_TPERIPH_BL_TPDO_DATA.TPERIPH_BL_DATA_SIDE_TIRE_TEMP;
+                auto& t = g_dbcc_state.can_0x1a7_TPERIPH_BL_TPDO_DATA;
+                vsm_state.tperiph_bl_side_temp = t.TPERIPH_BL_DATA_SIDE_TIRE_TEMP;
+                vsm_state.tperiph_bl_data_wheelspeed = t.TPERIPH_BL_DATA_WHEELSPEED;
             } else if (msg.id == 0x1a8) {
-                vsm_state.tperiph_br_side_temp = g_dbcc_state.can_0x1a8_TPERIPH_BR_TPDO_DATA.TPERIPH_BR_DATA_SIDE_TIRE_TEMP;
+                auto& t = g_dbcc_state.can_0x1a8_TPERIPH_BR_TPDO_DATA;
+                vsm_state.tperiph_br_side_temp = t.TPERIPH_BR_DATA_SIDE_TIRE_TEMP;
+                vsm_state.tperiph_br_data_wheelspeed = t.TPERIPH_BR_DATA_WHEELSPEED;
             }
             // Tire surface temps (8 pixels per corner)
             else if (msg.id == 0x2a5) {
@@ -548,9 +557,9 @@ void sendCANMessage() {
         )
     };
 
-    CANMessage steering_msg{0x378u, steering_data, 1};
+    CANMessage steering_msg{0x1b0, steering_data, 1};
     printf("sending CAN message");
-    // can.write(steering_msg);
+    can.write(steering_msg);
 }
 
 /**

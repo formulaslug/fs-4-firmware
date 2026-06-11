@@ -45,6 +45,11 @@ struct VehicleState{
     uint8_t tperiph_bl_tire_temps[8];
     uint8_t tperiph_br_side_temp;
     uint8_t tperiph_br_tire_temps[8];
+    // Wheelspeeds
+    uint8_t tperiph_fl_data_wheelspeed;
+    uint8_t tperiph_fr_data_wheelspeed;
+    uint8_t tperiph_bl_data_wheelspeed;
+    uint8_t tperiph_br_data_wheelspeed;
 
     // IZZE brake disc temperatures (°C, scaling applied)
     float izze_brake_fl;
