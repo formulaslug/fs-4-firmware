@@ -47,8 +47,9 @@ int main() {
                 etc.battery_precharged = rx.data[0] & 0b01000000;
                 etc.shutdown_closed = rx.data[0] & 0b00000100;
                 if (!etc.battery_precharged | !etc.shutdown_closed) {
-                    etc.ready_to_drive = false;
-                    etc.motor_enabled = false;
+                    etc.state.ready_to_drive = false;
+                    etc.state.motor_enabled = false;
+                    etc.rtd_light.write(false);
                 }
                 //printf("battery precharged: %d, shutdown closed: %d\n", etc.battery_precharged, etc.shutdown_closed);
                 break;

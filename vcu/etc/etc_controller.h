@@ -59,6 +59,8 @@ public:
     void set_regen_torque(bool is_regening, bool solenoid_open, int16_t regen_torque);
 
     void update_mbb_alive();
+    
+    DigitalOut rtd_light;
 
 private:
     AnalogIn unfiltered_APPS1_input;
@@ -76,7 +78,6 @@ private:
     // DebouncedDigitalIn rtd_button;
     InterruptIn rtd_button;
 
-    DigitalOut rtd_light;
     DigitalOut rtd_buzzer;
     DigitalOut solenoid;
     DigitalOut brakelight;
