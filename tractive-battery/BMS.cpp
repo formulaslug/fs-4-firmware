@@ -26,6 +26,13 @@ BMS::BMS(CAN& CAN_POWERTRAIN, bool charging, Mutex& mainMutex)
 
     nBMS_Fault_3V3 = 1;
     packCurrent = 0;
+    
+
+    // get initial values
+    turnOffBalancing();
+    readCellVoltages();
+    readTemps();
+    checkForFaults();
 }
 
 void BMS::readCellVoltages() {
@@ -223,29 +230,57 @@ void BMS::readTemps() {
 void BMS::turnOnBalancing() {
     if (currentState != FAULT) {
         for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-            uint8_t dischargeValue = 0x00;
             LTC6810::Configuration& config = chips[i].getConfig();
-            // uint16_t moduleVolts[NUM_VOLTAGES_PER_MODULE] = voltages[i];
-            // uint16_t minModuleVolt = voltages[i][0];
-            uint16_t maxModuleVolt = voltages[i][0];
-            for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-                // if(voltages[i][j] < minModuleVolt){
-                //     minModuleVolt = voltages[i][j];
-                // }
-                if (voltages[i][j] > maxModuleVolt) {
-                    maxModuleVolt = voltages[i][j];
+
+            uint8_t dischargeValue = 0x00;
+            uint8_t cellVisited = 0x00;
+
+            for (uint8_t k = 0; k < NUM_VOLTAGES_PER_MODULE; k++) {
+                int8_t maxVoltageIndex = -1; // -1 is not found yet
+                uint16_t maxVolt = 0;
+
+                
+                for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
+                    if (cellVisited & (1 << j)) {
+                        continue;
+                    }
+
+                    if (voltages[i][j] > maxVolt) {
+                        maxVoltageIndex = j;
+                    }
                 }
-                if ((maxModuleVolt - minCelVoltage) >= DIFFERENCE_THRESHOLD) {
-                    dischargeValue |= (0x1 << j); // we balance based on the whole battery
-                    j++; // this ensures that a BMS will not balance adjacent cells
+
+                if (maxVoltageIndex == -1) {
+                    break;
                 }
-                // Logic is find lowest voltage cell - go through each module and balance that
-                // module based on that cell reading so the whole battery is balanced
+
+                if (voltages[i][maxVoltageIndex] < BALANCING_THRESHOLD) {
+                    break;
+                }
+
+                cellVisited |= (1 << maxVoltageIndex);
+
+                bool neighborIsDischarging = false;
+                
+                if (maxVoltageIndex > 0) {
+                    if (dischargeValue & (1 << (maxVoltageIndex - 1))) {
+                        neighborIsDischarging = true;
+                    }
+                }
+                if (maxVoltageIndex < (NUM_VOLTAGES_PER_MODULE - 1)) {
+                    if (dischargeValue & (1 << (maxVoltageIndex + 1))) {
+                        neighborIsDischarging = true;
+                    }
+                }
+
+                if (!neighborIsDischarging && voltages[i][maxVoltageIndex] - minCelVoltage >= DIFFERENCE_THRESHOLD) {
+                    dischargeValue |= (1 << maxVoltageIndex);
+                }
             }
+
             config.dischargeState.value = dischargeValue;
             chips[i].updateConfig();
         }
-        balancing = true;
     }
 }
 
@@ -257,7 +292,6 @@ void BMS::turnOffBalancing() {
         chips[i].updateConfig();
     }
     // printf("Cell balancing deactivated....\n");
-    balancing = false;
 }
 
 void BMS::readPackCurrent() {
@@ -392,47 +426,20 @@ void BMS::throwFault(int moduleIndex, int sensorIndex) {
 // Main controller loop (to be called periodically at high frequency)
 void BMS::controller() {
 
+    turnOffBalancing();
     readCellVoltages();
+    const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
+    if (currentState != FAULT && can_balance) {
+        turnOnBalancing();
+        balancing = true;
+    } else {
+        balancing = false;
+    }
     readTemps();
     checkForFaults();
     readPackCurrent();
 
-    if (currentState != FAULT) {
-        // TelemetryLock.lock();
-        const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
-        if (can_balance && false) {
-            // TODO: ask cole about this. is it weird to send oscillating
-            // `balancing` signal over CAN? Answer: keep oscillating but send a
-            // constant signal
-            turnOnBalancing();
-            ThisThread::sleep_for(100ms);
-            turnOffBalancing();
-        }
-
-
-
-        // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
-        //     for (int j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-        //         printf("Voltage: Module %d, Cell %d: %d mv\n", i, j, voltages[i][j]);
-        //     }
-        // }
-        // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
-        //     for (int j = 0; j < NUM_TEMP_SENSORS_PER_MODULE; j++) {
-        //         printf("Temp: Module %d, Sensor %d: %f degC\n", i, j, temps[i][j]);
-        //     }
-        // }
-
-        // for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
-        //     auto& config = chips[i].getConfig();
-        //     config.gpio1 = LTC6810::GPIOOutputState::kLow;
-        //     chips[i].updateConfig();
-        // }
-
-
-        // TelemetryLock.unlock();
-        // printf("Pack current: %f A\n", packCurrent);
-
-    } else {
+    if (currentState == FAULT) {
         printf("BMS: FAULT STATE\n");
         turnOffBalancing();
         nBMS_Fault_3V3 = 0;
