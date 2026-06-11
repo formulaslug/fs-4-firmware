@@ -61,10 +61,14 @@ void ETCController::update_state() {
 
     update_implaus();
 
-    if (!REGEN_FORCE_DISABLE) {
+    if (!REGEN_FORCE_DISABLE && state.regen_mode != 0) {
         state.motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE) - static_cast<int16_t>(state.BPPS_position * MAX_REGEN_TORQUE);
     } else {
         state.motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
+    }
+
+    if (state.traction_mode != 0 && state.motor_torque > 0) {
+      state.motor_torque = static_cast<int16_t>(state.motor_torque * state.tc_torque_reduction_factor);
     }
 
     state.brakelight_enabled = state.motor_torque < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT && !state.solenoid_open);

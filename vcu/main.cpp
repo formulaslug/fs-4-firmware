@@ -152,11 +152,9 @@ void send_etc_CAN_messages() {
 void send_sme_CAN_messages() {
     etc.update_mbb_alive();
 
+    // Update traction control reduction factor synchronized with torque commands
     update_traction_control();
-    if (etc_state.traction_mode != 0) {
-      const float tc_torque_reduction_factor = etc.traction_controller.get_output();
-      etc.state.motor_torque = static_cast<int16_t>(etc.state.motor_torque * tc_torque_reduction_factor);
-    }
+    etc.state.tc_torque_reduction_factor = etc.traction_controller.get_output();
 
     uint8_t tpdo_throttle_demand[8];
     tpdo_throttle_demand[0] = etc_state.motor_torque & 0xFF;

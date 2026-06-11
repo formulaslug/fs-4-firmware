@@ -45,6 +45,7 @@ struct ETCState {
     float wheel_rpm_fr = 0.0f;
     float wheel_rpm_bl = 0.0f;
     float wheel_rpm_br = 0.0f;
+    float tc_torque_reduction_factor = 1.0f;
     //VectornavState vectornav;
     uint8_t drive_mode = 0;
     uint8_t traction_mode = 0;
