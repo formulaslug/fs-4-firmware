@@ -39,11 +39,7 @@ uint32_t curFrame = 0;
 uint16_t fps = 0;
 
 int main() {
-    printf("Hello World!!\n");
-    // while(true)
-    // {
-    //     printf("hi");
-    // }
+    printf("Steering Wheel!!\n");
     screen.init(EvePresets::CFAF800480H0);
     screen.setRotate(1); //Inverted Landscape since dash is mounted upsidedown
     // debouncedLayoutBtn.set_valid_read_count(7);
@@ -66,7 +62,6 @@ void readLayoutButton() {
     const bool debounced_button_state = layoutBtn.read();
     if (debounced_button_state && !lastLayoutBtnState) {
         currentScreen = (currentScreen >= 4) ? 0 : (currentScreen + 1);
-        printf("Current Screen: %d", currentScreen);
     }
     lastLayoutBtnState = debounced_button_state;
 }
@@ -152,7 +147,6 @@ void drawScreenLayout() {
             vsm_state.sme_temp_dc_bus_v,
             regenState
         );
-        printf("In Main Display \n");
         break;
     case 1: {
         //Lambda expression to take the average temps
@@ -175,7 +169,6 @@ void drawScreenLayout() {
             (float)vsm_state.vcu_etc_brake_pressure_front,
             (float)vsm_state.vcu_etc_brake_pressure_rear
         );
-        printf("In thermal Screen");
         break;
     }
     case 2:
@@ -183,7 +176,6 @@ void drawScreenLayout() {
         break;
     case 3:
         screen.debugCellVolts(vsm_state.batt_mod_volts);
-        printf("In batt volts ");
         break;
     case 4:
         printf("In Faults Display \n");
@@ -209,6 +201,7 @@ void drawScreenLayout() {
             vsm_state.sme_temp_motortemperature,
             vsm_state.sme_temp_faultcode,
             vsm_state.sme_temp_faultlevel,
+            fps,
             tick
         );
         break;

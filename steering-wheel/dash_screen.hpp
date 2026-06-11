@@ -57,6 +57,7 @@ public:
         uint8_t motortemp,     // MOTOR TEMP
         uint8_t faultcode,     // FAULT CODE
         uint8_t faultlevel,    // FAULT LEVEL
+        uint16_t fps,
         int tick
     );
 

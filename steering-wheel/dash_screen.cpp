@@ -170,6 +170,7 @@ void DashScreen::drawDebugFaultLayout(
     uint8_t motortemp,     // MOTOR TEMP
     uint8_t faultcode,     // FAULT CODE
     uint8_t faultlevel,    // FAULT LEVEL
+    uint16_t fps,
     int tick
 ) {
 
@@ -346,6 +347,11 @@ void DashScreen::drawDebugFaultLayout(
     else
         drawText(530, 470, "String interpretation not added", 23, OPT_CENTERY);
     endFrame();
+
+    //fps 
+    drawFormattedText(20, 400, "fps: %d", 23, OPT_CENTERY, fps);
+     
+
 }
 
 void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, bool fans, uint16_t acc_volt, uint8_t acc_temp, uint8_t soc, int tick, uint16_t speed, const char* lap_time, uint16_t glv, uint8_t mtr_temp, uint8_t ctrl_temp, uint16_t dc_bus, uint8_t regen_state) {
