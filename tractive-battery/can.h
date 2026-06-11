@@ -50,7 +50,7 @@ constexpr uint32_t BATT_TPDO_MOD1_TEMPSB = 0x499;
 constexpr uint32_t BATT_TPDO_MOD2_TEMPSA = 0x49b;
 constexpr uint32_t BATT_TPDO_MOD2_TEMPSB = 0x49c;
 constexpr uint32_t BATT_TPDO_MOD3_TEMPSA = 0x49e;
-constexpr uint32_t BATT_TPDO_MOD3_TEMPSB = 0x4af;
+constexpr uint32_t BATT_TPDO_MOD3_TEMPSB = 0x49f;
 constexpr uint32_t BATT_TPDO_MOD4_TEMPSA = 0x4a1;
 constexpr uint32_t BATT_TPDO_MOD4_TEMPSB = 0x4a2;
 
