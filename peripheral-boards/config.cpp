@@ -24,21 +24,21 @@ Corner readCorner() {
 // Could probably just make a lookup table for this
 CornerConfig getCornerConfig(Corner pos) {
     switch (pos) {
-    case Corner::FL:
-        return {0x1A5, 0x2A5, false, false};
+        case Corner::FL:
+            return {0x1A5, 0x2A5, true, false};
 
-    case Corner::FR:
-        return {0x1A6, 0x2A6, false, false};
+        case Corner::FR:
+            return {0x1A6, 0x2A6, true, false};
 
-    case Corner::BL:
-        return {0x1A7, 0x2A7, true, false};
+        case Corner::BL:
+            return {0x1A7, 0x2A7, true, false};
 
-    case Corner::BR:
-        return {0x1A8, 0x2A8, true, false};
-
-    default:
-        return {0x1A6, 0x2A6, false, false};
-        // Defaulting to FR, Not sure what to do for an error
-        // FS-3 #error "WHEEL_POSITION must be one of BR/BL/FR/FL!"
+        case Corner::BR:
+            return {0x1A8, 0x2A8, true, false};
+        default:
+            return {0x1A6, 0x2A6, false, false};
+            //Can Message id for struct CornerConfig {tpdo_data_id, tpdo_tiretemp_id, has_tiretemp_1x8, has_tiretemp_1x1};
+            // Defaulting to FR, Not sure what to do for an error
+            // FS-3 #error "WHEEL_POSITION must be one of BR/BL/FR/FL!"
     }
 }
