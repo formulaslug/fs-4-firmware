@@ -69,6 +69,7 @@ void updatePrecharge();
 void controlFans();
 // void updateSoc();
 void sendCanMessages();
+void sendTemperatureCanMessages();
 void sampleShutdownFinal();
 
 int main() {
@@ -126,10 +127,11 @@ int main() {
 
     // queue.call_every(200ms, controlFans);
 
-    bmsEventQueue.call_every(200ms, &bms, &BMS::controller);
+    bmsEventQueue.call_every(50ms, &bms, &BMS::controller); // 20 hz
     bmsControllerThread.start(callback(&bmsEventQueue, &EventQueue::dispatch_forever));
 
-    queue.call_every(100ms, sendCanMessages);
+    queue.call_every(50ms, sendCanMessages); // 20 hz
+    queue.call_every(500ms, sendTemperatureCanMessages); // 2 hz
 
     queue.dispatch_forever();
 
@@ -220,11 +222,7 @@ void sendCanMessages() {
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         msg = CanGenerator::BuildVoltageMessage(bms, i);
         canPowertrain.write(msg);
-        msg = CanGenerator::BuildTempMessage(bms, i, true);
-        canPowertrain.write(msg);
-        msg = CanGenerator::BuildTempMessage(bms, i, false);
-        canPowertrain.write(msg);
-        ThisThread::sleep_for(2ms);
+        ThisThread::sleep_for(1ms);
     }
     msg = CanGenerator::BuildPowerMessage(bms, 0);
     canPowertrain.write(msg);
@@ -240,6 +238,7 @@ void sendCanMessages() {
         fanPwmDuty
     );
     canPowertrain.write(msg);
+    ThisThread::sleep_for(1ms);
 
     //printf("\033[2J");
     //printf("IMD fault voltage (normally high): %f\n", nIMD_Fault_3V3.read()*3.3);
@@ -247,4 +246,17 @@ void sendCanMessages() {
 
     canPowertrain.reset();
     // TelemetryLock.unlock();
+}
+
+void sendTemperatureCanMessages() {
+    CANMessage msg;
+
+    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+        msg = CanGenerator::BuildTempMessage(bms, i, true);
+        canPowertrain.write(msg);
+        msg = CanGenerator::BuildTempMessage(bms, i, false);
+        canPowertrain.write(msg);
+        ThisThread::sleep_for(1ms);
+    }
+    canPowertrain.reset();
 }
