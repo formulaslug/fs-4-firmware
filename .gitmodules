@@ -1,0 +1,3 @@
+[submodule "libraries/vectornav-sdk-1-2-0-mbed"]
+	path = libraries/vectornav-sdk-1-2-0-mbed
+	url = https://github.com/formulaslug/vectornav-sdk-1-2-0-mbed

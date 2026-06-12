@@ -15,7 +15,7 @@ include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
 project(stm32-test
         LANGUAGES C CXX ASM)
 include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
-
+ 
 add_subdirectory(../mbed-os mbed-os)
 
 set(CMAKE_CXX_STANDARD 20)
