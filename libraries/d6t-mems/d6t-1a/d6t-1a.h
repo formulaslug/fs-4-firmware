@@ -2,14 +2,6 @@
 #include "mbed.h"
 #include <cstdint>
 
-// Read-transaction style — see d6t-8lh.h for details. Keep identical to the D6T8LH setting
-// (the #ifndef guard means a -D build flag or whichever header is included first wins).
-//   1 = RepeatStart (manual primary), PEC seed = write-addr + cmd + read-addr.
-//   0 = Stop-Start (manual 6.5), PEC seed = read-addr only.
-#ifndef D6T_USE_REPEATED_START
-#define D6T_USE_REPEATED_START 1
-#endif
-
 class D6T1A {
 public:
     static constexpr uint8_t ADDR7 = 0x0A;

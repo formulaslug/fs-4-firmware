@@ -18,19 +18,15 @@ int16_t D6T8LH::le_s16(const uint8_t *buf, int n) {
     return (int16_t)ret;
 }
 
-// PEC check. The seed must match the read transaction style (manual section 6.5):
+//  PEC check (Packet Error Check Code). The seed must match the read transaction style (manual section 6.5):
 //  - RepeatStart: the sensor's PEC covers write-addr + command + read-addr + data.
 //  - Stop-Start:  the command write is a separate transaction, so the PEC covers only
 //                 read-addr + data.
 bool D6T8LH::pec_ok(const uint8_t* buf, int payload_len)
 {
-#if D6T_USE_REPEATED_START
     uint8_t crc = calc_crc((ADDR7 << 1) | 0);      // write address (0x14)
     crc = calc_crc(CMD ^ crc);                     // command (0x4C)
     crc = calc_crc(((ADDR7 << 1) | 1) ^ crc);      // read address (0x15)
-#else
-    uint8_t crc = calc_crc((ADDR7 << 1) | 1);      // read address (0x15) only
-#endif
 
     for (int i = 0; i < payload_len; i++) {
         crc = calc_crc(buf[i] ^ crc);
@@ -66,34 +62,24 @@ bool D6T8LH::setup() {
 
 int D6T8LH::read() {
     std::memset(_rbuf, 0, sizeof(_rbuf));
-    const int addr8 = (ADDR7 << 1); //setting R/W bit to 0, in write mode
+    const int addr8 = (ADDR7 << 1); //setting R/W bit to 0, in write mode, 1 is read
     char cmd = (char)CMD; //0x4C, command to read
 
     // Write the command byte. D6T_USE_REPEATED_START selects whether the bus is held for a
     // repeated start (manual primary, Fig. 16) or released with a STOP (manual 6.5 alternative).
-#if D6T_USE_REPEATED_START
     if (_i2c.write(addr8, &cmd, 1, true) != 0) {  // true = no STOP -> repeated start before read
         return 1;
     }
-#else
-    if (_i2c.write(addr8, &cmd, 1, false) != 0) { // false = STOP, separate read transaction
-        return 1;
-    }
-#endif
     //read the full packet into rbuf
     if (_i2c.read(addr8, (char*)_rbuf, N_READ, false) != 0) {
         return 2;
     }
     //PEC check (payload is N_READ-1 bytes)
     if (!pec_ok(_rbuf, N_READ - 1)) {
-        // Recompute with the seed matching the active read style (for the diagnostic line).
-#if D6T_USE_REPEATED_START
-        uint8_t crc = calc_crc((ADDR7 << 1) | 0);
-        crc = calc_crc(CMD ^ crc);
-        crc = calc_crc(((ADDR7 << 1) | 1) ^ crc);
-#else
-        uint8_t crc = calc_crc((ADDR7 << 1) | 1);
-#endif
+        // Debugging
+        // uint8_t crc = calc_crc((ADDR7 << 1) | 0);
+        // crc = calc_crc(CMD ^ crc);
+        // crc = calc_crc(((ADDR7 << 1) | 1) ^ crc);
         // for (int i = 0; i < N_READ - 1; i++) crc = calc_crc(_rbuf[i] ^ crc);
         // printf("D6T raw:");
         // for (int i = 0; i < N_READ; i++) printf(" %02X", _rbuf[i]);
@@ -104,7 +90,10 @@ int D6T8LH::read() {
     // Per manual section 6.3 Table 3: PTAT and every pixel are (degrees C * 10), signed 16-bit
     // (e.g. 25.0 C == 250). So both divide by 10.
     _ptat_c = (double)le_s16(_rbuf, 0) / 10.0;
-
+    //Reference temperature data stored in the sensor
+    // The PTAT and Pn temperature data represents values equal to
+    // temperature values (°C) multiplied by a factor of 10 as signed 16-bit
+    // integers
     for (int i = 0; i < N_PIXEL; i++) {
         int16_t raw = le_s16(_rbuf, 2 + 2 * i);
         _pix_c[i] = (double)raw / 10.0;

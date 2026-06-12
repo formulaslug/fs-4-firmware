@@ -45,7 +45,21 @@ Generates and writes the CAN message for speed, suspension, strain, and temp
 void sendCANtpdo();
 
 void sendLastMessageTicks();
+/**
+ * @brief CAN message sending, just sends the can message. If it fails too many times, resets the CAN object
+ */
+void sendCANmessage(const CANMessage& msg);
+/**
+ * @brief Reads the temperature sensors that use slow i2c calls.
+ *        Runs on a different thread since when the I2C is blocked, it stalls the CAN reads
+ */
+void readSensors();
 
+/**
+ *  @brief prints how many tpdo/temp frames were actually sent in the last ~1 s (= rate in Hz).
+ *  Runs on the sensor thread so the printf can't disturb the CAN-thread timing it's measuring.
+ */
+void printSendRates();
 constexpr PinName PIN_STRAIN = PB_0;
 constexpr PinName PIN_DIP_0 = PA_0;
 constexpr PinName PIN_DIP_1 = PA_1;
@@ -63,4 +77,4 @@ constexpr uint8_t TEETH_PER_REV = 24; // Double check this
 
 // D6T I2C bus speed. The D6T tops out at 100 kHz (standard mode). Drop to 50000 / 10000 if the
 // bus is marginal (long leads / 5 V level-shifter capacitance) to get more reliable edges.
-constexpr int D6T_I2C_HZ = 100000;
+constexpr int D6T_I2C_HZ = 100000; //0.1Mhz
