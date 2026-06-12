@@ -12,9 +12,7 @@ DigitalIn bspd_fault{PA_2};
 DigitalIn bspd_shutdown_out{PA_3};
 
 CAN canP{PB_8, PB_9, 500000};
-CAN canD{
-    PB_5, PB_6, 1000000
-}; // using both by sending the messages in parallel, but not sure if this is correct usage
+CAN canD{PB_5, PB_6, 1000000};
 ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4, PC_12, PD_2};
 const ETCState& etc_state = etc.state;
 
@@ -41,19 +39,13 @@ int main() {
 
     CANMessage rx;
     while (true) {
-        if (canP.read(
-                rx
-            )) { // currently just reads from 1, but maybe make this both for possible optimization?
+        // currently just reads from 1, but maybe make this both for possible optimization?
+        if (canP.read(rx)) {
             switch (rx.id) {
             case 0x391: {
                 etc.battery_precharged = rx.data[0] & 0b01000000;
                 etc.shutdown_closed = rx.data[0] & 0b00000100;
-                if (!etc.battery_precharged | !etc.shutdown_closed) {
-                    etc.state.ready_to_drive = false;
-                    etc.state.motor_enabled = false;
-                    etc.rtd_light.write(false);
-                }
-                //printf("battery precharged: %d, shutdown closed: %d\n", etc.battery_precharged, etc.shutdown_closed);
+                etc.turn_off_rtd();
                 break;
             }
             case 1154: { // SME_TPDO_Torque_speed

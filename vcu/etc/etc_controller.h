@@ -69,8 +69,9 @@ public:
     void set_regen_torque(bool is_regening, bool solenoid_open, int16_t regen_torque);
 
     void update_mbb_alive();
-    
-    DigitalOut rtd_light;
+
+    void turn_off_rtd();
+    void turn_on_rtd();
 
 private:
     AnalogIn unfiltered_APPS1_input;
@@ -84,32 +85,26 @@ private:
     AnalogIn unfiltered_rear_BSE_input;
     FilteredAnalogIn rear_BSE_input;
 
-    // DigitalIn unfiltered_rtd_button;
-    // DebouncedDigitalIn rtd_button;
     InterruptIn rtd_button;
-
+    DigitalOut rtd_light;
     DigitalOut rtd_buzzer;
+    Timeout rtd_buzzer_timeout;
+
     DigitalOut solenoid;
     DigitalOut brakelight;
-
-    Timeout rtd_buzzer_timeout;
-    // Makes it so that update_rtd only occurs on every rise
-    bool rtd_button_last_state = false;
-
-    bool ts_ready = false;
 
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
 
     static constexpr float APPS1_MIN_VOLTAGE = 0.370f;
-    static constexpr float APPS1_DEADZONE_VOLTAGE = 0.410f;
+    static constexpr float APPS1_DEADZONE_VOLTAGE = 0.03f + APPS1_MIN_VOLTAGE;
     static constexpr float APPS1_MAX_VOLTAGE = 1.040f;
 
     static constexpr float APPS2_MIN_VOLTAGE = 0.430f;
-    static constexpr float APPS2_DEADZONE_VOLTAGE = 0.45f;
+    static constexpr float APPS2_DEADZONE_VOLTAGE = 0.03f + APPS1_MIN_VOLTAGE;
     static constexpr float APPS2_MAX_VOLTAGE = 1.067f;
 
-    static constexpr float BPPS_MIN_VOLTAGE = 0.570f;
-    static constexpr float BPPS_MAX_VOLTAGE = 2.8125f;
+    static constexpr float BPPS_MIN_VOLTAGE = 0.550f;
+    static constexpr float BPPS_MAX_VOLTAGE = 1.0f; // 2.8125f;
 
     static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
     static constexpr float FRONT_BSE_MAX_VOLTAGE = 2.8125f;
@@ -117,8 +112,9 @@ private:
     static constexpr float REAR_BSE_MIN_VOLTAGE = 0.3125f;
     static constexpr float REAR_BSE_MAX_VOLTAGE = 2.8125f;
 
-    static constexpr float FRONT_BSE_ACTIVATION_VOLTAGE = 0.5f;
-    static constexpr float REAR_BSE_ACTIVATION_VOLTAGE = 0.5f;
+    // Using BPPS instead
+    // static constexpr float FRONT_BSE_ACTIVATION_VOLTAGE = 0.5f;
+    // static constexpr float REAR_BSE_ACTIVATION_VOLTAGE = 0.5f;
     static constexpr float BPPS_MAX_NON_REGEN_BRAKING = 0.9f;
 
     static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.08f;
@@ -129,7 +125,7 @@ private:
 
     static constexpr bool REGEN_FORCE_DISABLE = true;
     static constexpr bool TRACTION_CONTROL_FORCE_DISABLE = true;
-    static constexpr bool SOLENOID_FORCE_CLOSED = true; // closed = brake fluid can flow = default state
+    static constexpr bool SOLENOID_FORCE_OPEN = true; // open = brake fluid can flow = default state
 
     Timer implaus_APPS_deviation_timer;
     Timer implaus_APPS_range_timer;
@@ -152,7 +148,7 @@ private:
 
     void update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus);
 
-    void toggle_rtd();
+    void rtd_button_irq();
 };
 
 #endif

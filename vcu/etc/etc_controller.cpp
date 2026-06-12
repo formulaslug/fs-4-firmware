@@ -5,32 +5,42 @@
 #include "etc_controller.h"
 #include "../imu/vectornav_imu.h"
 
-ETCController::ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin, PinName vectornav_tx, PinName vectornav_rx) :
-    unfiltered_APPS1_input(APPS1_pin),
-    APPS1_input(unfiltered_APPS1_input, 60),
-    unfiltered_APPS2_input(APPS2_pin),
-    APPS2_input(unfiltered_APPS2_input, 60),
-    unfiltered_BPPS_input(BPPS_pin),
-    BPPS_input(unfiltered_BPPS_input, 60),
-    unfiltered_front_BSE_input(front_BSE_pin),
-    front_BSE_input(unfiltered_front_BSE_input, 60),
-    unfiltered_rear_BSE_input(rear_BSE_pin),
-    rear_BSE_input(unfiltered_rear_BSE_input, 60),
-    // unfiltered_rtd_button(rtd_button_pin),
-    // rtd_button(unfiltered_rtd_button, 2),
-    rtd_button(rtd_button_pin),
-    rtd_light(rtd_light_pin),
-    rtd_buzzer(rtd_buzzer_pin),
-    solenoid(solenoid_pin),
-    brakelight(brakelight_pin),
-    vn_imu(vectornav_tx, vectornav_rx),
-    traction_controller()
-{
+ETCController::ETCController(
+    PinName APPS1_pin,
+    PinName APPS2_pin,
+    PinName BPPS_pin,
+    PinName front_BSE_pin,
+    PinName rear_BSE_pin,
+    PinName rtd_button_pin,
+    PinName rtd_light_pin,
+    PinName rtd_buzzer_pin,
+    PinName solenoid_pin,
+    PinName brakelight_pin,
+    PinName vectornav_tx,
+    PinName vectornav_rx
+)
+    : unfiltered_APPS1_input(APPS1_pin),
+      APPS1_input(unfiltered_APPS1_input, 60),
+      unfiltered_APPS2_input(APPS2_pin),
+      APPS2_input(unfiltered_APPS2_input, 60),
+      unfiltered_BPPS_input(BPPS_pin),
+      BPPS_input(unfiltered_BPPS_input, 60),
+      unfiltered_front_BSE_input(front_BSE_pin),
+      front_BSE_input(unfiltered_front_BSE_input, 60),
+      unfiltered_rear_BSE_input(rear_BSE_pin),
+      rear_BSE_input(unfiltered_rear_BSE_input, 60),
+      rtd_button(rtd_button_pin),
+      rtd_light(rtd_light_pin),
+      rtd_buzzer(rtd_buzzer_pin),
+      solenoid(solenoid_pin),
+      brakelight(brakelight_pin),
+      vn_imu(vectornav_tx, vectornav_rx) {
     rtd_light.write(0);
     rtd_buzzer.write(0);
     solenoid.write(0);
     brakelight.write(0);
-    //rtd_button.rise(callback(this, &ETCController::toggle_rtd));
+
+    rtd_button.rise(callback(this, &ETCController::rtd_button_irq));
 
     // spawns new thread for imu listener
     // CHECK_VN_ERR(vn_imu.connect());
@@ -54,9 +64,14 @@ void ETCController::update_state() {
     state.front_BSE_voltage = front_BSE_input.read_voltage();
     state.rear_BSE_voltage = rear_BSE_input.read_voltage();
 
-    state.APPS1_position = clamp((state.APPS1_voltage - APPS1_DEADZONE_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE));
-    state.APPS2_position = clamp((state.APPS2_voltage - APPS2_DEADZONE_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE));
-    state.BPPS_position = clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
+    state.APPS1_position = clamp(
+        (state.APPS1_voltage - APPS1_DEADZONE_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE)
+    );
+    state.APPS2_position = clamp(
+        (state.APPS2_voltage - APPS2_DEADZONE_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE)
+    );
+    state.BPPS_position =
+        clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
 
     update_implaus();
@@ -71,34 +86,34 @@ void ETCController::update_state() {
       state.motor_torque = static_cast<int16_t>(state.motor_torque * state.tc_torque_reduction_factor);
     }
 
-    state.brakelight_enabled = state.motor_torque < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT && !state.solenoid_open);
+    state.brakelight_enabled = state.motor_torque < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT);
     brakelight.write(state.brakelight_enabled);
 
-    state.solenoid_open = SOLENOID_FORCE_CLOSED ? false : state.regen_allowed;
+    state.solenoid_open = SOLENOID_FORCE_OPEN ? true : state.regen_allowed;
     solenoid.write(state.solenoid_open);
 
-    bool _rtd_button_state = state.rtd_button_pressed;
     state.rtd_button_pressed = rtd_button.read();
-    if(_rtd_button_state == 0 && state.rtd_button_pressed == 1) {
-        toggle_rtd();
-    }
 
     // vn_imu.refreshDataToState(state.vectornav);
 }
 
-void ETCController::update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus) {
+void ETCController::update_implaus_timer(
+    Timer& timer, bool& timer_running, bool implaus_state, bool& etc_implaus
+) {
     if (implaus_state) {
-        if (etc_implaus) { return; }
+        if (etc_implaus) {
+            return;
+        }
 
         if (!timer_running) {
             timer.reset();
             timer.start();
             timer_running = true;
         } else {
-            float time = std::chrono::duration<float>(timer.elapsed_time()).count();
-            if (time > 100) {
+            uint16_t time_ms_elapsed = timer.elapsed_time().count() / 1000;
+            // Needs to have faulted for at least 100ms before the motor is disabled
+            if (time_ms_elapsed > 100) {
                 etc_implaus = true;
-                state.motor_enabled = false;
 
                 timer.stop();
                 timer.reset();
@@ -117,57 +132,92 @@ void ETCController::update_implaus_timer(Timer &timer, bool &timer_running, bool
 }
 
 void ETCController::update_implaus() {
-    bool implaus_APPS_deviation = std::abs(state.APPS1_position - state.APPS2_position) > MAX_APPS_POSITION_DEVIATION;
-    bool implaus_APPS_range = !in_range(state.APPS1_voltage, APPS1_MIN_VOLTAGE, APPS1_MAX_VOLTAGE) || !in_range(state.APPS2_voltage, APPS2_MIN_VOLTAGE, APPS2_MAX_VOLTAGE);
+    bool implaus_APPS_deviation =
+        std::abs(state.APPS1_position - state.APPS2_position) > MAX_APPS_POSITION_DEVIATION;
+    bool implaus_APPS_range =
+        !in_range(state.APPS1_voltage, APPS1_MIN_VOLTAGE, APPS1_MAX_VOLTAGE)
+        || !in_range(state.APPS2_voltage, APPS2_MIN_VOLTAGE, APPS2_MAX_VOLTAGE);
     bool implaus_BPPS_range = !in_range(state.BPPS_voltage, BPPS_MIN_VOLTAGE, BPPS_MAX_VOLTAGE);
-    bool implaus_BSE_range = !in_range(state.front_BSE_voltage, FRONT_BSE_MIN_VOLTAGE, FRONT_BSE_MAX_VOLTAGE) || !in_range(state.rear_BSE_voltage, REAR_BSE_MIN_VOLTAGE, REAR_BSE_MAX_VOLTAGE);
-    bool implaus_brake_and_accel = (state.front_BSE_voltage > FRONT_BSE_ACTIVATION_VOLTAGE || state.rear_BSE_voltage > REAR_BSE_ACTIVATION_VOLTAGE) && state.APPS_position_avg > 0.25f;
+    bool implaus_BSE_range =
+        !in_range(state.front_BSE_voltage, FRONT_BSE_MIN_VOLTAGE, FRONT_BSE_MAX_VOLTAGE)
+        || !in_range(state.rear_BSE_voltage, REAR_BSE_MIN_VOLTAGE, REAR_BSE_MAX_VOLTAGE);
+    // APPS / Brake Pedal Plausibility Check:
+    // "With accelerator > 25%, press brake pedal. Axle MUST stop"
+    // Note: brake pedal range is up for interpretation
+    bool implaus_brake_and_accel = (state.BPPS_position > 0.25) && state.APPS_position_avg > 0.25f;
 
-    update_implaus_timer(implaus_APPS_deviation_timer, implaus_APPS_deviation_timer_running, implaus_APPS_deviation, state.implaus_APPS_deviation);
-    update_implaus_timer(implaus_APPS_range_timer, implaus_APPS_range_timer_running, implaus_APPS_range, state.implaus_APPS_range);
-    update_implaus_timer(implaus_BPPS_range_timer, implaus_BPPS_range_timer_running, implaus_BPPS_range, state.implaus_BPPS_range);
-    update_implaus_timer(implaus_BSE_range_timer, implaus_BSE_range_timer_running, implaus_BSE_range, state.implaus_BSE_range);
+    update_implaus_timer(
+        implaus_APPS_deviation_timer,
+        implaus_APPS_deviation_timer_running,
+        implaus_APPS_deviation,
+        state.implaus_APPS_deviation
+    );
+    update_implaus_timer(
+        implaus_APPS_range_timer,
+        implaus_APPS_range_timer_running,
+        implaus_APPS_range,
+        state.implaus_APPS_range
+    );
+    update_implaus_timer(
+        implaus_BPPS_range_timer,
+        implaus_BPPS_range_timer_running,
+        implaus_BPPS_range,
+        state.implaus_BPPS_range
+    );
+    update_implaus_timer(
+        implaus_BSE_range_timer,
+        implaus_BSE_range_timer_running,
+        implaus_BSE_range,
+        state.implaus_BSE_range
+    );
+
+    // "axle may turn again once < 5% pedal position."
     if (state.implaus_brake_and_accel && state.APPS_position_avg < 0.05f) {
         state.implaus_brake_and_accel = false;
     }
-
-    if (!state.ready_to_drive) {
-        state.motor_enabled = false;
-    }
-
     if (implaus_brake_and_accel) {
         state.implaus_brake_and_accel = true;
-        state.motor_enabled = false;
     }
 
-    if (!state.motor_enabled && !state.implaus_APPS_deviation && !state.implaus_APPS_range && !state.implaus_BPPS_range && !state.implaus_brake_and_accel && !state.implaus_BSE_range && state.ready_to_drive) {
+    if (state.implaus_APPS_deviation
+        || state.implaus_APPS_range
+        || state.implaus_BPPS_range
+        || state.implaus_brake_and_accel
+        || state.implaus_BSE_range
+        || !state.ready_to_drive)
+    {
+        state.motor_enabled = false;
+    } else {
         state.motor_enabled = true;
     }
 }
 
 // Called in the rise irq for rtd_button
-void ETCController::toggle_rtd() {
-    printf("RTD EVAL %d\n", state.ready_to_drive);
-    if (!state.ready_to_drive) {
-        // TS_READY determined by battery CAN messages saying that precharge is done
-        // and shutdown closed
-        ts_ready = (battery_precharged && shutdown_closed);
-        printf("BPPS: %f\n", state.BPPS_position);
-        if (ts_ready && state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT) {
-            printf("RTD Should be actve...?\n");
-            state.ready_to_drive = true;
-            rtd_light.write(true);
-            rtd_buzzer.write(1);
-            rtd_buzzer_timeout.attach([this]{ rtd_buzzer.write(0); }, RTD_BUZZER_DURATION);
-        }
+void ETCController::rtd_button_irq() {
+    // TS_READY is battery CAN messages saying that precharge is done and
+    // shutdown closed
+    bool ts_ready = true || (battery_precharged && shutdown_closed);
+    bool rtd_condition = state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT;
+    if (!state.ready_to_drive && ts_ready && rtd_condition) {
+        turn_on_rtd();
     } else {
-        state.ready_to_drive = false;
-        rtd_light.write(false);
+        turn_off_rtd();
     }
+}
+void ETCController::turn_on_rtd() {
+    state.ready_to_drive = true;
+    rtd_light.write(1);
+    rtd_buzzer.write(1);
+    rtd_buzzer_timeout.attach([this] { rtd_buzzer.write(0); }, RTD_BUZZER_DURATION);
+}
+void ETCController::turn_off_rtd() {
+    state.ready_to_drive = false;
+    rtd_light.write(0);
 }
 
 void ETCController::update_regen_state(float speed) {
-    state.regen_allowed = !in_range(speed, 0.0f, 5.0f) || state.BPPS_position > BPPS_MAX_NON_REGEN_BRAKING;
+    state.regen_allowed =
+        !in_range(speed, 0.0f, 5.0f) || state.BPPS_position > BPPS_MAX_NON_REGEN_BRAKING;
 }
 
 // todo: this function is not called?
