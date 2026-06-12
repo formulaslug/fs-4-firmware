@@ -195,10 +195,9 @@ void drawScreenLayout() {
             vsm_state.sme_temp_faultcode,
             vsm_state.sme_temp_faultlevel,
             fps,
-            vsm_state.tperiph_br_tire_temps,
+            //vsm_state.tperiph_br_tire_temps,
             tick
         );
-        printf("vsm br,temp[1] %d \n", vsm_state.tperiph_br_tire_temps[1]);
         break;
     }
 }

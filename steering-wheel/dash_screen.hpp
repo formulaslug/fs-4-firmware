@@ -58,7 +58,7 @@ public:
         uint8_t faultcode,     // FAULT CODE
         uint8_t faultlevel,    // FAULT LEVEL
         uint16_t fps,
-        uint8_t (&wheelspeedFL)[],
+        //uint8_t (&tperiph_br_tire_temps)[8],
         int tick
     );
 
