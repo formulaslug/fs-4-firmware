@@ -57,6 +57,15 @@ bool ETCController::in_range(float value, float low, float high) {
     return (value >= low) && (value <= high);
 }
 
+float ETCController::current_limit(float voltage, float current){
+    float R0 = 0.008f / 19.0f;
+    float limit = -1.0f / R0 * (2.5 - (voltage - 0.5f) - current * R0);
+    if (limit > state.MAX_DISCHARGE_CURRENT_LIMIT) {
+        return state.MAX_DISCHARGE_CURRENT_LIMIT;
+    }
+    return limit;
+}
+
 float ETCController::accelerator_mapping(float position) {
     // Tune these. Raising the scale of region 1 and 3 will make the pedal more sensetive in those regions.
     // Making them both 1 will return the pedal to normal feel.

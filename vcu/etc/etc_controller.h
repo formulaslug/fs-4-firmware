@@ -24,8 +24,10 @@ struct ETCState {
     float rear_BSE_voltage = 0.0f;
     int16_t unfiltered_motor_torque = 0.0f; // -32767 to 32768
     int16_t MAX_SPEED = 7500;
-    uint16_t CHARGE_CURRENT_LIMIT = 150;
-    uint16_t DISCHARGE_CURRENT_LIMIT = 450;
+    uint16_t CHARGE_CURRENT_LIMIT = 150; // Amps
+    // FIXME (@Nathaniel): What is the difference between these?
+    uint16_t MAX_DISCHARGE_CURRENT_LIMIT = 450; // Amps
+    uint16_t DISCHARGE_CURRENT_LIMIT = 450; // Amps
     uint8_t mbb_alive = 0;
     bool rtd_button_pressed = false;
     bool ready_to_drive = false;
@@ -52,6 +54,9 @@ struct ETCState {
     uint8_t traction_mode = 0;
     uint8_t regen_mode = 0;
     LowPassFilter<int16_t> motor_torque{40}; // example 40hz frequency for -3db filtering, 
+
+    uint16_t min_battery_voltage_centivolts = 420; // in centivolts
+    uint16_t current_draw = 0; // in amps
 };
 
 class ETCController {
@@ -151,6 +156,8 @@ private:
     void update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus);
 
     void rtd_button_irq();
+
+    float current_limit(float voltage, float current);
 };
 
 #endif

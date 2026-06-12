@@ -61,6 +61,16 @@ int main() {
                 etc.update_regen_state(ground_speed);
                 break;
             }
+            case 914: { // TBB_Power
+                etc.state.current_draw = rx.data[2] + (rx.data[3] << 8);
+                break;
+            }
+            case 915: { // TBB_Status
+                etc.state.min_battery_voltage_centivolts = rx.data[5] + 200;
+                float max_discharge = etc.current_limit(etc.state.min_battery_voltage_centivolts / 100.0f, etc.state.current_draw);
+                etc.state.DISCHARGE_CURRENT_LIMIT = max_discharge;
+                break;
+            }
             }
         }
         if (canD.read(rx)) {
