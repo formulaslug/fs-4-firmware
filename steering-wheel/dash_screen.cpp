@@ -171,7 +171,7 @@ void DashScreen::drawDebugFaultLayout(
     uint8_t faultcode,     // FAULT CODE
     uint8_t faultlevel,    // FAULT LEVEL
     uint16_t fps,
-    //uint8_t wheelSpeedFL,
+    uint8_t (&tperiph_br_tire_temps)[],
     int tick
 ) {
 
@@ -350,6 +350,7 @@ void DashScreen::drawDebugFaultLayout(
 
     //fps 
     //drawFormattedText(20, 450, "wheelSpeed FL: %d", 23, OPT_CENTERY, wheelSpeedFL); testing if this works
+    drawFormattedText(20, 450, "temps: %d, %d, %d, %d, %d, %d, %d, %d\n", 23, OPT_CENTERY, tperiph_br_tire_temps[0],tperiph_br_tire_temps[1],tperiph_br_tire_temps[2],tperiph_br_tire_temps[3],tperiph_br_tire_temps[4],tperiph_br_tire_temps[5],tperiph_br_tire_temps[6],tperiph_br_tire_temps[7]);
     drawFormattedText(20, 400, "fps: %d", 23, OPT_CENTERY, fps);
     endFrame();
 
