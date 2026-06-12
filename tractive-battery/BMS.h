@@ -36,10 +36,10 @@ inline constexpr uint16_t MAX_CELL_VOLTAGE_MV = 4200; // 4.2 volts
 inline constexpr uint16_t MIN_CELL_VOLTAGE_MV = 2500; // 2.5 volts
 
 // Min cell voltage for balancing while active (mv)
-// inline constexpr uint16_t BALANCING_THRESHOLD = 0.85 * MAX_CELL_VOLTAGE; // 0.85*4.2v = 3.57v
-inline constexpr uint16_t BALANCING_THRESHOLD = 3000;  
+inline constexpr uint16_t BALANCING_THRESHOLD_MV = 0.85 * MAX_CELL_VOLTAGE_MV; // 0.85*4.2v = 3.57v
+// inline constexpr uint16_t BALANCING_THRESHOLD = 3000;  
 // Min cell difference for balancing (mv)
-inline constexpr uint16_t DIFFERENCE_THRESHOLD = 1;
+inline constexpr uint16_t DIFFERENCE_THRESHOLD_MV = 15;
 
 class BMS {
 

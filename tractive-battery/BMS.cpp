@@ -259,7 +259,7 @@ void BMS::turnOnBalancing() {
                 break;
             }
 
-            if (voltages[i][maxVoltageIndex] < BALANCING_THRESHOLD) {
+            if (voltages[i][maxVoltageIndex] < BALANCING_THRESHOLD_MV) {
                 break;
             }
 
@@ -279,7 +279,7 @@ void BMS::turnOnBalancing() {
             }
 
             if (!neighborIsDischarging
-                && voltages[i][maxVoltageIndex] - minCellVoltage >= DIFFERENCE_THRESHOLD)
+                && voltages[i][maxVoltageIndex] - minCellVoltage >= DIFFERENCE_THRESHOLD_MV)
             {
                 dischargeValue |= (1 << maxVoltageIndex);
             }
@@ -424,18 +424,18 @@ void BMS::controller() {
     readCellVoltages();
     for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
         for (int j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-            printf("c[%d][%d]: %f mv  ", i, j, temps[i][j]);
+            // printf("c[%d][%d]: %d mv  ", i, j, voltages[i][j]);
         }
-        printf("\n");
+        // printf("\n");
     }
-    const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
+    const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD_MV || currentState == CHARGING;
     if (currentState != FAULT && can_balance) {
         turnOnBalancing();
         balancing = true;
     } else {
         balancing = false;
     }
-    printf("pack: %d mv\n", packVoltageMv);
+    // printf("pack: %dmv, min: %dmv, max: %dmv\n", packVoltageMv, minCellVoltage, maxCellVoltage);
     readTemps();
     checkForFaults();
     readPackCurrent();
