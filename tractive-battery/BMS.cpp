@@ -1,6 +1,7 @@
 #include "BMS.h"
 
 #include <algorithm>
+#include <bitset>
 #include <cmath>
 #include <cstdint>
 
@@ -26,7 +27,6 @@ BMS::BMS(CAN& CAN_POWERTRAIN, bool charging, Mutex& mainMutex)
 
     nBMS_Fault_3V3 = 1;
     packCurrent = 0;
-    
 
     // get initial values
     turnOffBalancing();
@@ -85,7 +85,7 @@ void BMS::readCellVoltages() {
             uint16_t* castVoltages = (uint16_t*)voltageReading;
             for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
                 // printf("%d\n", castVoltages[j]);
-                voltages[i][j] = castVoltages[j]/10;
+                voltages[i][j] = castVoltages[j] / 10;
             }
             // printf("\n");
 
@@ -93,7 +93,7 @@ void BMS::readCellVoltages() {
             // casted so that its easier to read
         }
 
-        uint16_t temp_minCelVoltage = 0;
+        uint16_t temp_minCelVoltage = 65535;
         uint16_t temp_maxCellVoltage = 0;
         uint32_t temp_packVoltageMv = 0;
 
@@ -101,16 +101,16 @@ void BMS::readCellVoltages() {
             for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
                 temp_packVoltageMv += voltages[i][j];
 
-                if (voltages[i][j] < minCelVoltage) {
+                if (voltages[i][j] < temp_minCelVoltage) {
                     temp_minCelVoltage = voltages[i][j];
                 }
-                if (voltages[i][j] > maxCellVoltage) {
+                if (voltages[i][j] > temp_maxCellVoltage) {
                     temp_maxCellVoltage = voltages[i][j];
                 }
             }
         }
 
-        minCelVoltage = temp_minCelVoltage;
+        minCellVoltage = temp_minCelVoltage;
         maxCellVoltage = temp_maxCellVoltage;
         packVoltageMv = temp_packVoltageMv;
     }
@@ -126,7 +126,7 @@ void BMS::readTemps() {
 
         // STEP 1: Write register pointer (tell sensor which register to read)
         // I2C Sequence: START -> [ADDR+W] -> ACK -> [REG] -> STOP
-        
+
         // BYTE 0: Address with Write bit (ADDR << 1|0)
         commData[0] = (0x6 << 4) | ((((temp_sense_address << 1) | 0x00) >> 4) & 0x0F);
         commData[1] = ((((temp_sense_address << 1) | 0x00) & 0x0F) << 4) | 0x0;
@@ -141,9 +141,8 @@ void BMS::readTemps() {
         commData[5] = ((0x00 & 0x0F) << 4) | 0x0;
 
         ltcBusInterface.WakeupBus();
-        LTC681xParallelBus::BusCommand wrCmd = LTC681xParallelBus::BuildBroadcastBusCommand(
-            WriteCommGroup()
-        );
+        LTC681xParallelBus::BusCommand wrCmd =
+            LTC681xParallelBus::BuildBroadcastBusCommand(WriteCommGroup());
         ltcBusInterface.SendDataCommand(wrCmd, commData);
 
         ThisThread::sleep_for(3ms);
@@ -155,9 +154,8 @@ void BMS::readTemps() {
         // its PEC followed by 72 clock cycles. Pull CSB high at the
         // end of the 72 clock cycles of STCOMM command.
         ltcBusInterface.WakeupBus();
-        LTC681xParallelBus::BusCommand stCmd = LTC681xParallelBus::BuildBroadcastBusCommand(
-            StartComm()
-        );
+        LTC681xParallelBus::BusCommand stCmd =
+            LTC681xParallelBus::BuildBroadcastBusCommand(StartComm());
         static uint8_t buf[6] = {};
         ltcBusInterface.SendDataCommand(stCmd, buf);
 
@@ -196,7 +194,7 @@ void BMS::readTemps() {
             uint8_t tempMSB = ((rxData[2] & 0x0F) << 4) | ((rxData[3] >> 4) & 0x0F);
 
             // LSB is in comm register 3 4 msbs
-            uint8_t tempLSB = (rxData[3] & 0xF0)>>4;
+            uint8_t tempLSB = (rxData[3] & 0xF0) >> 4;
 
             // Combine MSB and LSB into 16-bit value
 
@@ -208,7 +206,6 @@ void BMS::readTemps() {
             // Each LSB = 0.0625°C
             temps[i][j] = ((float)rawTemp) * 0.0625f;
         }
-
     }
 
     int8_t maxTemp = 0;
@@ -224,63 +221,74 @@ void BMS::readTemps() {
     maxCellTemp = maxTemp;
 }
 
-// Turns on balancing for chips. Balancing should be done while charging and
-// cells are most of the way charged, or when active and cells are most of the
-// way charged. Our balancing threshold is at 85% of maximum cell voltage
+// Turns on balancing for all chips. Balancing should be done while charging and
+// cells or when active and cells are most of the way charged. Our balancing
+// threshold is at 85% of maximum cell voltage. Should only be called when there
+// is no fault.
+//
+// From the LTC6810 datasheet:
+// "The LTC6810 does not allow adjacent discharge switches to be asserted, so
+// the WRFG command will not be executed if adjacent DCC bits in the CONFIG
+// register are asserted. The current path shown at the right of Figure 40b
+// shows that if adjacent discharges switches were permitted to be on, discharge
+// current would flow through the series combination of cells instead of the
+// individual cells."
 void BMS::turnOnBalancing() {
-    if (currentState != FAULT) {
-        for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
-            LTC6810::Configuration& config = chips[i].getConfig();
+    for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
+        LTC6810::Configuration& config = chips[i].getConfig();
 
-            uint8_t dischargeValue = 0x00;
-            uint8_t cellVisited = 0x00;
+        uint8_t dischargeValue = 0x00;
+        uint8_t cellVisited = 0x00;
 
-            for (uint8_t k = 0; k < NUM_VOLTAGES_PER_MODULE; k++) {
-                int8_t maxVoltageIndex = -1; // -1 is not found yet
-                uint16_t maxVolt = 0;
+        for (uint8_t k = 0; k < NUM_VOLTAGES_PER_MODULE; k++) {
+            int8_t maxVoltageIndex = -1; // -1 is not found yet
+            uint16_t maxVolt = 0;
 
-                
-                for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
-                    if (cellVisited & (1 << j)) {
-                        continue;
-                    }
-
-                    if (voltages[i][j] > maxVolt) {
-                        maxVoltageIndex = j;
-                    }
+            for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
+                if (cellVisited & (1 << j)) {
+                    continue;
                 }
 
-                if (maxVoltageIndex == -1) {
-                    break;
-                }
-
-                if (voltages[i][maxVoltageIndex] < BALANCING_THRESHOLD) {
-                    break;
-                }
-
-                cellVisited |= (1 << maxVoltageIndex);
-
-                bool neighborIsDischarging = false;
-                
-                if (maxVoltageIndex > 0) {
-                    if (dischargeValue & (1 << (maxVoltageIndex - 1))) {
-                        neighborIsDischarging = true;
-                    }
-                }
-                if (maxVoltageIndex < (NUM_VOLTAGES_PER_MODULE - 1)) {
-                    if (dischargeValue & (1 << (maxVoltageIndex + 1))) {
-                        neighborIsDischarging = true;
-                    }
-                }
-
-                if (!neighborIsDischarging && voltages[i][maxVoltageIndex] - minCelVoltage >= DIFFERENCE_THRESHOLD) {
-                    dischargeValue |= (1 << maxVoltageIndex);
+                if (voltages[i][j] > maxVolt) {
+                    maxVoltageIndex = j;
+                    maxVolt = voltages[i][j];
                 }
             }
 
-            config.dischargeState.value = dischargeValue;
-            chips[i].updateConfig();
+            if (maxVoltageIndex == -1) {
+                break;
+            }
+
+            if (voltages[i][maxVoltageIndex] < BALANCING_THRESHOLD) {
+                break;
+            }
+
+            cellVisited |= (1 << maxVoltageIndex);
+
+            bool neighborIsDischarging = false;
+
+            if (maxVoltageIndex > 0) {
+                if (dischargeValue & (1 << (maxVoltageIndex - 1))) {
+                    neighborIsDischarging = true;
+                }
+            }
+            if (maxVoltageIndex < (NUM_VOLTAGES_PER_MODULE - 1)) {
+                if (dischargeValue & (1 << (maxVoltageIndex + 1))) {
+                    neighborIsDischarging = true;
+                }
+            }
+
+            if (!neighborIsDischarging
+                && voltages[i][maxVoltageIndex] - minCellVoltage >= DIFFERENCE_THRESHOLD)
+            {
+                dischargeValue |= (1 << maxVoltageIndex);
+            }
         }
+
+        config.dischargeState.value = dischargeValue;
+        // printf("%d: %s\n", i, std::bitset<8>(dischargeValue).to_string().c_str());
+        ltcBusInterface.WakeupBus();
+        chips[i].updateConfig();
     }
 }
 
@@ -301,10 +309,12 @@ void BMS::readPackCurrent() {
     // Nominal primary current (A)
     constexpr float HASS300_IPN = 300.0f;
     constexpr float HASS300_SENSITIVITY = 0.625f; // V/Ipn
+
+    // Todo: tune these more
     // "Ref" pin of the InAmps; i.e. output voltage at 0 current (V)
     constexpr float HASS300_INSTR_AMP_VREF = 0.2024f; // 0.174f;
-    // Gain on InAmp output
-    constexpr float HASS300_INSTR_AMP_GAIN = 1.796f; // 61.86 // 62.18
+    // "Gain" pin of the InAmps.
+    constexpr float HASS300_INSTR_AMP_GAIN = 1.69f; // 1.796f;
 
     float voutPos = V_Out_Positive.read() * 3.3f; // idk about this one
     float voutNeg = V_Out_Negative.read() * 3.3f;
@@ -349,13 +359,7 @@ void BMS::checkForFaults() {
         for (uint8_t j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
             uint16_t voltage = voltages[i][j];
             if (voltage >= MAX_CELL_VOLTAGE_MV || voltage <= MIN_CELL_VOLTAGE_MV) {
-                printf("voltage fault: (%d, %d): %d\n", i, j, voltage);
-                // if (faultLoc == NONE) {
-                //     faultLoc = VOLTAGE;
-                // } else {
-                //     faultLoc = BOTH;
-                // }
-                // throwFault(i, j);
+                // printf("voltage fault: (%d, %d): %d\n", i, j, voltage);
                 modFaultIndex = i;
                 componentFaultIndex = j;
                 faultPresent = true;
@@ -375,7 +379,7 @@ void BMS::checkForFaults() {
             int8_t tempReading = temps[i][j];
             if (tempReading >= MAX_TEMP) {
                 // throwFault(i, j);
-                printf("overtemp: (%d, %d): %d\n", i, j, tempReading);
+                // printf("overtemp: (%d, %d): %d\n", i, j, tempReading);
                 modFaultIndex = i;
                 componentFaultIndex = j;
                 faultPresent = true;
@@ -386,7 +390,7 @@ void BMS::checkForFaults() {
                 }
             } else if (tempReading <= MIN_TEMP) {
                 // throwFault(i, j);
-                printf("undertemp: (%d, %d): %d\n", i, j, tempReading);
+                // printf("undertemp: (%d, %d): %d\n", i, j, tempReading);
                 modFaultIndex = i;
                 componentFaultIndex = j;
                 faultPresent = true;
@@ -395,23 +399,14 @@ void BMS::checkForFaults() {
         }
     }
 
-    if(faultPresent){
+    if (faultPresent) {
         faultCounter++;
-    }else{
-        faultCounter=0;
+    } else {
+        faultCounter = 0;
     }
 
-    if(faultCounter>=FAULT_LIMIT){
-        throwFault(modFaultIndex,componentFaultIndex);
-    }
-
-    // Watch pack current. TODO: need to add negative here as well
-    if (std::fabs(packCurrent) > MAX_PACK_CURRENT_AMPS) {
-        // currentState = FAULT;
-        // nBMS_Fault_3V3 = 0;
-        printf(
-            "ERROR: Overcurrent detected: %.2f A (not throwing actual BMS fault)\n", packCurrent
-        );
+    if (faultCounter >= FAULT_LIMIT) {
+        throwFault(modFaultIndex, componentFaultIndex);
     }
 }
 
@@ -425,9 +420,14 @@ void BMS::throwFault(int moduleIndex, int sensorIndex) {
 
 // Main controller loop (to be called periodically at high frequency)
 void BMS::controller() {
-
     turnOffBalancing();
     readCellVoltages();
+    for (int i = 0; i < NUM_BATTERY_MODULES; i++) {
+        for (int j = 0; j < NUM_VOLTAGES_PER_MODULE; j++) {
+            printf("c[%d][%d]: %f mv  ", i, j, temps[i][j]);
+        }
+        printf("\n");
+    }
     const bool can_balance = maxCellVoltage >= BALANCING_THRESHOLD || currentState == CHARGING;
     if (currentState != FAULT && can_balance) {
         turnOnBalancing();
@@ -435,6 +435,7 @@ void BMS::controller() {
     } else {
         balancing = false;
     }
+    printf("pack: %d mv\n", packVoltageMv);
     readTemps();
     checkForFaults();
     readPackCurrent();

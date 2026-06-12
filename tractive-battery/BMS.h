@@ -35,12 +35,11 @@ inline constexpr int8_t MIN_CELL_TEMP = -40;
 inline constexpr uint16_t MAX_CELL_VOLTAGE_MV = 4200; // 4.2 volts
 inline constexpr uint16_t MIN_CELL_VOLTAGE_MV = 2500; // 2.5 volts
 
+// Min cell voltage for balancing while active (mv)
 // inline constexpr uint16_t BALANCING_THRESHOLD = 0.85 * MAX_CELL_VOLTAGE; // 0.85*4.2v = 3.57v
-inline constexpr uint16_t BALANCING_THRESHOLD = 30000;  // temporary balancing threshold
-inline constexpr uint16_t DIFFERENCE_THRESHOLD = 00300; // 30 milivolts
-
-// Overcurrent fault threshold - tune later
-inline constexpr float MAX_PACK_CURRENT_AMPS = 600.0f;
+inline constexpr uint16_t BALANCING_THRESHOLD = 3000;  
+// Min cell difference for balancing (mv)
+inline constexpr uint16_t DIFFERENCE_THRESHOLD = 1;
 
 class BMS {
 
@@ -78,8 +77,6 @@ public:
     Mutex& TelemetryLock; 
 
     bms_state currentState;
-    fault_location faultLoc = NONE;
-
 
     uint8_t faultCounter = 0;
 
@@ -97,12 +94,12 @@ public:
     CANMessage msg;
 
     // All in mv
-    uint16_t voltages[NUM_BATTERY_MODULES][NUM_VOLTAGES_PER_MODULE];
-    uint16_t minCelVoltage;
-    uint16_t maxCellVoltage;
-    uint32_t packVoltageMv;
+    uint16_t voltages[NUM_BATTERY_MODULES][NUM_VOLTAGES_PER_MODULE] = {{0}};
+    uint16_t minCellVoltage = 65535;
+    uint16_t maxCellVoltage = 0;
+    uint32_t packVoltageMv = 0;
 
-    float temps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE];
+    float temps[NUM_BATTERY_MODULES][NUM_TEMP_SENSORS_PER_MODULE] = {{0}};
     uint16_t maxCellTemp;
 
     std::vector<LTC6810> chips;
