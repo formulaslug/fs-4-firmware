@@ -57,6 +57,30 @@ bool ETCController::in_range(float value, float low, float high) {
     return (value >= low) && (value <= high);
 }
 
+float ETCController::accelerator_mapping(float position) {
+    // Tune these. Raising the scale of region 1 and 3 will make the pedal more sensetive in those regions.
+    // Making them both 1 will return the pedal to normal feel.
+    float region1 = 0.3f; // This represents the size of the region, not the position. 
+    float region1_scale = 0.25f; 
+    float region2 = 0.4f; // This represents the size of the region, not the position.
+    float region3_scale = 0.25f;
+
+    float region3 = 1.0f - region2 - region1;
+    float region1_size = region1 * region1_scale; // This is the scaled size of the region
+    float region3_size = region3 * region3_scale; // This is the scaled size of the region
+
+    float region2_size = 1.0f - region1_size - region3_size;
+    float region2_scale = region2_size / region2;
+
+    if (position < 0.3f) {
+        return position * region1_scale;
+    };
+    if (position < 0.7f) {
+        return region1_size + (position - region1) * region2_scale;
+    };
+    return region1_size + region2_size + (position - region2) * region3_scale;
+}
+
 void ETCController::update_state() {
     state.APPS1_voltage = APPS1_input.read_voltage();
     state.APPS2_voltage = APPS2_input.read_voltage();
@@ -73,8 +97,10 @@ void ETCController::update_state() {
     state.BPPS_position =
         clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
-
+    
     update_implaus();
+
+    state.APPS_position_avg = accelerator_mapping(state.APPS_position_avg);
 
     if (!REGEN_FORCE_DISABLE && state.regen_mode != 0) {
         state.unfiltered_motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE) - static_cast<int16_t>(state.BPPS_position * MAX_REGEN_TORQUE);
