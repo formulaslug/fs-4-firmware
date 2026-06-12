@@ -10,7 +10,7 @@
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
 #include "traction_control.h"
-#include "low_pass"
+#include "low_pass_filter.h"
 
 struct ETCState {
     float APPS1_voltage = 0.0f;
@@ -51,7 +51,7 @@ struct ETCState {
     uint8_t drive_mode = 0;
     uint8_t traction_mode = 0;
     uint8_t regen_mode = 0;
-
+    LowPassFilter<int16_t> motor_torque{300}; // example 300hz frequency for -3db filtering, 
 };
 
 class ETCController {
