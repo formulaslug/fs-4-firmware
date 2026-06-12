@@ -46,6 +46,12 @@ Mutex sensorMutex;
 uint8_t shared_pixels8lh[D6T8LH::N_PIXEL] = {0};
 uint8_t shared_side_temp = 0; // D6T-1A side tire temp (DATA_SIDE_TIRE_TEMP)
 
+// DEBUG: count actual CAN sends so we can measure the real rates. Incremented on the CAN thread
+// (in sendCANtpdo/sendCANtemp), read + reset once per second by printSendRates() on the sensor
+// thread. 32-bit aligned reads are atomic on Cortex-M, so the counts are accurate to +/-1.
+volatile uint32_t dbg_tpdo_count = 0;
+volatile uint32_t dbg_temp_count = 0;
+
 /**
  * @brief CAN message sending, just sends the can message. If it fails too many times, resets the CAN object
  */
@@ -78,11 +84,10 @@ void readSensors() {
                 local8[i] = (uint8_t)(px8[i]);
             }
             // TEMP DIAGNOSTIC: actual sensor values in degrees C (and internal PTAT temp).
-            printf("d6t8 ok  ptat=%.1f  px=%.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",
-                   d6t8.ptat_c(), px8[0], px8[1], px8[2], px8[3], px8[4], px8[5], px8[6], px8[7]);
+            //printf("d6t8 ok  ptat=%.1f  px=%.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n", d6t8.ptat_c(), px8[0], px8[1], px8[2], px8[3], px8[4], px8[5], px8[6], px8[7]);
             i2c_fail_count = 0; // Recover from transient failures
         } else {
-            printf("Failed reading d6t8 : %d\n", read_result);
+            //printf("Failed reading d6t8 : %d\n", read_result);
             local8[0] = 66; //  BAD DATA when sensor data is
             i2c_fail_count++;
         }
@@ -106,6 +111,17 @@ void readSensors() {
     if (publish8) std::memcpy(shared_pixels8lh, local8, sizeof(shared_pixels8lh));
     if (publish1) shared_side_temp = local1;
     sensorMutex.unlock();
+}
+
+// DEBUG: prints how many tpdo/temp frames were actually sent in the last ~1 s (= rate in Hz).
+// Runs on the sensor thread so the printf can't disturb the CAN-thread timing it's measuring.
+void printSendRates() {
+    uint32_t tpdo = dbg_tpdo_count;
+    uint32_t temp = dbg_temp_count;
+    dbg_tpdo_count = 0;
+    dbg_temp_count = 0;
+    printf("Send rates: tpdo=%lu Hz (target 100), temp=%lu Hz (target 10)\n",
+           (unsigned long)tpdo, (unsigned long)temp);
 }
 
 int main() {
@@ -141,13 +157,14 @@ int main() {
     canMsgTimer.start();
 
     // CAN TX on a dedicated high-priority thread so blocking sensor I/O can't delay it.
-    //canQueue.call_every(10ms, &sendCANtpdo);  // 100Hz
+    canQueue.call_every(10ms, &sendCANtpdo);  // 100Hz
     canQueue.call_every(100ms, &sendCANtemp); // 10Hz
     canThread.start(callback(&canQueue, &EventQueue::dispatch_forever));
 
     // Sensor reads run on this (main) thread. A blocking/timed-out I2C read here no longer
     // affects CAN timing because the RTOS preempts this thread for the higher-priority CAN thread.
     sensorQueue.call_every(100ms, &readSensors); // 10Hz
+    //sensorQueue.call_every(100ms, &printSendRates); // DEBUG: report actual CAN send rates every second
     sensorQueue.dispatch_forever();
 
     return 0;
@@ -176,12 +193,13 @@ void sendCANtemp() {
     std::memcpy(pixels8lh, shared_pixels8lh, sizeof(pixels8lh));
     sensorMutex.unlock();
 
-    printf("Temp: %d, %d, %d, %d, %d, %d, %d, %d \n", pixels8lh[0],pixels8lh[1],pixels8lh[2],pixels8lh[3],pixels8lh[4],pixels8lh[5],pixels8lh[6],pixels8lh[7]);
+    //printf("Temp: %d, %d, %d, %d, %d, %d, %d, %d \n", pixels8lh[0],pixels8lh[1],pixels8lh[2],pixels8lh[3],pixels8lh[4],pixels8lh[5],pixels8lh[6],pixels8lh[7]);
 
     // Tire temperature message
     CANMessage tpdo_tiretemp_msg(cfg.tpdo_tiretemp_id, pixels8lh, 8);
     sendCANmessage(tpdo_tiretemp_msg);
     last_sent_temp = canMsgTimer.elapsed_time().count();
+    dbg_temp_count++; // DEBUG: count temp sends for rate measurement
 }
 
 void sendCANtpdo() {
@@ -243,6 +261,7 @@ void sendCANtpdo() {
     // printf("%d:: WRITE START \n", canMsgTimer.elapsed_time().count());
     sendCANmessage(tpdo_msg);
     last_sent_tpdo = canMsgTimer.elapsed_time().count();
+    dbg_tpdo_count++; // DEBUG: count tpdo sends for rate measurement
 
     //printf("CAN TX ERR CNT: %d\n", can.tderror());
     //printf("wheelspeed %d\n", wheel_speed_scaled);
