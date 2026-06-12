@@ -128,7 +128,7 @@ int main() {
         // if proximity pilot is about 0.9v then EVSE connected and button not pressed
         bool proximity_pilot_ready = (proximity_pilot.read() * 3.3 < 1.2);
         //enable = proximity_pilot_ready && prechargeDone;// && shutdown_closed;
-        faultCase = cell_temps_too_low && cell_temps_too_high_crg && !shutdown_closed;
+        faultCase = cell_temps_too_low && cell_temps_too_high_crg;// && !shutdown_closed;
         enable = proximity_pilot_ready && prechargeDone && (!faultCase||(dcBusVoltageMv <= DC_BUS_VOLTAGE_LOW_THRESHOLD));
         /*
         enable is high if:
