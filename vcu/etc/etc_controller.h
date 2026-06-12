@@ -10,6 +10,7 @@
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
 #include "traction_control.h"
+#include "low_pass"
 
 struct ETCState {
     float APPS1_voltage = 0.0f;
@@ -21,7 +22,7 @@ struct ETCState {
     float BPPS_position = 0.0f; // 0 to 1
     float front_BSE_voltage = 0.0f;
     float rear_BSE_voltage = 0.0f;
-    int16_t motor_torque = 0.0f; // -32767 to 32768
+    int16_t unfiltered_motor_torque = 0.0f; // -32767 to 32768
     int16_t MAX_SPEED = 7500;
     uint16_t CHARGE_CURRENT_LIMIT = 150;
     uint16_t DISCHARGE_CURRENT_LIMIT = 600;
@@ -50,6 +51,7 @@ struct ETCState {
     uint8_t drive_mode = 0;
     uint8_t traction_mode = 0;
     uint8_t regen_mode = 0;
+
 };
 
 class ETCController {

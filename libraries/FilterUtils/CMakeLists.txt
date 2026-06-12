@@ -14,6 +14,7 @@ project(filter-utils LANGUAGES CXX)
 add_library(filter-utils STATIC
         debounced_digital_in.cpp
         filtered_analog_in.cpp
+        low_pass_filter.cpp
 )
 
 target_include_directories(filter-utils PUBLIC include)
