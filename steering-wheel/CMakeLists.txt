@@ -18,7 +18,7 @@ include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 
 add_subdirectory(../mbed-os mbed-os)
 add_subdirectory(../libraries/bt817q bt817q)
-add_subdirectory(../libraries/FilterUtils debounced_digital_in)
+#add_subdirectory(../libraries/FilterUtils debounced_digital_in)
 
 set(CMAKE_CXX_STANDARD 20)
 
