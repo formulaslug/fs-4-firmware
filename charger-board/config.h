@@ -41,9 +41,4 @@
 #endif
 
 
-
-#ifndef DC_BUS_VOLTAGE_LOW_THRESHOLD
-#define DC_BUS_VOLTAGE_LOW_THRESHOLD 2000
-#endif
-
 #endif //CONFIG_H

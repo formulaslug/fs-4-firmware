@@ -4,7 +4,6 @@
 #include "config.h"
 #include "mbed.h"
 
-
 void initIO();
 void initScreen();
 void initChargerCAN();
@@ -34,12 +33,8 @@ uint32_t max_voltage_mV = 0;
 uint16_t max_dc_current_cA = 0; // in centiamps (0.01 amps)
 uint8_t max_ac_current_A = 0;
 
-
 uint16_t pack_voltage = 0;
 uint8_t soc = 0;
-uint32_t dcBusVoltageMv = 0;
-
-
 
 float pack_current = 0.0f;
 float min_temp_C = 0.0f;
@@ -52,7 +47,6 @@ uint32_t charge_time_min = 0;
 Timer charge_timer;
 bool charging = false;
 bool enable = false;
-bool faultCase = false;
 
 
 
@@ -103,14 +97,6 @@ int main() {
                 max_temp_C = static_cast<float>(static_cast<int8_t>(msg.data[2]));
 
                 break;
-
-            case 0x190: // SMPC_TPD0_STATS
-                dcBusVoltageMv =
-                    (msg.data[2] | (msg.data[3] << 8) | (msg.data[4] << 16) | (msg.data[5] << 24));
-                
-            
-                break;
-
             // case 0x488:// Energy usage stuff potentially? (placeholder id)
             //     energy_used = static_cast<float>(msg.data[0]
             //                         | (msg.data[1] << 8)
@@ -127,18 +113,7 @@ int main() {
         // if proximity pilot is about 1.7v then EVSE connected and button pressed
         // if proximity pilot is about 0.9v then EVSE connected and button not pressed
         bool proximity_pilot_ready = (proximity_pilot.read() * 3.3 < 1.2);
-        //enable = proximity_pilot_ready && prechargeDone;// && shutdown_closed;
-        faultCase = fault && cell_temps_too_low && cell_temps_too_high_crg && !shutdown_closed;
-        enable = proximity_pilot_ready && prechargeDone && (!faultCase||(dcBusVoltageMv <= DC_BUS_VOLTAGE_LOW_THRESHOLD));
-        /*
-        enable is high if:
-            proximity_pilot_ready is high
-            prechargeDone is high
-            and
-            there is not a fault or the bus voltage is below the threshold 
-            ie if theres a fault enable will be enabled until the dc bus voltage falls below 2 volts 
-        */
-
+        enable = proximity_pilot_ready && prechargeDone && !fault && shutdown_closed && !cell_temps_too_low && !cell_temps_too_high_crg;
 
         // printf("pp: %f\n",proximity_pilot.read());
 
@@ -153,14 +128,9 @@ int main() {
         //
         printf("max ac current: %d\n", max_ac_current_CP);
 
-        if(!faultCase){
-            max_ac_current_A = std::min(max_ac_current_CP, MAX_AC_CURRENT);
+        max_ac_current_A = std::min(max_ac_current_CP, MAX_AC_CURRENT);
 
-            max_voltage_mV = VOLTAGE_TARGET_MV;
-        }else{
-            max_ac_current_A = 0;
-            max_voltage_mV = 0;
-        }
+        max_voltage_mV = VOLTAGE_TARGET_MV;
 
         printf("pp_ready: %x, precharge done: %x, fault: %x, sh closed: %x, cell temps fine: %x\n",
             proximity_pilot_ready,
@@ -169,25 +139,19 @@ int main() {
             shutdown_closed,
             !cell_temps_too_low && !cell_temps_too_high_crg);
 
-
-
-
-        if (enable && !faultCase && !charging) {
+        if (enable && !charging) {
             charge_timer.reset();
             charge_timer.start();
             charging = true;
-        } else if ((enable && faultCase && charging) || !enable) {
+        } else if (!enable && charging) {
             charge_timer.stop();
             charging = false;
-            // max_voltage_mV = 0;
-            // max_dc_current_cA = 0;
         }
-
-
 
         if(charging){
             float power_W = (pack_voltage / 10.0f) * pack_current;
             energy_used += (power_W / 10.0f) / 3600.0f;
+        
         }
         
         //add energy timer logic here
@@ -195,9 +159,8 @@ int main() {
                                 charge_timer.elapsed_time())
                                 .count();
 
-        max_dc_current_cA = (enable && !fault) ? CURRENT_MAX_CA : 0;
-        max_ac_current_A = (enable && !fault) ? std::min((int)(control_pilot.read() * 3.3 * 19), MAX_AC_CURRENT) : 0;
-        //if there is any kind of fault we want this set to 0
+        max_dc_current_cA = enable ? CURRENT_MAX_CA : 0;
+        max_ac_current_A = std::min((int)(control_pilot.read() * 3.3 * 19), MAX_AC_CURRENT);
 
         printf("Enable: %x\nVoltage: %f\nSOC: %d\n\n", enable, pack_voltage / 100.0, soc);
 
