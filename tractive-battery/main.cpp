@@ -124,7 +124,7 @@ int main() {
     // TODO: Verify and uncoment
     // queue.call_every(500ms, sampleShutdownFinal);
 
-    // queue.call_every(200ms, controlFans);
+    queue.call_every(500ms, controlFans);
 
     bmsEventQueue.call_every(200ms, &bms, &BMS::controller);
     bmsControllerThread.start(callback(&bmsEventQueue, &EventQueue::dispatch_forever));
