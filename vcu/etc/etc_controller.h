@@ -25,7 +25,7 @@ struct ETCState {
     int16_t unfiltered_motor_torque = 0.0f; // -32767 to 32768
     int16_t MAX_SPEED = 7500;
     uint16_t CHARGE_CURRENT_LIMIT = 150;
-    uint16_t DISCHARGE_CURRENT_LIMIT = 600;
+    uint16_t DISCHARGE_CURRENT_LIMIT = 450;
     uint8_t mbb_alive = 0;
     bool rtd_button_pressed = false;
     bool ready_to_drive = false;
@@ -97,15 +97,13 @@ private:
 
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
 
-    static constexpr float APPS1_MIN_VOLTAGE = 0.370f;
-    static constexpr float APPS1_DEADZONE_VOLTAGE = 0.03f + APPS1_MIN_VOLTAGE;
+    static constexpr float APPS1_MIN_VOLTAGE = 0.360f;
     static constexpr float APPS1_MAX_VOLTAGE = 1.040f;
 
-    static constexpr float APPS2_MIN_VOLTAGE = 0.430f;
-    static constexpr float APPS2_DEADZONE_VOLTAGE = 0.03f + APPS1_MIN_VOLTAGE;
+    static constexpr float APPS2_MIN_VOLTAGE = 0.390f;
     static constexpr float APPS2_MAX_VOLTAGE = 1.067f;
 
-    static constexpr float BPPS_MIN_VOLTAGE = 0.550f;
+    static constexpr float BPPS_MIN_VOLTAGE = 0.580f;
     static constexpr float BPPS_MAX_VOLTAGE = 1.0f; // 2.8125f;
 
     static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
@@ -119,7 +117,7 @@ private:
     // static constexpr float REAR_BSE_ACTIVATION_VOLTAGE = 0.5f;
     static constexpr float BPPS_MAX_NON_REGEN_BRAKING = 0.9f;
 
-    static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.08f;
+    static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.09f;
     static constexpr float MAX_APPS_POSITION_DEVIATION = 0.10f;
 
     static constexpr int16_t MAX_TORQUE = 32767;

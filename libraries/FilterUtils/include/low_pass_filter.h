@@ -25,7 +25,7 @@ public:
      *
      * @returns A value based off this object's template representing the previously filtered sample
     */
-    const T read() {
+    T read() const {
         return _smoothed_value; 
     }
     

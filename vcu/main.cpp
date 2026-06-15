@@ -45,7 +45,9 @@ int main() {
             case 0x391: {
                 etc.battery_precharged = rx.data[0] & 0b01000000;
                 etc.shutdown_closed = rx.data[0] & 0b00000100;
-                etc.turn_off_rtd();
+                if (!etc.shutdown_closed || !etc.battery_precharged) {
+                    etc.turn_off_rtd();
+                }
                 break;
             }
             case 1154: { // SME_TPDO_Torque_speed
@@ -149,8 +151,8 @@ void send_sme_CAN_messages() {
     etc.state.tc_torque_reduction_factor = etc.traction_controller.get_output();
 
     uint8_t tpdo_throttle_demand[8];
-    tpdo_throttle_demand[0] = etc_state.motor_torque & 0xFF;
-    tpdo_throttle_demand[1] = etc_state.motor_torque >> 8;
+    tpdo_throttle_demand[0] = etc_state.motor_torque.read() & 0xFF;
+    tpdo_throttle_demand[1] = etc_state.motor_torque.read() >> 8;
     tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
     tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
     tpdo_throttle_demand[4] =

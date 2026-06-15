@@ -65,10 +65,10 @@ void ETCController::update_state() {
     state.rear_BSE_voltage = rear_BSE_input.read_voltage();
 
     state.APPS1_position = clamp(
-        (state.APPS1_voltage - APPS1_DEADZONE_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE)
+        (state.APPS1_voltage - APPS1_MIN_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE)
     );
     state.APPS2_position = clamp(
-        (state.APPS2_voltage - APPS2_DEADZONE_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE)
+        (state.APPS2_voltage - APPS2_MIN_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE)
     );
     state.BPPS_position =
         clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
@@ -82,13 +82,13 @@ void ETCController::update_state() {
         state.unfiltered_motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
     }
 
-    if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.motor_torque > 0) {
-      state.unfiltered_motor_torque = static_cast<int16_t>(state.motor_torque * state.tc_torque_reduction_factor);
+    if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.motor_torque.read() > 0) {
+      state.unfiltered_motor_torque = static_cast<int16_t>(state.motor_torque.read() * state.tc_torque_reduction_factor);
     }
 
     state.motor_torque.sample(state.unfiltered_motor_torque); // smooth out motor torque
 
-    state.brakelight_enabled = state.motor_torque < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT);
+    state.brakelight_enabled = state.motor_torque.read() < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT);
     brakelight.write(state.brakelight_enabled);
 
     state.solenoid_open = SOLENOID_FORCE_OPEN ? true : state.regen_allowed;
@@ -198,7 +198,7 @@ void ETCController::update_implaus() {
 void ETCController::rtd_button_irq() {
     // TS_READY is battery CAN messages saying that precharge is done and
     // shutdown closed
-    bool ts_ready = true || (battery_precharged && shutdown_closed);
+    bool ts_ready = battery_precharged && shutdown_closed;
     bool rtd_condition = state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT;
     if (!state.ready_to_drive && ts_ready && rtd_condition) {
         turn_on_rtd();
