@@ -149,6 +149,8 @@ private:
     void update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus);
 
     void rtd_button_irq();
+
+    float accelerator_mapping(float pedal_travel);
 };
 
 #endif

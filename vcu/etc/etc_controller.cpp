@@ -57,6 +57,37 @@ bool ETCController::in_range(float value, float low, float high) {
     return (value >= low) && (value <= high);
 }
 
+float ETCController::accelerator_mapping(float pedal_travel) {
+    float region1 = 0.3f;
+    float region1_scale = 2.0f;
+    float region2 = 0.4f;
+    float region3_scale = 2.0f;
+
+    float region3 = 1 - region1 - region2;
+    float scaled_region1 = region1 / region1_scale;
+    float scaled_region3 = region3 / region3_scale;
+    float scaled_region2 = 1 - scaled_region1 - scaled_region3;
+    float region2_scale = region2 / scaled_region2;
+
+    if (pedal_travel < scaled_region1) {
+        return pedal_travel * region1_scale;
+    }
+    if (pedal_travel < scaled_region2 + scaled_region1) {
+        float p1 = scaled_region1;
+        float p1_power = p1 * region1_scale;
+        float p2 = pedal_travel - scaled_region1;
+        float p2_power = p2 * region2_scale;
+        return p1_power + p2_power;
+    }
+    float p1 = scaled_region1;
+    float p1_power = p1 * region1_scale;
+    float p2 = scaled_region2;
+    float p2_power = p2 * region2_scale;
+    float p3 = pedal_travel - scaled_region1 - scaled_region2;
+    float p3_power = p3 * region3_scale;
+    return p1_power + p2_power + p3_power;
+}
+
 void ETCController::update_state() {
     state.APPS1_voltage = APPS1_input.read_voltage();
     state.APPS2_voltage = APPS2_input.read_voltage();
@@ -75,6 +106,8 @@ void ETCController::update_state() {
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
 
     update_implaus();
+
+    state.APPS_position_avg = accelerator_mapping(state.APPS_position_avg);
 
     if (!REGEN_FORCE_DISABLE && state.regen_mode != 0) {
         state.unfiltered_motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE) - static_cast<int16_t>(state.BPPS_position * MAX_REGEN_TORQUE);

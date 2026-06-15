@@ -91,6 +91,8 @@ int main() {
         }
 
         etc.update_state();
+
+        printf("Accelerator: %f\n", etc_state.APPS_position_avg);
     }
 
     return 0;
