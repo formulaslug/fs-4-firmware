@@ -132,6 +132,10 @@ int main() {
 
         max_voltage_mV = VOLTAGE_TARGET_MV;
 
+        if (!shutdown_closed) {
+            max_voltage_mV = 0;
+        }
+
         printf("pp_ready: %x, precharge done: %x, fault: %x, sh closed: %x, cell temps fine: %x\n",
             proximity_pilot_ready,
             prechargeDone, 
