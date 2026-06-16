@@ -141,8 +141,8 @@ void send_etc_CAN_messages() {
 
     CANMessage msg1{402, tpdo_pedal_travel, 8};
     CANMessage msg2{403, tpdo_status, 8};
-    canP.write(msg1);
-    canP.write(msg2);
+    canD.write(msg1);
+    canD.write(msg2);
 }
 
 void send_sme_CAN_messages() {
@@ -189,7 +189,9 @@ void send_sme_CAN_messages() {
 
     canP.write(throttle_msg);
     canP.write(currents_msg);
+    canD.write(throttle_msg);
     canD.write(traction_msg);
+    canD.write(currents_msg);
 }
 
 void update_traction_control() {
