@@ -17,7 +17,8 @@ ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4, P
 const ETCState& etc_state = etc.state;
 
 void send_etc_CAN_messages();
-void send_sme_CAN_messages();
+void send_sme_CAN_messages_powertrain();
+void send_sme_CAN_messages_data();
 void send_imu_CAN_messages_fast();
 void send_imu_CAN_messages_slow();
 void update_traction_control();
@@ -31,7 +32,8 @@ int main() {
     printf("Hello World!!\n");
 
     etc_queue.call_every(50ms, &send_etc_CAN_messages);
-    etc_queue.call_every(40ms, &send_sme_CAN_messages);
+    etc_queue.call_every(40ms, &send_sme_CAN_messages_powertrain);
+    etc_queue.call_every(80ms, &send_sme_CAN_messages_data);
     // imu_queue.call_every(10ms, &send_imu_CAN_messages_fast); // 100Hz
     // imu_queue.call_every(20ms, &send_imu_CAN_messages_slow); // 50Hz
     etc_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
@@ -145,12 +147,37 @@ void send_etc_CAN_messages() {
     canD.write(msg2);
 }
 
-void send_sme_CAN_messages() {
+void send_sme_CAN_messages_powertrain() {
     etc.update_mbb_alive();
 
     // Update traction control reduction factor synchronized with torque commands
     update_traction_control();
     etc.state.tc_torque_reduction_factor = etc.traction_controller.get_output();
+
+    uint8_t tpdo_throttle_demand[8];
+    tpdo_throttle_demand[0] = etc_state.motor_torque.read() & 0xFF;
+    tpdo_throttle_demand[1] = etc_state.motor_torque.read() >> 8;
+    tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
+    tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
+    tpdo_throttle_demand[4] =
+        !etc_state.reversing | (etc_state.reversing << 1) | (etc_state.motor_enabled << 3);
+    tpdo_throttle_demand[5] = etc_state.mbb_alive;
+
+    uint8_t tpdo_max_currents[8];
+    tpdo_max_currents[0] = etc_state.CHARGE_CURRENT_LIMIT & 0xFF;
+    tpdo_max_currents[1] = etc_state.CHARGE_CURRENT_LIMIT >> 8;
+    tpdo_max_currents[2] = etc_state.DISCHARGE_CURRENT_LIMIT & 0xFF;
+    tpdo_max_currents[3] = etc_state.DISCHARGE_CURRENT_LIMIT >> 8;
+
+    CANMessage throttle_msg{390, tpdo_throttle_demand, 8};
+    CANMessage currents_msg{646, tpdo_max_currents, 8};
+
+    canP.write(throttle_msg);
+    canP.write(currents_msg);
+}
+
+void send_sme_CAN_messages_data() {
+    // Update traction control reduction factor synchronized with torque commands
 
     uint8_t tpdo_throttle_demand[8];
     tpdo_throttle_demand[0] = etc_state.motor_torque.read() & 0xFF;
@@ -187,8 +214,6 @@ void send_sme_CAN_messages() {
     CANMessage currents_msg{646, tpdo_max_currents, 8};
     CANMessage traction_msg{660, tpdo_traction_data, 8};
 
-    canP.write(throttle_msg);
-    canP.write(currents_msg);
     canD.write(throttle_msg);
     canD.write(traction_msg);
     canD.write(currents_msg);
