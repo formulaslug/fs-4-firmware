@@ -10,6 +10,7 @@ inline constexpr uint16_t glvVoltageScaling = 3.3 * 1000 * 3.94 * 2;
 Mutex TelemetryLock;
 
 CAN canPowertrain = CAN(PA_11, PA_12, 500000);
+CAN canDatatrain = CAN(PB_12, PB_13, 1000000);
 
 AnalogIn GLV_Voltage = AnalogIn(PA_7);
 // 1 = charging, 0 = not charging
@@ -68,7 +69,7 @@ bool shutdownClosed();
 void updatePrecharge();
 void controlFans();
 // void updateSoc();
-void sendCanMessages();
+void sendCanMessages(CAN &can_train);
 void sampleShutdownFinal();
 
 int main() {
@@ -112,8 +113,10 @@ int main() {
 
     if (bms.currentState == BMS::CHARGING) {
         canPowertrain.filter(0x190, 0x1ff);
+        canDatatrain.filter(0x190, 0x1ff);
     } else {
         canPowertrain.filter(0x682, 0xfff);
+        canDatatrain.filter(0x682, 0xfff);
     }
     //canPowertrain.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
 
@@ -129,7 +132,8 @@ int main() {
     bmsEventQueue.call_every(200ms, &bms, &BMS::controller);
     bmsControllerThread.start(callback(&bmsEventQueue, &EventQueue::dispatch_forever));
 
-    queue.call_every(100ms, sendCanMessages);
+    queue.call_every(100ms, []() { sendCanMessages(canPowertrain); });
+    queue.call_every(200ms, []() { sendCanMessages(canDatatrain); });
 
     queue.dispatch_forever();
 
@@ -213,21 +217,21 @@ void updatePrecharge() {
 
 }
 
-void sendCanMessages() {
+void sendCanMessages(CAN &can_train) {
     // TelemetryLock.lock();
     CANMessage msg;
 
     for (uint8_t i = 0; i < NUM_BATTERY_MODULES; i++) {
         msg = CanGenerator::BuildVoltageMessage(bms, i);
-        canPowertrain.write(msg);
+        can_train.write(msg);
         msg = CanGenerator::BuildTempMessage(bms, i, true);
-        canPowertrain.write(msg);
+        can_train.write(msg);
         msg = CanGenerator::BuildTempMessage(bms, i, false);
-        canPowertrain.write(msg);
+        can_train.write(msg);
         ThisThread::sleep_for(2ms);
     }
     msg = CanGenerator::BuildPowerMessage(bms, 0);
-    canPowertrain.write(msg);
+    can_train.write(msg);
     msg = CanGenerator::BuildStatusMessage(
         bms,
         ((nIMD_Fault_3V3.read()*analogInThreshold)<700),
@@ -239,12 +243,12 @@ void sendCanMessages() {
         glvVoltageMv(),
         fanPwmDuty
     );
-    canPowertrain.write(msg);
+    can_train.write(msg);
 
     //printf("\033[2J");
     //printf("IMD fault voltage (normally high): %f\n", nIMD_Fault_3V3.read()*3.3);
     //printf("CAN    RTRN: %d, TDERRCNT: %d, RDERRCNT: %d\n", canPowertrain.write(msg), canPowertrain.tderror(), canPowertrain.rderror());
 
-    canPowertrain.reset();
+    can_train.reset();
     // TelemetryLock.unlock();
 }
