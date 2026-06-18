@@ -31,7 +31,7 @@
 #endif
 
 #ifndef VOLTAGE_TARGET_MV
-#define VOLTAGE_TARGET_MV 125000
+#define VOLTAGE_TARGET_MV 124000
 #endif
 
 // in centiamps (0.01 amps)
