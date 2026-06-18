@@ -4,6 +4,7 @@
 
 #include "etc_controller.h"
 #include "../imu/vectornav_imu.h"
+#include <sys/stat.h>
 
 ETCController::ETCController(
     PinName APPS1_pin,
@@ -15,9 +16,8 @@ ETCController::ETCController(
     PinName rtd_light_pin,
     PinName rtd_buzzer_pin,
     PinName solenoid_pin,
-    PinName brakelight_pin,
-    PinName vectornav_tx,
-    PinName vectornav_rx
+    PinName brakelight_pin
+    // VectorNavIMU &vn_imu
 )
     : unfiltered_APPS1_input(APPS1_pin),
       APPS1_input(unfiltered_APPS1_input, 60),
@@ -33,18 +33,14 @@ ETCController::ETCController(
       rtd_light(rtd_light_pin),
       rtd_buzzer(rtd_buzzer_pin),
       solenoid(solenoid_pin),
-      brakelight(brakelight_pin),
-      vn_imu(vectornav_tx, vectornav_rx) {
+      brakelight(brakelight_pin) {
+      // vn_imu(vn_imu) {
     rtd_light.write(0);
     rtd_buzzer.write(0);
     solenoid.write(0);
     brakelight.write(0);
 
     rtd_button.rise(callback(this, &ETCController::rtd_button_irq));
-
-    // spawns new thread for imu listener
-    // CHECK_VN_ERR(vn_imu.connect());
-    // CHECK_VN_ERR(vn_imu.init());
 }
 
 float ETCController::clamp(float value) {
@@ -95,6 +91,9 @@ void ETCController::update_state() {
     state.front_BSE_voltage = front_BSE_input.read_voltage();
     state.rear_BSE_voltage = rear_BSE_input.read_voltage();
 
+    state.front_BSE_pressure = ((state.front_BSE_voltage * 1000.0f - 330.0f) / (3300.0f - 660.0f)) * 2000.0f;
+    state.read_BSE_pressure = ((state.rear_BSE_voltage * 1000.0f - 330.0f) / (3300.0f - 660.0f)) * 2000.0f;
+
     state.APPS1_position = clamp(
         (state.APPS1_voltage - APPS1_MIN_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE)
     );
@@ -128,8 +127,6 @@ void ETCController::update_state() {
     solenoid.write(state.solenoid_open);
 
     state.rtd_button_pressed = rtd_button.read();
-
-    // vn_imu.refreshDataToState(state.vectornav);
 }
 
 void ETCController::update_implaus_timer(
@@ -260,6 +257,15 @@ void ETCController::set_regen_torque(bool is_regening, bool solenoid_open, int16
     // state.is_regening = is_regening;
     state.solenoid_open = solenoid_open;
     // state.regen_torque = is_regening ? regen_torque : 0.0f;
+}
+
+float ETCController::current_limit(float voltage, float current) {
+    float R0 = 0.00686f / 19.0f;
+    float limit = -1.0f / R0 * (2.5 - (voltage - 0.5f) - current * R0);
+    if (limit > state.MAX_DISCHARGE_CURRENT_LIMIT) {
+        return state.MAX_DISCHARGE_CURRENT_LIMIT;
+    }
+    return limit;
 }
 
 void ETCController::update_mbb_alive() {

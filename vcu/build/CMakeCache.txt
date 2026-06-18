@@ -579,7 +579,7 @@ FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[/Users/jpins/Documents/Coding/CPP
 MBED_DISABLE_MCU_TARGET_FILE_FILES:INTERNAL=
 MBED_DISABLE_MCU_TARGET_FILE_TARGETS:INTERNAL=
 //Previous mbed target this dir was configured with
-MBED_INTERNAL_LAST_MBED_TARGET:INTERNAL=VEHICLE_CONTROL_UNIT
+MBED_INTERNAL_LAST_MBED_TARGET:INTERNAL=NUCLEO_F446RE
 MBED_TOOLCHAIN_FILE_USED:INTERNAL=TRUE
 MBED_UPLOAD_GDBSERVER_DEBUG_COMMAND:INTERNAL=/opt/homebrew/bin/openocd;-f;interface/stlink-dap.cfg;-c;transport select dapdirect_swd;-c;reset_config srst_only srst_nogate connect_assert_srst;-f;target/stm32f4x.cfg;-c;[lindex [target names] 0] configure -event gdb-detach {shutdown};-c;gdb_port 23331
 MBED_UPLOAD_LAUNCH_COMMANDS:INTERNAL=monitor reset halt;handle SIGTRAP nostop noprint;set remotetimeout 30;set mem inaccessible-by-default off;monitor program;tbreak main;monitor reset halt

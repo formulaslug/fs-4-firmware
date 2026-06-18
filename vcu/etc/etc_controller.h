@@ -6,7 +6,7 @@
 #define ETC_CONTROLLER_H
 
 #include "mbed.h"
-#include "../imu/vectornav_imu.h"
+// #include "../imu/vectornav_imu.h"
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
 #include "traction_control.h"
@@ -22,10 +22,13 @@ struct ETCState {
     float BPPS_position = 0.0f; // 0 to 1
     float front_BSE_voltage = 0.0f;
     float rear_BSE_voltage = 0.0f;
+    float front_BSE_pressure = 0.0f;
+    float read_BSE_pressure = 0.0f;
     int16_t unfiltered_motor_torque = 0.0f; // -32767 to 32768
     int16_t MAX_SPEED = 7500;
-    uint16_t CHARGE_CURRENT_LIMIT = 0;
-    uint16_t DISCHARGE_CURRENT_LIMIT = 450;
+    uint16_t CHARGE_CURRENT_LIMIT = 100; // amps
+    uint16_t MAX_DISCHARGE_CURRENT_LIMIT = 600; // amps
+    uint16_t DISCHARGE_CURRENT_LIMIT = 570; //amps
     uint8_t mbb_alive = 0;
     bool rtd_button_pressed = false;
     bool ready_to_drive = false;
@@ -47,11 +50,14 @@ struct ETCState {
     float wheel_rpm_bl = 0.0f;
     float wheel_rpm_br = 0.0f;
     float tc_torque_reduction_factor = 1.0f;
-    //VectornavState vectornav;
+    // VectornavState vectornav;
     uint8_t drive_mode = 0;
     uint8_t traction_mode = 0;
     uint8_t regen_mode = 0;
-    LowPassFilter<int16_t> motor_torque{40}; // example 40hz frequency for -3db filtering, 
+    LowPassFilter<int16_t> motor_torque{40}; // example 40hz frequency for -3db filtering
+
+    uint16_t min_battery_voltage = 420; // centivolts
+    uint16_t current_draw = 0; // amps
 };
 
 class ETCController {
@@ -62,7 +68,7 @@ public:
     bool shutdown_closed = false;
     TractionController traction_controller;
 
-    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin, PinName vectornav_tx, PinName vectornav_rx);
+    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin); // add ref to imu at end
 
     void update_state();
 
@@ -73,7 +79,10 @@ public:
     void update_mbb_alive();
 
     void turn_off_rtd();
+
     void turn_on_rtd();
+
+    float current_limit(float voltage, float current);
 
 private:
     AnalogIn unfiltered_APPS1_input;
@@ -138,7 +147,7 @@ private:
     bool implaus_BSE_range_timer_running = false;
     bool implaus_brake_and_accel_timer_running = false;
 
-    VectorNavIMU vn_imu;
+    // VectorNavIMU &vn_imu;
 
     static float clamp(float value);
 
