@@ -4,7 +4,7 @@
 	// Debug launch for target vcu.
 	{
 	    "type": "cortex-debug",
-	    "name": "Debug vcu NUCLEO_F446RE Develop",
+	    "name": "Debug vcu VEHICLE_CONTROL_UNIT Develop",
 	    "executable": "/Users/jpins/Documents/Coding/CPP/Hardware/formula-slug/fs-4-firmware/vcu/build/vcu.elf",
 	    "cwd": "${workspaceRoot}",
 	    "gdbPath": "/System/Volumes/Data/Applications/ArmGNUToolchain/14.3.rel1/arm-none-eabi/bin/arm-none-eabi-gdb",
