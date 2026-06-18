@@ -54,7 +54,7 @@ struct ETCState {
     uint8_t drive_mode = 0;
     uint8_t traction_mode = 0;
     uint8_t regen_mode = 0;
-    LowPassFilter<int16_t> motor_torque{40}; // example 40hz frequency for -3db filtering
+    // LowPassFilter<int16_t> motor_torque{40}; // example 40hz frequency for -3db filtering
 
     uint16_t min_battery_voltage = 420; // centivolts
     uint16_t current_draw = 0; // amps

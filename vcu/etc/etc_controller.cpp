@@ -114,13 +114,13 @@ void ETCController::update_state() {
         state.unfiltered_motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
     }
 
-    if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.motor_torque.read() > 0) {
-      state.unfiltered_motor_torque = static_cast<int16_t>(state.motor_torque.read() * state.tc_torque_reduction_factor);
-    }
+    // if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.motor_torque.read() > 0) {
+    //   // state.unfiltered_motor_torque = static_cast<int16_t>(state.motor_torque.read() * state.tc_torque_reduction_factor);
+    // }
 
-    state.motor_torque.sample(state.unfiltered_motor_torque); // smooth out motor torque
+    // state.motor_torque.sample(state.unfiltered_motor_torque); // smooth out motor torque
 
-    state.brakelight_enabled = state.motor_torque.read() < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT);
+    state.brakelight_enabled = state.unfiltered_motor_torque < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT);
     brakelight.write(state.brakelight_enabled);
 
     state.solenoid_open = SOLENOID_FORCE_OPEN ? true : state.regen_allowed;
