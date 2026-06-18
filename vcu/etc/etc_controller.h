@@ -39,10 +39,10 @@ struct ETCState {
     bool implaus_BSE_range = false;
     bool implaus_brake_and_accel = false;
     bool regen_allowed = false;
-    // solenoid_open: false means the solenoid will be closed (default state)
-    // and lets hydraulic brake pressure pass, but true means the solenoid will
-    // open and NOT let hydraulic brake pressure through
-    bool solenoid_open = false;
+    // solenoid_open: true means the solenoid will be open (default state)
+    // and lets hydraulic brake pressure pass, but false means the solenoid will
+    // close and NOT let hydraulic brake pressure through
+    bool solenoid_open = true;
     bool reversing = false; // CURRENTLY ISN'T IMPLEMENTED
     bool brakelight_enabled = false;
     float wheel_rpm_fl = 0.0f;

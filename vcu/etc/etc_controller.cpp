@@ -124,7 +124,7 @@ void ETCController::update_state() {
     brakelight.write(state.brakelight_enabled);
 
     state.solenoid_open = SOLENOID_FORCE_OPEN ? true : state.regen_allowed;
-    solenoid.write(state.solenoid_open);
+    solenoid.write(!state.solenoid_open);
 
     state.rtd_button_pressed = rtd_button.read();
 }
@@ -249,13 +249,13 @@ void ETCController::turn_off_rtd() {
 
 void ETCController::update_regen_state(float speed) {
     state.regen_allowed =
-        !in_range(speed, 0.0f, 5.0f) || state.BPPS_position > BPPS_MAX_NON_REGEN_BRAKING;
+        (!in_range(speed, 0.0f, 5.0f) || state.BPPS_position > BPPS_MAX_NON_REGEN_BRAKING) && !REGEN_FORCE_DISABLE;
 }
 
 // todo: this function is not called?
 void ETCController::set_regen_torque(bool is_regening, bool solenoid_open, int16_t regen_torque) {
     // state.is_regening = is_regening;
-    state.solenoid_open = solenoid_open;
+    // state.solenoid_open = solenoid_open;
     // state.regen_torque = is_regening ? regen_torque : 0.0f;
 }
 
