@@ -70,7 +70,6 @@ void updatePrecharge();
 void controlFans();
 // void updateSoc();
 void sendCanMessages(CAN &can_train);
-void sampleShutdownFinal();
 
 int main() {
     TS_READY = 0;
@@ -123,9 +122,6 @@ int main() {
     // Start updating precharge, and also again whenever shutdown opens
     queue.call_every(10ms, &updatePrecharge);
     queue.call_every(5ms, &processCanRx);
-
-    // TODO: Verify and uncoment
-    // queue.call_every(500ms, sampleShutdownFinal);
 
     queue.call_every(500ms, controlFans);
 
@@ -191,8 +187,7 @@ bool shutdownClosed() { return ((Shutdown_Final_3V3_Filtered.read()*analogInThre
 
 uint16_t glvVoltageMv() { return (uint16_t)(GLV_Voltage.read() * glvVoltageScaling); }
 
-// Intented to be called repeatedly during start and until completion of
-// precharge.
+// Intented to be called repeatedly throughout entire runtime of the car.
 void updatePrecharge() {
     // printf("dcBusVoltageMv %d mv, packVoltageMv %d mv\n", dcBusVoltageMv, bms.packVoltageMv);
     if (dcBusVoltageMv > 0.9 * bms.packVoltageMv) {
