@@ -7,6 +7,7 @@ cmake-build-*/
 
 # VS Code build dir
 build/
+.build/
 
 # VS Code config files
 **/.vscode/launch.json
@@ -36,10 +37,8 @@ Doxygen
 
 *.iml
 
-
+tempPrecharge.*
 
 # The above gitignores cannot apply within ./mbed-os, so we exclude everything
 # from this gitignore. This line MUST be last
 !mbed-os/**
-vcu/
-vcu/

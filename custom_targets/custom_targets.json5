@@ -107,14 +107,6 @@
       }
     },
 
-    //// NOTE: 
-    //"config": {
-    //  "hse_value": {
-    //    "help": "HSE default value is 8MHz in stm32f4xx_hal_conf.h",
-    //    "value": "24000000",
-    //    "macro_name": "HSE_VALUE"
-    //  }
-    //},
   },
 
   // hse_value defined as a config bc STM32F446xE in targets.json has no HSE config

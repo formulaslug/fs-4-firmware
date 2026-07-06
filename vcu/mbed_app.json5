@@ -1,0 +1,13 @@
+{
+  "target_overrides": {
+    "*": {
+      "platform.stdio-baud-rate": 115200,
+      "platform.stdio-buffered-serial": 1,
+
+      // Uncomment to use mbed-baremetal instead of mbed-os
+      //"target.application-profile": "bare-metal",
+      "rtos.thread-stack-size": 16384,
+      "target.default-adc-vref": 3.3,
+    },
+  }
+}
