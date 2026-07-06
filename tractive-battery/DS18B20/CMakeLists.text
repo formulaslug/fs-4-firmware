@@ -1,0 +1,5 @@
+add_library(DS18B20 STATIC DS18B20.cpp)
+
+target_include_directories(DS18B20 PUBLIC .)
+
+target_link_libraries(DS18B20 PUBLIC onewire-mbed-os mbed-core-flags)
