@@ -28,12 +28,15 @@ private:
     void onRiseISR();
 
     InterruptIn sensor;
-    Timer timer;
 
     const uint8_t teeth_per_rev;
-
     uint32_t start_us;
     volatile uint8_t teeth_passed; // Sampled at 100hz, doubt that there would be more than 256 teeth passed in 0.1 seconds
-
     float rpm;
+    // 32-bit microsecond timestamps from us_ticker_read() (wraps ~71 min; unsigned math is wrap-safe).
+    // Using the raw us_ticker keeps the rising-edge ISR cheap: Timer::elapsed_time() takes nested
+    // critical sections + a 64-bit ticker read, which is far too heavy to call on every tooth.
+    volatile uint32_t time_last_cycle;
+    volatile uint32_t time_recent_tooth;
+    volatile bool do_timer_wheelspeed;
 };

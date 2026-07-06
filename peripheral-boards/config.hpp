@@ -9,10 +9,10 @@ Corner that the current board is in, determined by dip switches
 Just for organization in determining the board location
 */
 enum class Corner : uint8_t {
-    FR,
     FL,
-    BR,
-    BL
+    FR,
+    BL,
+    BR
 };
 
 /*
@@ -44,20 +44,37 @@ Generates and writes the CAN message for speed, suspension, strain, and temp
 */
 void sendCANtpdo();
 
+void sendLastMessageTicks();
+/**
+ * @brief CAN message sending, just sends the can message. If it fails too many times, resets the CAN object
+ */
+void sendCANmessage(const CANMessage& msg);
+/**
+ * @brief Reads the temperature sensors that use slow i2c calls.
+ *        Runs on a different thread since when the I2C is blocked, it stalls the CAN reads
+ */
+void readSensors();
+
+/**
+ *  @brief prints how many tpdo/temp frames were actually sent in the last ~1 s (= rate in Hz).
+ *  Runs on the sensor thread so the printf can't disturb the CAN-thread timing it's measuring.
+ */
+void printSendRates();
 constexpr PinName PIN_STRAIN = PB_0;
-constexpr PinName PIN_DIP_1 = PA_0; // Still not entirely sure where the dip switches are
-constexpr PinName PIN_DIP_2 = PA_1; // These are the pins to the only switch I see
+constexpr PinName PIN_DIP_0 = PA_0;
+constexpr PinName PIN_DIP_1 = PA_1;
 constexpr PinName PIN_WHEEL_SENSOR = PA_5;
 constexpr PinName PIN_SUSPENSION = PA_7;
-constexpr PinName PIN_I2C2_SDA = PA_8;
-constexpr PinName PIN_I2C2_SCL = PA_9;
+constexpr PinName PIN_I2C2_SDA = PA_8;  //1x8 tire temp sense
+constexpr PinName PIN_I2C2_SCL = PA_9;  //1x8 tire temp sense
 constexpr PinName PIN_CAN1_RX = PA_11;
 constexpr PinName PIN_CAN1_TX = PA_12;
-constexpr PinName PIN_I2C1_SDA = PB_7;
-constexpr PinName PIN_I2C1_SCL = PA_13;
+constexpr PinName PIN_I2C1_SDA = PB_7;  //1x1 tire temp sense
+constexpr PinName PIN_I2C1_SCL = PA_15; //1x1 tire temp sense
 
-constexpr bool ok8 = true; // To manually disable temp sensor if they fail
-constexpr bool ok1 = true;
+constexpr uint32_t CAN_FREQUENCY = 1000000; //1Mhz
+constexpr uint8_t TEETH_PER_REV = 24; // Double check this
 
-constexpr uint32_t CAN_FREQUENCY = 500000;
-constexpr uint8_t TEETH_PER_REV = 60; // Double check this
+// D6T I2C bus speed. The D6T tops out at 100 kHz (standard mode). Drop to 50000 / 10000 if the
+// bus is marginal (long leads / 5 V level-shifter capacitance) to get more reliable edges.
+constexpr int D6T_I2C_HZ = 100000; //0.1Mhz

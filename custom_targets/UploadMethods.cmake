@@ -37,7 +37,7 @@ if (MBED_TARGET STREQUAL "PERIPHERAL_BOARD" OR
         -c "reset_config srst_only srst_nogate connect_assert_srst"
         -f target/stm32g4x.cfg
         )
-    set(PYOCD_TARGET_NAME STM32G441KBT6)
+    set(PYOCD_TARGET_NAME STM32G441KBTX)
 endif()
 
 #stm32f4x boards

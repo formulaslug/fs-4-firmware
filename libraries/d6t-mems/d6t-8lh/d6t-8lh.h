@@ -15,8 +15,8 @@ public:
     bool setup();
 
     // Read temperatures from sensor. Use pixels_c() to access readings
-    bool read();
-    
+    int read();
+
     // Internal reference temperature ("Proportional To Absolute Temperature")
     double ptat_c() const { return _ptat_c; }
 
@@ -33,5 +33,3 @@ private:
     static int16_t le_s16(const uint8_t* buf, int n);
     static bool pec_ok(const uint8_t* buf, int payload_len);
 };
-
-

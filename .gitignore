@@ -12,7 +12,14 @@ build/
 # VS Code config files
 **/.vscode/launch.json
 **/.vscode/tasks.json
-
+cubemx_projects/steering-wheel/Core
+cubemx_projects/steering-wheel/Drivers
+cubemx_projects/steering-wheel/EWARM
+cubemx_projects/steering-wheel/.mxproject
+cubemx_projects/peripheral-board/Core
+cubemx_projects/peripheral-board/Drivers
+cubemx_projects/peripheral-board/EWARM
+cubemx_projects/peripheral-board/.mxproject
 # Python stuff
 *.pyc
 
