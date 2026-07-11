@@ -1,11 +1,8 @@
 # Upload Method
-if(CMAKE_HOST_WIN32)
-    # OpenOCD is too painful to install on windows so we just use pyocd instead,
-    # which is slower but still works fine.
-    set(UPLOAD_METHOD_DEFAULT PYOCD) 
-else()
-    set(UPLOAD_METHOD_DEFAULT OPENOCD) 
-endif()
+set(UPLOAD_METHOD_DEFAULT OPENOCD) 
+# # OpenOCD is painful to install on windows. If you want to struggle with pyocd
+# # instead, use:
+# set(UPLOAD_METHOD_DEFAULT PYOCD) 
 
 set(OPENOCD_UPLOAD_ENABLED true)
 set(PYOCD_UPLOAD_ENABLED true)
