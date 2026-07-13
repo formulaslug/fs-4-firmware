@@ -106,25 +106,25 @@ private:
 
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
 
-    static constexpr float APPS1_MIN_VOLTAGE = 0.406f;
-    static constexpr float APPS1_MAX_VOLTAGE = 1.036f;
+    static constexpr float APPS1_MIN_VOLTAGE = 0.427f;
+    static constexpr float APPS1_MAX_VOLTAGE = 1.040f;
 
-    static constexpr float APPS2_MIN_VOLTAGE = 0.449f;
-    static constexpr float APPS2_MAX_VOLTAGE = 1.083f;
+    static constexpr float APPS2_MIN_VOLTAGE = 0.466f;
+    static constexpr float APPS2_MAX_VOLTAGE = 1.080f;
 
-    static constexpr float BPPS_MIN_VOLTAGE = 0.615f;
-    static constexpr float BPPS_MAX_VOLTAGE = 0.972f; // 2.8125f;
+    static constexpr float BPPS_MIN_VOLTAGE = 0.625f;
+    static constexpr float BPPS_MAX_VOLTAGE = 0.820f; // 2.8125f;
 
-    static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
-    static constexpr float FRONT_BSE_MAX_VOLTAGE = 2.8125f;
+    static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.340f;
+    static constexpr float FRONT_BSE_MAX_VOLTAGE = 1.386f;
 
-    static constexpr float REAR_BSE_MIN_VOLTAGE = 0.3125f;
-    static constexpr float REAR_BSE_MAX_VOLTAGE = 2.8125f;
+    static constexpr float REAR_BSE_MIN_VOLTAGE = 0.340f;
+    static constexpr float REAR_BSE_MAX_VOLTAGE = 1.386f;
 
     static constexpr float APPS_BUFFER_VOLTAGE = 0.015f;
     static constexpr float BPPS_BUFFER_VOLTAGE = 0.010f;
-    static constexpr float FRONT_BSE_BUFFER_VOLTAGE = 0.015f;
-    static constexpr float REAR_BSE_BUFFER_VOLTAGE = 0.015f;
+    static constexpr float FRONT_BSE_BUFFER_VOLTAGE = 0.02f;
+    static constexpr float REAR_BSE_BUFFER_VOLTAGE = 0.02f;
 
     // Using BPPS instead
     // static constexpr float FRONT_BSE_ACTIVATION_VOLTAGE = 0.5f;
