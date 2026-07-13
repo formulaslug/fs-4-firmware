@@ -54,7 +54,7 @@ struct ETCState {
     uint8_t drive_mode = 0;
     uint8_t traction_mode = 0;
     uint8_t regen_mode = 0;
-    // LowPassFilter<int16_t> motor_torque{40}; // example 40hz frequency for -3db filtering
+    LowPassFilter<int16_t> motor_torque{40}; // example 40hz frequency for -3db filtering
 
     uint16_t min_battery_voltage = 420; // centivolts
     uint16_t current_draw = 0; // amps
@@ -106,7 +106,7 @@ private:
 
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
 
-    static constexpr float APPS1_MIN_VOLTAGE = 0.406;
+    static constexpr float APPS1_MIN_VOLTAGE = 0.406f;
     static constexpr float APPS1_MAX_VOLTAGE = 1.036f;
 
     static constexpr float APPS2_MIN_VOLTAGE = 0.449f;
@@ -120,6 +120,11 @@ private:
 
     static constexpr float REAR_BSE_MIN_VOLTAGE = 0.3125f;
     static constexpr float REAR_BSE_MAX_VOLTAGE = 2.8125f;
+
+    static constexpr float APPS_BUFFER_VOLTAGE = 0.015f;
+    static constexpr float BPPS_BUFFER_VOLTAGE = 0.010f;
+    static constexpr float FRONT_BSE_BUFFER_VOLTAGE = 0.015f;
+    static constexpr float REAR_BSE_BUFFER_VOLTAGE = 0.015f;
 
     // Using BPPS instead
     // static constexpr float FRONT_BSE_ACTIVATION_VOLTAGE = 0.5f;
