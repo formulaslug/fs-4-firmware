@@ -176,7 +176,10 @@ void ETCController::update_implaus() {
     // APPS / Brake Pedal Plausibility Check:
     // "With accelerator > 25%, press brake pedal. Axle MUST stop"
     // Note: brake pedal range is up for interpretation
-    bool implaus_brake_and_accel = (state.BPPS_position > 0.25) && state.APPS_position_avg > 0.25f;
+    bool implaus_brake_and_accel = true;
+    if (!state.implaus_brake_and_accel) {
+        implaus_brake_and_accel = (state.BPPS_position > 0.25) && state.APPS_position_avg > 0.25f;
+    }
 
     update_implaus_timer(
         implaus_APPS_deviation_timer,
@@ -206,6 +209,7 @@ void ETCController::update_implaus() {
     // "axle may turn again once < 5% pedal position."
     if (state.implaus_brake_and_accel && state.APPS_position_avg < 0.05f) {
         state.implaus_brake_and_accel = false;
+        implaus_brake_and_accel = false;
     }
     if (implaus_brake_and_accel) {
         state.implaus_brake_and_accel = true;

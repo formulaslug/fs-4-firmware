@@ -158,8 +158,8 @@ void send_sme_CAN_messages_powertrain() {
     etc.state.tc_torque_reduction_factor = etc.traction_controller.get_output();
 
     uint8_t tpdo_throttle_demand[8];
-    tpdo_throttle_demand[0] = etc_state.motor_torque & 0xFF;
-    tpdo_throttle_demand[1] = etc_state.motor_torque >> 8;
+    tpdo_throttle_demand[0] = etc_state.motor_torque.read() & 0xFF;
+    tpdo_throttle_demand[1] = etc_state.motor_torque.read() >> 8;
     tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
     tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
     tpdo_throttle_demand[4] = (!etc_state.reversing)
@@ -184,8 +184,8 @@ void send_sme_CAN_messages_data() {
     // Update traction control reduction factor synchronized with torque commands
 
     uint8_t tpdo_throttle_demand[8];
-    tpdo_throttle_demand[0] = etc_state.motor_torque & 0xFF;
-    tpdo_throttle_demand[1] = etc_state.motor_torque >> 8;
+    tpdo_throttle_demand[0] = etc_state.motor_torque.read() & 0xFF;
+    tpdo_throttle_demand[1] = etc_state.motor_torque.read() >> 8;
     tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
     tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
     tpdo_throttle_demand[4] = (!etc_state.reversing)
