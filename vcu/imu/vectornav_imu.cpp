@@ -36,36 +36,30 @@ VN::Error VectorNavIMU::start() {
 
     imu_reg.asyncMode.emplace();
     imu_reg.asyncMode->serial1 = false;
-    imu_reg.asyncMode->serial2 = true;
-    imu_reg.rateDivisor = 4; // 800Hz / 4 = 200Hz
+    imu_reg.asyncMode->serial2 = true; // should be true
+    imu_reg.rateDivisor = 8; // 800Hz / 4 = 200Hz
     imu_reg.imu.accel = true;
     imu_reg.imu.angularRate = true;
 
-    // ins_reg.asyncMode.emplace();
-    // ins_reg.asyncMode->serial1 = false;
-    // ins_reg.asyncMode->serial2 = true;
-    // ins_reg.rateDivisor = 4; // 800Hz / 4 = 200Hz
-    // ins_reg.ins.posLla = true;
-    // // ins_reg.ins.posU = true;
-    // ins_reg.ins.velBody = true;
-    // // ins_reg.ins.velU = true;
-    // // positioning_reg.attitude.ypr = true;
-    // // positioning_reg.attitude.yprU = true;
-    //
-    // attitude_reg.asyncMode.emplace();
-    // attitude_reg.asyncMode->serial1 = false;
-    // attitude_reg.asyncMode->serial2 = true;
-    // attitude_reg.rateDivisor = 4; // 800Hz / 80 = 10Hz
-    // attitude_reg.attitude.ypr = true;
-    // // gps_reg.attitude.yprU = true;
-    // // gps_reg.time.timeGps = true;
+    ins_reg.asyncMode.emplace();
+    ins_reg.asyncMode->serial1 = false;
+    ins_reg.asyncMode->serial2 = true;
+    ins_reg.rateDivisor = 8; // 800Hz / 4 = 200Hz
+    ins_reg.ins.posLla = true;
+    ins_reg.ins.velBody = true;
+
+    attitude_reg.asyncMode.emplace();
+    attitude_reg.asyncMode->serial1 = false;
+    attitude_reg.asyncMode->serial2 = true;
+    attitude_reg.rateDivisor = 8; // 800Hz / 4 = 200Hz
+    attitude_reg.attitude.ypr = true;
 
     err = sensor.writeRegister(&imu_reg);
     check_vn_error(err);
-    // err = sensor.writeRegister(&ins_reg);
-    // check_vn_error(err);
-    // err = sensor.writeRegister(&attitude_reg);
-    // check_vn_error(err);
+    err = sensor.writeRegister(&ins_reg);
+    check_vn_error(err);
+    err = sensor.writeRegister(&attitude_reg);
+    check_vn_error(err);
 
     composite_data = sensor.getMostRecentMeasurement();
     return err;
@@ -82,35 +76,16 @@ void VectorNavIMU::update_state(VectornavState &state) {
     if (!composite_data) return;
 
     if (composite_data->matchesMessage(imu_reg)) {
-        printf("\x1b[2J");
-        printf("\x1b[H");
-
-        printf("Found binary 1 measurment.\n");
-
         state.accel = composite_data->imu.accel.has_value() ? composite_data->imu.accel.value() : state.accel;
         state.ang_rate = composite_data->imu.angularRate.has_value() ? composite_data->imu.angularRate.value() : state.ang_rate;
-        printf("\tAccel X: %f\n\tAccel Y: %f\n\tAccel Z: %f\n", state.accel[0], state.accel[1], state.accel[2]);
-        printf("\tGyro X: %f\n\tGyro Y: %f\n\tGyro Z: %f\n", state.ang_rate[0], state.ang_rate[1], state.ang_rate[2]);
     }
-    // if (composite_data->matchesMessage(ins_reg)) {
-    //     printf("\x1b[2J");
-    //     printf("\x1b[H");
-    //
-    //     printf("Found binary 1 measurment.\n");
-    //
-    //     state.pos = composite_data->ins.posLla.has_value() ? composite_data->ins.posLla.value() : state.pos;
-    //     state.vel = composite_data->ins.velBody.has_value() ? composite_data->ins.velBody.value() : state.vel;
-    //     printf("\tVelocity X: %f\n\tVelocity Y: %f\n\tVelocity Z: %f\n", state.vel[0], state.vel[1], state.vel[2]);
-    // }
-    // if (composite_data->matchesMessage(attitude_reg)) {
-    //     printf("\x1b[2J");
-    //     printf("\x1b[H");
-    //
-    //     printf("Found binary 1 measurment.\n");
-    //
-    //     state.ypr = composite_data->attitude.ypr.has_value() ? wrap_ypr(composite_data->attitude.ypr.value()) : state.ypr;
-    //     printf("\tYaw: %f\n\tPitch: %f\n\tRoll: %f\n", state.ypr.yaw, state.ypr.pitch, state.ypr.roll);
-    // }
+    if (composite_data->matchesMessage(ins_reg)) {
+        state.pos = composite_data->ins.posLla.has_value() ? composite_data->ins.posLla.value() : state.pos;
+        state.vel = composite_data->ins.velBody.has_value() ? composite_data->ins.velBody.value() : state.vel;
+    }
+    if (composite_data->matchesMessage(attitude_reg)) {
+        state.ypr = composite_data->attitude.ypr.has_value() ? composite_data->attitude.ypr.value() : state.ypr;
+    }
 
     // Handle asynchronous errors
     std::optional<VN::AsyncError> asyncError = sensor.getNextAsyncError();
