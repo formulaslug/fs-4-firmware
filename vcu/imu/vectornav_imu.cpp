@@ -37,21 +37,21 @@ VN::Error VectorNavIMU::start() {
     imu_reg.asyncMode.emplace();
     imu_reg.asyncMode->serial1 = false;
     imu_reg.asyncMode->serial2 = true; // should be true
-    imu_reg.rateDivisor = 8; // 800Hz / 4 = 200Hz
+    imu_reg.rateDivisor = 8; // 800Hz / 8 = 100Hz
     imu_reg.imu.accel = true;
     imu_reg.imu.angularRate = true;
 
     ins_reg.asyncMode.emplace();
     ins_reg.asyncMode->serial1 = false;
     ins_reg.asyncMode->serial2 = true;
-    ins_reg.rateDivisor = 8; // 800Hz / 4 = 200Hz
+    ins_reg.rateDivisor = 8; // 800Hz / 8 = 100Hz
     ins_reg.ins.posLla = true;
     ins_reg.ins.velBody = true;
 
     attitude_reg.asyncMode.emplace();
     attitude_reg.asyncMode->serial1 = false;
     attitude_reg.asyncMode->serial2 = true;
-    attitude_reg.rateDivisor = 8; // 800Hz / 4 = 200Hz
+    attitude_reg.rateDivisor = 8; // 800Hz / 8 = 100Hz
     attitude_reg.attitude.ypr = true;
 
     err = sensor.writeRegister(&imu_reg);
