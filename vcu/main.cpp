@@ -14,7 +14,7 @@ AnalogIn steering_position{PC_5};
 DigitalIn bspd_fault{PA_2};
 DigitalIn bspd_shutdown_out{PA_3};
 
-VectorNavIMU imu{PC_12, PD_2}; // TX = PC_12, RX = PD_2
+VectorNavIMU imu{PA_9, PA_10}; // TX = PC_12, RX = PD_2
 
 CAN canP{PB_8, PB_9, 500000};
 CAN canD{PB_5, PB_6, 1000000};
@@ -330,6 +330,5 @@ void send_imu_CAN_messages() {
 //     printf("Angular Rate\nX: %f\nY: %f\nZ: %f\n", ang_x, ang_y, ang_z); 
 //     printf("YPR\nYaw: %f\nPit: %f\nRol: %f\n", yaw, pit, rol); 
 // }
-
 
 void send_sync() { canP.write(CANMessage{0x80, (uint8_t*)nullptr, 0}); }

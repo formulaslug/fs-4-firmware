@@ -25,33 +25,33 @@ VN::Error VectorNavIMU::start() {
     auto baud = sensor.connectedBaudRate();
     printf("baud: %lu\n", static_cast<uint32_t>(*baud));
 
-    // sensor.changeBaudRate(
-    //     VN::Registers::System::BaudRate::BaudRates::Baud921600,
+    // err = sensor.changeBaudRate(
+    //     VN::Registers::System::BaudRate::BaudRates::Baud230400,
     //     VN::Registers::System::BaudRate::SerialPort::Serial2
     // );
     // check_vn_error(err);
 
-    baud = sensor.connectedBaudRate();
-    printf("baud: %lu\n", static_cast<uint32_t>(*baud));
+    // baud = sensor.connectedBaudRate();
+    // printf("baud: %lu\n", static_cast<uint32_t>(*baud));
 
     imu_reg.asyncMode.emplace();
     imu_reg.asyncMode->serial1 = false;
     imu_reg.asyncMode->serial2 = true; // should be true
-    imu_reg.rateDivisor = 8; // 800Hz / 8 = 100Hz
+    imu_reg.rateDivisor = 8; // 800Hz / 2 = 400Hz
     imu_reg.imu.accel = true;
     imu_reg.imu.angularRate = true;
 
     ins_reg.asyncMode.emplace();
     ins_reg.asyncMode->serial1 = false;
     ins_reg.asyncMode->serial2 = true;
-    ins_reg.rateDivisor = 8; // 800Hz / 8 = 100Hz
+    ins_reg.rateDivisor = 8; // 800Hz / 2 = 400Hz
     ins_reg.ins.posLla = true;
     ins_reg.ins.velBody = true;
 
     attitude_reg.asyncMode.emplace();
     attitude_reg.asyncMode->serial1 = false;
     attitude_reg.asyncMode->serial2 = true;
-    attitude_reg.rateDivisor = 8; // 800Hz / 8 = 100Hz
+    attitude_reg.rateDivisor = 8; // 800Hz / 2 = 400Hz
     attitude_reg.attitude.ypr = true;
 
     err = sensor.writeRegister(&imu_reg);
@@ -92,4 +92,8 @@ void VectorNavIMU::update_state(VectornavState &state) {
     if (asyncError.has_value()) {
         printf("Received async error: %s\n", asyncError.value().message.data());
     }
+
+    // if (sensor.hasMeasurement()) {
+    //     update_state(state);
+    // }
 }
