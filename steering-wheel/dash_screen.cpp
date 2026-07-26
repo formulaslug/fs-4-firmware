@@ -350,7 +350,7 @@ void DashScreen::drawDebugFaultLayout(
 
     //fps 
     //drawFormattedText(20, 450, "wheelSpeed FL: %d", 23, OPT_CENTERY, wheelSpeedFL); testing if this works
-    drawFormattedText(20, 450, "temps: %d, %d, %d, %d, %d, %d, %d, %d\n", 23, OPT_CENTERY, tperiph_br_tire_temps[0],tperiph_br_tire_temps[1],tperiph_br_tire_temps[2],tperiph_br_tire_temps[3],tperiph_br_tire_temps[4],tperiph_br_tire_temps[5],tperiph_br_tire_temps[6],tperiph_br_tire_temps[7]);
+    //drawFormattedText(20, 450, "temps: %d, %d, %d, %d, %d, %d, %d, %d\n", 23, OPT_CENTERY, tperiph_br_tire_temps[0],tperiph_br_tire_temps[1],tperiph_br_tire_temps[2],tperiph_br_tire_temps[3],tperiph_br_tire_temps[4],tperiph_br_tire_temps[5],tperiph_br_tire_temps[6],tperiph_br_tire_temps[7]);
     drawFormattedText(20, 400, "fps: %d", 23, OPT_CENTERY, fps);
     endFrame();
 

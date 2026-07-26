@@ -6,6 +6,10 @@
 #include "pin_config.hpp"
 #include "vehicle_state.hpp"
 
+// TODO: I had to put this here to get it to compile, but I have no
+// idea what the actual clock setup on steering wheel board is supposed to be
+extern "C" void SetSysClock(void) {}
+
 DashScreen screen{
     PIN_MOSI, PIN_MISO, PIN_SCK, PIN_CS, PIN_PDN, PIN_IRQ, EvePresets::CFAF800480H0
 };
