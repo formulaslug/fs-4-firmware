@@ -34,7 +34,7 @@ ETCController::ETCController(
       rtd_buzzer(rtd_buzzer_pin),
       solenoid(solenoid_pin),
       brakelight(brakelight_pin) {
-      // vn_imu(vn_imu) {
+    // vn_imu(vn_imu) {
     rtd_light.write(0);
     rtd_buzzer.write(0);
     solenoid.write(0);
@@ -54,34 +54,41 @@ bool ETCController::in_range(float value, float low, float high) {
 }
 
 float ETCController::accelerator_mapping(float pedal_travel) {
-    float region1 = 0.3f;
-    float region1_scale = 2.0f;
-    float region2 = 0.4f;
-    float region3_scale = 2.0f;
+    // Clamp input pedal position between 0.0 (0%) and 1.0 (100%)
+    pedal_travel = clamp(pedal_travel, 0.0f, 1.0f);
 
-    float region3 = 1 - region1 - region2;
-    float scaled_region1 = region1 / region1_scale;
-    float scaled_region3 = region3 / region3_scale;
-    float scaled_region2 = 1 - scaled_region1 - scaled_region3;
-    float region2_scale = region2 / scaled_region2;
+    // Pre-computed 17-Point Power Law (k=1.4) LUT
+    static constexpr float TORQUE_LUT[17] = {
+        0.000000f,
+        0.020785f,
+        0.054854f,
+        0.098863f,
+        0.151214f,
+        0.210744f,
+        0.276632f,
+        0.348250f,
+        0.425114f,
+        0.506822f,
+        0.593026f,
+        0.683424f,
+        0.777748f,
+        0.875758f,
+        0.977239f,
+        1.000000f,
+        1.000000f
+    };
 
-    if (pedal_travel < scaled_region1) {
-        return pedal_travel * region1_scale;
+    float scaled_index = pedal_travel * 16.0f;
+    int index = static_cast<int>(scaled_index);
+
+    if (index >= 16) {
+        return 1.0f;
     }
-    if (pedal_travel < scaled_region2 + scaled_region1) {
-        float p1 = scaled_region1;
-        float p1_power = p1 * region1_scale;
-        float p2 = pedal_travel - scaled_region1;
-        float p2_power = p2 * region2_scale;
-        return p1_power + p2_power;
-    }
-    float p1 = scaled_region1;
-    float p1_power = p1 * region1_scale;
-    float p2 = scaled_region2;
-    float p2_power = p2 * region2_scale;
-    float p3 = pedal_travel - scaled_region1 - scaled_region2;
-    float p3_power = p3 * region3_scale;
-    return p1_power + p2_power + p3_power;
+
+    float fraction = scaled_index - static_cast<float>(index);
+
+    // Linear interpolation between table points
+    return TORQUE_LUT[index] + fraction * (TORQUE_LUT[index + 1] - TORQUE_LUT[index]);
 }
 
 void ETCController::update_state() {
@@ -91,15 +98,15 @@ void ETCController::update_state() {
     state.front_BSE_voltage = front_BSE_input.read_voltage();
     state.rear_BSE_voltage = rear_BSE_input.read_voltage();
 
-    state.front_BSE_pressure = ((state.front_BSE_voltage * 1000.0f - 330.0f) / (3300.0f - 660.0f)) * 2000.0f;
-    state.read_BSE_pressure = ((state.rear_BSE_voltage * 1000.0f - 330.0f) / (3300.0f - 660.0f)) * 2000.0f;
+    state.front_BSE_pressure =
+        ((state.front_BSE_voltage * 1000.0f - 330.0f) / (3300.0f - 660.0f)) * 2000.0f;
+    state.read_BSE_pressure =
+        ((state.rear_BSE_voltage * 1000.0f - 330.0f) / (3300.0f - 660.0f)) * 2000.0f;
 
-    state.APPS1_position = clamp(
-        (state.APPS1_voltage - APPS1_MIN_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE)
-    );
-    state.APPS2_position = clamp(
-        (state.APPS2_voltage - APPS2_MIN_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE)
-    );
+    state.APPS1_position =
+        clamp((state.APPS1_voltage - APPS1_MIN_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE));
+    state.APPS2_position =
+        clamp((state.APPS2_voltage - APPS2_MIN_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE));
     state.BPPS_position =
         clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
@@ -109,18 +116,23 @@ void ETCController::update_state() {
     state.APPS_position_avg = accelerator_mapping(state.APPS_position_avg);
 
     if (!REGEN_FORCE_DISABLE && state.regen_mode != 0) {
-        state.unfiltered_motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE) - static_cast<int16_t>(state.BPPS_position * MAX_REGEN_TORQUE);
+        state.unfiltered_motor_torque =
+            static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE)
+            - static_cast<int16_t>(state.BPPS_position * MAX_REGEN_TORQUE);
     } else {
         state.unfiltered_motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
     }
 
-    // if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.motor_torque.read() > 0) {
-    //   // state.unfiltered_motor_torque = static_cast<int16_t>(state.motor_torque.read() * state.tc_torque_reduction_factor);
+    // if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.motor_torque.read()
+    // > 0) {
+    //   // state.unfiltered_motor_torque = static_cast<int16_t>(state.motor_torque.read() *
+    //   state.tc_torque_reduction_factor);
     // }
 
     // state.motor_torque.sample(state.unfiltered_motor_torque); // smooth out motor torque
 
-    state.brakelight_enabled = state.unfiltered_motor_torque < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT);
+    state.brakelight_enabled =
+        state.unfiltered_motor_torque < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT);
     brakelight.write(state.brakelight_enabled);
 
     state.solenoid_open = SOLENOID_FORCE_OPEN ? true : state.regen_allowed;
@@ -249,7 +261,8 @@ void ETCController::turn_off_rtd() {
 
 void ETCController::update_regen_state(float speed) {
     state.regen_allowed =
-        (!in_range(speed, 0.0f, 5.0f) || state.BPPS_position > BPPS_MAX_NON_REGEN_BRAKING) && !REGEN_FORCE_DISABLE;
+        (!in_range(speed, 0.0f, 5.0f) || state.BPPS_position > BPPS_MAX_NON_REGEN_BRAKING)
+        && !REGEN_FORCE_DISABLE;
 }
 
 // todo: this function is not called?
