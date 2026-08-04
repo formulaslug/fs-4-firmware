@@ -79,14 +79,21 @@ void readPedalCalButton() {
             pedalCalActive = !pedalCalActive;
             pedalCalStep = 0;
         } else if (lastState && pedalCalActive) {
-            uint16_t mv = pedalCalStep < 2 ? vsm_state.vcu_etc_apps1_mv
-                        : pedalCalStep < 4 ? vsm_state.vcu_etc_apps2_mv
-                        : vsm_state.vcu_etc_bpps_mv;
-            uint8_t data[3] = {pedalCalStep, (uint8_t)mv, (uint8_t)(mv >> 8)};
-            CANMessage cal_msg{0x4B0, data, 3};
-            can.write(cal_msg);
+            if (pedalCalStep < 2) {
+                uint8_t data1[3] = {pedalCalStep, (uint8_t)vsm_state.vcu_etc_apps1_mv, (uint8_t)(vsm_state.vcu_etc_apps1_mv >> 8)};
+                uint8_t data2[3] = {(uint8_t)(pedalCalStep + 2), (uint8_t)vsm_state.vcu_etc_apps2_mv, (uint8_t)(vsm_state.vcu_etc_apps2_mv >> 8)};
+                CANMessage msg1{0x4B0, data1, 3};
+                CANMessage msg2{0x4B0, data2, 3};
+                can.write(msg1);
+                can.write(msg2);
+            } else {
+                uint8_t idx = pedalCalStep + 2;
+                uint8_t data[3] = {idx, (uint8_t)vsm_state.vcu_etc_bpps_mv, (uint8_t)(vsm_state.vcu_etc_bpps_mv >> 8)};
+                CANMessage cal_msg{0x4B0, data, 3};
+                can.write(cal_msg);
+            }
             pedalCalStep++;
-            if (pedalCalStep > 5) pedalCalActive = false;
+            if (pedalCalStep > 3) pedalCalActive = false;
         }
         heldTicks = 0;
     }

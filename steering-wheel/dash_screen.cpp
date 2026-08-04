@@ -523,8 +523,8 @@ void DashScreen::debugCellVolts(const uint8_t seg_volts[5][6]) {
 }
 
 void DashScreen::drawPedalCalScreen(uint16_t apps1_mv, uint16_t apps2_mv, uint16_t bpps_mv, uint8_t step) {
-    static const char *names[6] = {
-        "APPS1 MIN", "APPS1 MAX", "APPS2 MIN", "APPS2 MAX", "BPPS MIN", "BPPS MAX"
+    static const char *names[4] = {
+        "APPS MIN", "APPS MAX", "BPPS MIN", "BPPS MAX"
     };
 
     if (failure == startFrame()) return;
