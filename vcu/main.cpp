@@ -97,6 +97,7 @@ int main() {
               }
               case 0x4b0: { // byte0 = which bound, bytes1-2 = mV
                   float v = (rx.data[1] | (rx.data[2] << 8)) / 1000.0f;
+                  printf("Setting %hhu to %.3fV\n", rx.data[0], v);
                   switch (rx.data[0]) {
                       case 0: etc.state.APPS1_MIN_VOLTAGE = v; break;
                       case 1: etc.state.APPS1_MAX_VOLTAGE = v; break;
