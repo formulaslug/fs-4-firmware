@@ -93,6 +93,19 @@ int main() {
                   etc.state.drive_mode = modes & 0b00000011;
                   etc.state.traction_mode = (modes >> 2) & 0b00000011;
                   etc.state.regen_mode = (modes >> 4) & 0b00000011;
+                  break;
+              }
+              case 0x4b0: { // byte0 = which bound, bytes1-2 = mV
+                  float v = (rx.data[1] | (rx.data[2] << 8)) / 1000.0f;
+                  switch (rx.data[0]) {
+                      case 0: etc.state.APPS1_MIN_VOLTAGE = v; break;
+                      case 1: etc.state.APPS1_MAX_VOLTAGE = v; break;
+                      case 2: etc.state.APPS2_MIN_VOLTAGE = v; break;
+                      case 3: etc.state.APPS2_MAX_VOLTAGE = v; break;
+                      case 4: etc.state.BPPS_MIN_VOLTAGE = v; break;
+                      case 5: etc.state.BPPS_MAX_VOLTAGE = v; break;
+                  }
+                  break;
               }
             }
         }

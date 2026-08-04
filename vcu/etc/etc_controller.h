@@ -58,6 +58,15 @@ struct ETCState {
 
     uint16_t min_battery_voltage = 420; // centivolts
     uint16_t current_draw = 0; // amps
+
+    float APPS1_MIN_VOLTAGE = 0.406f;
+    float APPS1_MAX_VOLTAGE = 1.036f;
+
+    float APPS2_MIN_VOLTAGE = 0.449f;
+    float APPS2_MAX_VOLTAGE = 1.083f;
+    
+    float BPPS_MIN_VOLTAGE = 0.615f;
+    float BPPS_MAX_VOLTAGE = 0.972f; // 2.8125f;
 };
 
 class ETCController {
@@ -105,15 +114,6 @@ private:
     DigitalOut brakelight;
 
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
-
-    static constexpr float APPS1_MIN_VOLTAGE = 0.406;
-    static constexpr float APPS1_MAX_VOLTAGE = 1.036f;
-
-    static constexpr float APPS2_MIN_VOLTAGE = 0.449f;
-    static constexpr float APPS2_MAX_VOLTAGE = 1.083f;
-
-    static constexpr float BPPS_MIN_VOLTAGE = 0.615f;
-    static constexpr float BPPS_MAX_VOLTAGE = 0.972f; // 2.8125f;
 
     static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
     static constexpr float FRONT_BSE_MAX_VOLTAGE = 2.8125f;

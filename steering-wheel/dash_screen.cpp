@@ -522,6 +522,25 @@ void DashScreen::debugCellVolts(const uint8_t seg_volts[5][6]) {
     endFrame();
 }
 
+void DashScreen::drawPedalCalScreen(uint16_t apps1_mv, uint16_t apps2_mv, uint16_t bpps_mv, uint8_t step) {
+    static const char *names[6] = {
+        "APPS1 MIN", "APPS1 MAX", "APPS2 MIN", "APPS2 MAX", "BPPS MIN", "BPPS MAX"
+    };
+
+    if (failure == startFrame()) return;
+    clear(255, 255, 255);
+    loadFonts();
+
+    setMainColor(black);
+    drawFormattedText(400, 150, "APPS1: %umV", 28, OPT_CENTER, apps1_mv);
+    drawFormattedText(400, 200, "APPS2: %umV", 28, OPT_CENTER, apps2_mv);
+    drawFormattedText(400, 250, "BPPS: %umV", 28, OPT_CENTER, bpps_mv);
+    drawFormattedText(400, 330, "Press button to capture:", 26, OPT_CENTER);
+    drawFormattedText(400, 370, names[step], 30, OPT_CENTER);
+
+    endFrame();
+}
+
 void DashScreen::drawTempCell(uint16_t x, uint16_t y, uint8_t temp) {
     uint16_t br_x = x + (CELL_WIDTH / 2), br_y = y + CELL_HEIGHT;
     // draw cell

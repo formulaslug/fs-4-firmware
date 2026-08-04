@@ -81,6 +81,8 @@ public:
         uint8_t regen_state
     );
 
+    void drawPedalCalScreen(uint16_t apps1_mv, uint16_t apps2_mv, uint16_t bpps_mv, uint8_t step);
+
     void debugCellTemps(const uint8_t seg_temps_A[5][6], const uint8_t seg_temps_B[5][6]);
 
     void debugCellVolts(const uint8_t seg_volts[5][6]);

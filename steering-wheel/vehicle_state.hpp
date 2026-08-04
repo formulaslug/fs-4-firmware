@@ -28,6 +28,9 @@ struct VehicleState{
     uint8_t vcu_etc_batt_precharge_done;
     uint8_t vcu_etc_brake_pedal_travel; 
     uint8_t vcu_etc_bpps_he;
+    uint16_t vcu_etc_apps1_mv;
+    uint16_t vcu_etc_apps2_mv;
+    uint16_t vcu_etc_bpps_mv;
     uint8_t vcu_etc_implausibility_apps_out_of_range;
     uint8_t vcu_etc_implausibility_bpps_out_of_range;
     uint8_t vcu_etc_implausibility_apps_deviation;
@@ -71,6 +74,7 @@ struct VehicleState{
 };
 
 void readLayoutButton();
+void readPedalCalButton();
 void readDials();
 void drawScreenLayout();
 void canISR();

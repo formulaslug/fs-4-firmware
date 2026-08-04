@@ -26,6 +26,8 @@ AnalogIn regenDial{PIN_REGEN};
 uint8_t driveState;
 uint8_t tractionState;
 uint8_t regenState;
+bool pedalCalActive = false;
+uint8_t pedalCalStep = 0;
 
 // g_dbcc_state removed — all CAN signals decoded manually from msg.data[]
 VehicleState vsm_state;
@@ -41,6 +43,7 @@ int main() {
     // debouncedLayoutBtn.set_valid_read_count(7);
     can.attach(&canISR, CAN::RxIrq); // callback function to handle CAN interrupts
     queue.call_every(10ms, &readLayoutButton);
+    queue.call_every(10ms, &readPedalCalButton);
     queue.call_every(10ms, &readDials);
     queue.call_every(10ms, &drawScreenLayout); //100hz
     queue.call_every(100ms, []() { tick++; }); //Lambda expression to increase ticks every 100ms, or I hope it runs every 100ms
@@ -60,6 +63,34 @@ void readLayoutButton() {
         currentScreen = (currentScreen >= 4) ? 0 : (currentScreen + 1);
     }
     lastLayoutBtnState = debounced_button_state;
+}
+
+/**
+ * @brief Function to read button state for pedal calibration screen
+ */
+void readPedalCalButton() {
+    static uint16_t heldTicks = 0;
+    static bool lastState = false;
+    const bool state = layoutBtn.read();
+    if (state) {
+        heldTicks++;
+    } else {
+        if (lastState && heldTicks >= 100) {
+            pedalCalActive = !pedalCalActive;
+            pedalCalStep = 0;
+        } else if (lastState && pedalCalActive) {
+            uint16_t mv = pedalCalStep < 2 ? vsm_state.vcu_etc_apps1_mv
+                        : pedalCalStep < 4 ? vsm_state.vcu_etc_apps2_mv
+                        : vsm_state.vcu_etc_bpps_mv;
+            uint8_t data[3] = {pedalCalStep, (uint8_t)mv, (uint8_t)(mv >> 8)};
+            CANMessage cal_msg{0x4B0, data, 3};
+            can.write(cal_msg);
+            pedalCalStep++;
+            if (pedalCalStep > 5) pedalCalActive = false;
+        }
+        heldTicks = 0;
+    }
+    lastState = state;
 }
 
 /**
@@ -118,6 +149,12 @@ void readDials() {
  * 4: Fault
  */
 void drawScreenLayout() {
+    if (pedalCalActive) {
+        screen.drawPedalCalScreen(
+            vsm_state.vcu_etc_apps1_mv, vsm_state.vcu_etc_apps2_mv, vsm_state.vcu_etc_bpps_mv, pedalCalStep
+        );
+        return;
+    }
     // Render the screen like how it was done before?
     // Should look into optimal ways of doing this
     // Also add fps overlay to the screens
@@ -268,6 +305,9 @@ void processCANMessage() {
                 vsm_state.vcu_etc_bpps_he = msg.data[4];
                 // BRAKE_PEDAL_TRAVEL: bit 56 (byte 7), raw = 0-100 %
                 vsm_state.vcu_etc_brake_pedal_travel = msg.data[7];
+                vsm_state.vcu_etc_apps1_mv = (uint16_t)msg.data[0] | ((uint16_t)msg.data[1] << 8);
+                vsm_state.vcu_etc_apps2_mv = (uint16_t)msg.data[2] | ((uint16_t)msg.data[3] << 8);
+                vsm_state.vcu_etc_bpps_mv  = (uint16_t)msg.data[4] | ((uint16_t)msg.data[5] << 8);
             } else if (msg.id == 0x193) { // VCU_TPDO_STATUS
                 // BRAKE_PRESSURE_FRONT: bits 16-31 (bytes 2-3), little-endian
                 vsm_state.vcu_etc_brake_pressure_front = (uint16_t)msg.data[2] | ((uint16_t)msg.data[3] << 8);
