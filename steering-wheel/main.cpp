@@ -75,7 +75,7 @@ void readPedalCalButton() {
     if (state) {
         heldTicks++;
     } else {
-        if (lastState && heldTicks >= 100) {
+        if (lastState && heldTicks >= 300) {
             pedalCalActive = !pedalCalActive;
             pedalCalStep = 0;
         } else if (lastState && pedalCalActive) {
