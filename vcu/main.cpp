@@ -95,16 +95,36 @@ int main() {
                   etc.state.regen_mode = (modes >> 4) & 0b00000011;
                   break;
               }
-              case 0x4b0: { // byte0 = which bound, bytes1-2 = mV
-                  float v = (rx.data[1] | (rx.data[2] << 8)) / 1000.0f;
-                  printf("Setting %hhu to %.3fV\n", rx.data[0], v);
+              case 0x4b0: { // byte0 = which bound
                   switch (rx.data[0]) {
-                      case 0: etc.state.APPS1_MIN_VOLTAGE = v; break;
-                      case 1: etc.state.APPS1_MAX_VOLTAGE = v; break;
-                      case 2: etc.state.APPS2_MIN_VOLTAGE = v; break;
-                      case 3: etc.state.APPS2_MAX_VOLTAGE = v; break;
-                      case 4: etc.state.BPPS_MIN_VOLTAGE = v; break;
-                      case 5: etc.state.BPPS_MAX_VOLTAGE = v; break;
+                      case 0:
+                          etc_state.APPS1_MIN_VOLTAGE = etc_state.APPS1_voltage;
+                          etc_state.APPS2_MIN_VOLTAGE = etc_state.APPS2_voltage;
+
+                          printf("Setting APPS1_MIN to %.3fV\n", etc_state.APPS1_voltage);
+                          printf("Setting APPS2_MIN to %.3fV\n", etc_state.APPS2_voltage);
+
+                          break;
+                      case 1:
+                          etc_state.APPS1_MAX_VOLTAGE = etc_state.APPS1_voltage;
+                          etc_state.APPS2_MAX_VOLTAGE = etc_state.APPS2_voltage;
+
+                          printf("Setting APPS1_MAX to %.3fV\n", etc_state.APPS1_voltage);
+                          printf("Setting APPS2_MAX to %.3fV\n", etc_state.APPS2_voltage);
+
+                          break;
+                      case 2:
+                          etc_state.BPPS_MIN_VOLTAGE = etc_state.BPPS_voltage;
+
+                          printf("Setting BPPS_MIN to %.3fV\n", etc_state.BPPS_voltage);
+
+                          break;
+                      case 3:
+                          etc_state.BPPS_MAX_VOLTAGE = etc_state.BPPS_voltage;
+
+                          printf("Setting BPPS_MAX to %.3fV\n", etc_state.BPPS_voltage);
+                          
+                          break;
                   }
                   break;
               }
