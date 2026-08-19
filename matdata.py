@@ -10,7 +10,9 @@ Q_NOM = 3000 # mAh
 # DOD = Q_released/Q_nom
 # SOH = Q_releasable + Q_released = Q_total
 
+# -----------------------------
 # Load Matlab data
+# -----------------------------
 
 matData = scipy.io.loadmat("Molicel_INR18650P30B_measurement.mat", squeeze_me = True, struct_as_record=False)
 measurements = matData["measurement"]
@@ -21,7 +23,9 @@ dcp = measurements.fu.DCP
 chp = measurements.fu.CHP
 pro = measurements.fu.PRO
 
+# -----------------------------
 # Calculate SOC using Coulomb counting
+# -----------------------------
 
 def Calculate_SOC(I, t, starting_SOH):
 
@@ -29,20 +33,33 @@ def Calculate_SOC(I, t, starting_SOH):
     soc = starting_SOH + q_io/Q_NOM # SOC = SOH - DOD
     return np.clip(soc, 0.0, 1.0)
 
+# -----------------------------
 # Calculate OCV
+# -----------------------------
 
 def OCV_terminal_voltage(SOC, T, a0, a1, a2, a3, a4, a5, a6, K_T):
     return (a0 + a1 * SOC + a2 * SOC**2 + a3 * SOC**3 + a4 * SOC**4 + a5 * SOC**5 + a6 * SOC**6) * (1 + K_T * (T - 25))
 
+# -----------------------------
 # Save data into parquet
+# -----------------------------
 
-data = {
+dcc_soc = Calculate_SOC(dcc[0].I, dcc[0].t, 1)
+chc_soc = Calculate_SOC(chc[0].I, chc[0].t, 0)
 
-    "Current": dcc[0].I,
-    "SOC": Calculate_SOC(dcc[0].I, dcc[0].t, 1),
+# make columns same length
+
+max_len = max(len(dcc[0].I), len(chc[0].I))
+
+data_cons_0 = {
+
+    "Current_DCC": list(dcc[0].I)+[None]*(max_len-len(dcc[0].I)),
+    "SOC_DCC": list(dcc_soc)+[None]*(max_len-len(dcc[0].I)),
+    "Current_CHC": list(chc[0].I)+[None]*(max_len-len(chc[0].I)),
+    "SOC_CHC": list(chc_soc)+[None]*(max_len-len(chc[0].I))
     # OCV
 
 }
 
-df = polars.DataFrame(data)
-df.write_parquet("DCC0.parquet")
+df = polars.DataFrame(data_cons_0)
+df.write_parquet("CONS0.parquet")
