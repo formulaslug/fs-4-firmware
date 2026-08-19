@@ -72,12 +72,20 @@ void readPedalCalButton() {
     static uint16_t heldTicks = 0;
     static bool lastState = false;
     const bool state = layoutBtn.read();
+    if (vsm_state.vcu_etc_batt_precharge_done && pedalCalActive) {
+        pedalCalActive = false;
+        heldTicks = 0;
+        lastState = state;
+        return;
+    }
     if (state) {
         heldTicks++;
     } else {
         if (lastState && heldTicks >= 300) {
-            pedalCalActive = !pedalCalActive;
-            pedalCalStep = 0;
+            if (!vsm_state.vcu_etc_batt_precharge_done) {
+                pedalCalActive = !pedalCalActive;
+                pedalCalStep = 0;
+            }
         } else if (lastState && pedalCalActive) {
             uint8_t data[1] = {pedalCalStep};
             CANMessage msg{0x4B0, data, 1};

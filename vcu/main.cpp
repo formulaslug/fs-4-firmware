@@ -96,6 +96,10 @@ int main() {
                   break;
               }
               case 0x4b0: { // byte0 = which bound
+                  if (etc.battery_precharged) {
+                      printf("Ignoring pedal cal: TS is active\n");
+                      break;
+                  }
                   switch (rx.data[0]) {
                       case 0:
                           etc_state.APPS1_MIN_VOLTAGE = etc_state.APPS1_voltage;
