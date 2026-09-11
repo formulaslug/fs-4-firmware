@@ -54,34 +54,55 @@ bool ETCController::in_range(float value, float low, float high) {
 }
 
 float ETCController::accelerator_mapping(float pedal_travel) {
-    // Clamp input pedal position between 0.0 (0%) and 1.0 (100%)
-    pedal_travel = clamp(pedal_travel, 0.0f, 1.0f);
-
-    // Pre-computed 17-Point Power Law (k=1.4) LUT
-    static constexpr float TORQUE_LUT[17] = {
-        0.000000f,
-        0.020785f,
-        0.054854f,
-        0.098863f,
-        0.151214f,
-        0.210744f,
-        0.276632f,
-        0.348250f,
-        0.425114f,
-        0.506822f,
-        0.593026f,
-        0.683424f,
-        0.777748f,
-        0.875758f,
-        0.977239f,
-        1.000000f,
-        1.000000f
+    // Pre-computed 41-Point 3rd Degree Polynomial (-0.2x^3 + 0.9x^2 + 0.3x) LUT
+    static constexpr float TORQUE_LUT[41] = {
+        0.000000000f,
+        0.008059375f,
+        0.017225000f,
+        0.027478125f,
+        0.038800000f,
+        0.051171875f,
+        0.064575000f,
+        0.078990625f,
+        0.094400000f,
+        0.110784380f,
+        0.128125000f,
+        0.146403120f,
+        0.165600000f,
+        0.185696880f,
+        0.206675000f,
+        0.228515630f,
+        0.251200000f,
+        0.274709370f,
+        0.299025000f,
+        0.324128120f,
+        0.350000000f,
+        0.376621870f,
+        0.403975000f,
+        0.432040630f,
+        0.460800000f,
+        0.490234380f,
+        0.520325000f,
+        0.551053130f,
+        0.582400000f,
+        0.614346870f,
+        0.646875000f,
+        0.679965630f,
+        0.713600000f,
+        0.747759380f,
+        0.782425000f,
+        0.817578130f,
+        0.853200000f,
+        0.889271880f,
+        0.925775000f,
+        0.962690630f,
+        1.000000000f
     };
 
-    float scaled_index = pedal_travel * 16.0f;
+    float scaled_index = pedal_travel * 40.0f;
     int index = static_cast<int>(scaled_index);
 
-    if (index >= 16) {
+    if (index >= 40) {
         return 1.0f;
     }
 
