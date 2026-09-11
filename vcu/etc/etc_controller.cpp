@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 
 ETCController::ETCController(
-    PinName APPS1_pin,
+
     PinName APPS2_pin,
     PinName BPPS_pin,
     PinName front_BSE_pin,
@@ -114,16 +114,16 @@ void ETCController::update_state() {
         state.unfiltered_motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
     }
 
-    // if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.motor_torque.read() > 0) {
-    //   // state.unfiltered_motor_torque = static_cast<int16_t>(state.motor_torque.read() * state.tc_torque_reduction_factor);
-    // }
+    if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.unfiltered_motor_torque > 0) {
+        state.unfiltered_motor_torque *= state.tc_mult_factor;
+    }
 
     state.motor_torque.sample(state.unfiltered_motor_torque); // smooth out motor torque
 
     state.brakelight_enabled = state.unfiltered_motor_torque < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT);
     brakelight.write(state.brakelight_enabled);
 
-    state.solenoid_open = SOLENOID_FORCE_OPEN ? true : state.regen_allowed;
+    // state.solenoid_open = SOLENOID_FORCE_OPEN ? true : state.regen_allowed; // probably unsafe since regen is allowed often
     solenoid.write(!state.solenoid_open);
 
     state.rtd_button_pressed = rtd_button.read();
@@ -233,7 +233,12 @@ void ETCController::rtd_button_irq() {
     if (!state.ready_to_drive && ts_ready && rtd_condition) {
         turn_on_rtd();
     } else {
-        turn_off_rtd();
+        // TEMP ADDED FOR TESTING SOLENOID
+        if (!SOLENOID_FORCE_OPEN && state.ready_to_drive) {
+            state.solenoid_open = !state.solenoid_open;
+        } else {
+            turn_off_rtd();
+        }
     }
 }
 void ETCController::turn_on_rtd() {

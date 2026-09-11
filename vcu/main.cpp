@@ -21,6 +21,12 @@ CAN canD{PB_5, PB_6, 1000000};
 ETCController etc{PC_1, PC_2, PC_3, PA_1, PA_0, PC_13, PC_0, PA_7, PB_1, PC_4}; // add imu at end
 ETCState& etc_state = etc.state;
 
+bool wheel_fl_read = false;
+bool wheel_fr_read = false;
+bool wheel_bl_read = false;
+bool wheel_br_read = false;
+
+void update_wheel_reads();
 void send_etc_CAN_messages();
 void send_sme_CAN_messages_powertrain();
 void send_sme_CAN_messages_data();
@@ -74,18 +80,26 @@ int main() {
           switch (rx.id) {
               case 421: {
                   etc.state.wheel_rpm_fl = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                  wheel_fl_read = true;
+                  update_wheel_reads();
                   break;
               }
               case 422: {
                   etc.state.wheel_rpm_fr = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                  wheel_fr_read = true;
+                  update_wheel_reads();
                   break;
               }
               case 423: {
                   etc.state.wheel_rpm_bl = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                  wheel_bl_read = true;
+                  update_wheel_reads();
                   break;
               }
               case 424: {
                   etc.state.wheel_rpm_br = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                  wheel_br_read = true;
+                  update_wheel_reads();
                   break;
               }
               case 432: {
@@ -102,6 +116,17 @@ int main() {
 
     imu.disconnect();
     return 0;
+}
+
+void update_wheel_reads() {
+    if (wheel_fl_read && wheel_fr_read && wheel_bl_read && wheel_br_read) {
+        update_traction_control();
+
+        wheel_fl_read = false;
+        wheel_fr_read = false;
+        wheel_bl_read = false;
+        wheel_br_read = false;
+    }
 }
 
 void send_etc_CAN_messages() {
@@ -153,10 +178,6 @@ void send_etc_CAN_messages() {
 void send_sme_CAN_messages_powertrain() {
     etc.update_mbb_alive();
 
-    // Update traction control reduction factor synchronized with torque commands
-    update_traction_control();
-    etc.state.tc_torque_reduction_factor = etc.traction_controller.get_output();
-
     uint8_t tpdo_throttle_demand[8];
     tpdo_throttle_demand[0] = etc_state.motor_torque.read() & 0xFF;
     tpdo_throttle_demand[1] = etc_state.motor_torque.read() >> 8;
@@ -181,8 +202,6 @@ void send_sme_CAN_messages_powertrain() {
 }
 
 void send_sme_CAN_messages_data() {
-    // Update traction control reduction factor synchronized with torque commands
-
     uint8_t tpdo_throttle_demand[8];
     tpdo_throttle_demand[0] = etc_state.motor_torque.read() & 0xFF;
     tpdo_throttle_demand[1] = etc_state.motor_torque.read() >> 8;
@@ -201,7 +220,7 @@ void send_sme_CAN_messages_data() {
 
     uint8_t tpdo_traction_data[8];
     uint8_t tc_slip = static_cast<uint8_t>(etc.traction_controller.get_slip() * 100.0f);
-    uint8_t tc_output = static_cast<uint8_t>(etc.traction_controller.get_output() * 100.0f);
+    uint8_t tc_output = static_cast<uint8_t>(etc_state.tc_mult_factor * 100.0f);
     uint8_t tc_integral = static_cast<uint8_t>(etc.traction_controller.get_integral() * 100.0f);
     uint8_t tc_loop_time = static_cast<uint8_t>(etc.traction_controller.get_loop_time() * 1000.0f);
     int16_t tc_raw_derivative = static_cast<int16_t>(etc.traction_controller.get_raw_derivative() * 1000.0f);
@@ -225,7 +244,7 @@ void send_sme_CAN_messages_data() {
 }
 
 void update_traction_control() {
-  etc.traction_controller.update(etc.state.wheel_rpm_fl, etc.state.wheel_rpm_fr, etc.state.wheel_rpm_bl, etc.state.wheel_rpm_br);
+    etc_state.tc_mult_factor = etc.traction_controller.update(etc.state.wheel_rpm_fl, etc.state.wheel_rpm_fr, etc.state.wheel_rpm_bl, etc.state.wheel_rpm_br);
 }
 
 /// 100Hz VectorNav Messages
@@ -286,11 +305,11 @@ void send_imu_CAN_messages() {
     buf_vel[4] = vel_z & 0xFF;
     buf_vel[5] = vel_z >> 8;
 
-    CANMessage accel_msg    {0x3D0, buf_accel,    6};
-    CANMessage ypr_msg    {0x3D0, buf_ypr,    6};
-    CANMessage latlon_msg {0x2D1, buf_latlon,  8};
-    CANMessage gyro_msg    {0x2D2, buf_gyro,     6};
-    CANMessage vel_msg    {0x2D2, buf_vel,     6};
+    CANMessage accel_msg    {0x3D0, buf_accel,  6};
+    CANMessage ypr_msg      {0x3D0, buf_ypr,    6};
+    CANMessage latlon_msg   {0x2D1, buf_latlon, 8};
+    CANMessage gyro_msg     {0x2D2, buf_gyro,   6};
+    CANMessage vel_msg      {0x2D2, buf_vel,    6};
 
     canD.write(accel_msg);
     canD.write(ypr_msg);
