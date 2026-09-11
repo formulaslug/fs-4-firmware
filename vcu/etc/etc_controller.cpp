@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 
 ETCController::ETCController(
-
+    PinName APPS1_pin,
     PinName APPS2_pin,
     PinName BPPS_pin,
     PinName front_BSE_pin,
@@ -17,7 +17,6 @@ ETCController::ETCController(
     PinName rtd_buzzer_pin,
     PinName solenoid_pin,
     PinName brakelight_pin
-    // VectorNavIMU &vn_imu
 )
     : unfiltered_APPS1_input(APPS1_pin),
       APPS1_input(unfiltered_APPS1_input, 60),
@@ -34,7 +33,6 @@ ETCController::ETCController(
       rtd_buzzer(rtd_buzzer_pin),
       solenoid(solenoid_pin),
       brakelight(brakelight_pin) {
-    // vn_imu(vn_imu) {
     rtd_light.write(0);
     rtd_buzzer.write(0);
     solenoid.write(0);
