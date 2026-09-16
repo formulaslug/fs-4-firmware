@@ -136,7 +136,7 @@ void ETCController::update_state() {
 
     state.APPS_position_avg = accelerator_mapping(state.APPS_position_avg);
 
-    if (!REGEN_FORCE_DISABLE && state.regen_mode != 0) {
+    if (state.regen_allowed && state.regen_mode != 0) {
         state.unfiltered_motor_torque =
             static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE)
             - static_cast<int16_t>(state.BPPS_position * MAX_REGEN_TORQUE);
