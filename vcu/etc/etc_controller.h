@@ -114,7 +114,7 @@ private:
 
     static constexpr float PEDAL_DEADZONE_PERCENTAGE = 0.03;
 
-    static constexpr float BPPS_MIN_VOLTAGE = 0.615f;
+    static constexpr float BPPS_MIN_VOLTAGE = 0.460f;
     static constexpr float BPPS_MAX_VOLTAGE = 0.972f; // 2.8125f;
 
     static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;

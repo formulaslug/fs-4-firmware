@@ -66,16 +66,20 @@ int main() {
                 ground_speed *= 60.0f / 1000.0f;              // km / hr
 
                 etc.update_regen_state(ground_speed);
+                canD.write(rx);
                 break;
             }
             case 0x4c0: { // BATT_TPDO_TRAY_TEMPS
                 uint8_t tray_temp_x2 = rx.data[1];
                 float tray_temp = tray_temp_x2 / 2.0;
-                if (tray_temp > 48.0){
+                if (tray_temp > 40.0){
                     etc.turn_off_rtd();
                 }
                 break;
             }
+            case 1666:
+                canD.write(rx);
+                break;
             }
         }
         if (canD.read(rx)) {
@@ -154,8 +158,8 @@ void send_etc_CAN_messages() {
 
     CANMessage msg1{402, tpdo_pedal_travel, 8};
     CANMessage msg2{403, tpdo_status, 8};
-    canP.write(msg1);
-    canP.write(msg2);
+    canD.write(msg1);
+    canD.write(msg2);
 }
 
 void send_sme_CAN_messages_powertrain() {

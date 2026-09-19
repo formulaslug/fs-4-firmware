@@ -122,7 +122,7 @@ void ETCController::update_state() {
 
     // state.motor_torque.sample(state.unfiltered_motor_torque); // smooth out motor torque
 
-    state.brakelight_enabled = state.unfiltered_motor_torque < 0 || (state.BPPS_position > BPPS_BRAKE_ENGAGE_PERCENT);
+    state.brakelight_enabled = (state.front_BSE_pressure > 30);
     brakelight.write(state.brakelight_enabled);
 
     state.solenoid_open = SOLENOID_FORCE_OPEN ? true : state.regen_allowed;
@@ -178,7 +178,7 @@ void ETCController::update_implaus() {
     // APPS / Brake Pedal Plausibility Check:
     // "With accelerator > 25%, press brake pedal. Axle MUST stop"
     // Note: brake pedal range is up for interpretation
-    bool implaus_brake_and_accel = (state.BPPS_position > 0.25) && state.APPS_position_avg > 0.25f;
+    bool implaus_brake_and_accel = (state.front_BSE_pressure > 30) && state.APPS_position_avg > 0.25f;
 
     update_implaus_timer(
         implaus_APPS_deviation_timer,
