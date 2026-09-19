@@ -25,16 +25,16 @@ Corner readCorner() {
 CornerConfig getCornerConfig(Corner pos) {
     switch (pos) {
         case Corner::FL:
-            return {0x1A5, 0x2A5, true, false};
+            return {0x1A5, 0x2A5, false, false};
 
         case Corner::FR:
-            return {0x1A6, 0x2A6, true, false};
+            return {0x1A6, 0x2A6, false, false};
 
         case Corner::BL:
-            return {0x1A7, 0x2A7, true, false};
+            return {0x1A7, 0x2A7, false, false};
 
         case Corner::BR:
-            return {0x1A8, 0x2A8, true, false};
+            return {0x1A8, 0x2A8, false, false};
         default:
             return {0x1A6, 0x2A6, false, false};
             //Can Message id for struct CornerConfig {tpdo_data_id, tpdo_tiretemp_id, has_tiretemp_1x8, has_tiretemp_1x1};
