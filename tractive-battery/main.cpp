@@ -50,12 +50,13 @@ BMS bms(canPowertrain, ((Charge_State_Filtered.read() * 3.3 * 1000) > 700), Tele
 OneWire TS1W = OneWire{PB_14};
 DigitalOut TS1W_PU_Control = DigitalOut(PB_15);
 // clang-format off
-DS18B20 temp_a {TS1W, 0x860000112ffda728};
-DS18B20 temp_b {TS1W, 0x520000112fffdd28};
-DS18B20 temp_c {TS1W, 0x7400001130aabd28};
+DS18B20 temp_a {TS1W, 0x520000112fffdd28};
+DS18B20 temp_b {TS1W, 0x0e0000111131fc28};
+DS18B20 temp_c {TS1W, 0x860000112ffda728};
 DS18B20 temp_d {TS1W, 0x3e00001111126d28};
-DS18B20 temp_e {TS1W, 0x0e0000111131fc28};
+DS18B20 temp_e {TS1W, 0x7400001130aabd28};
 
+// Module E-meter temp sensors (don't seem to work with open-drain from TBB)
 // DS18B20 temp_f {TS1W, 0x2f8d48110000b628};
 // DS18B20 temp_g {TS1W, 0x75bb481100004f28};
 // DS18B20 temp_h {TS1W, 0x3eb048110000b228};
@@ -152,7 +153,9 @@ int main() {
         for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) {
             uint8_t trayTemp = trayTempSensors[i].retrieve_conversion() / 2;
             trayTemps[i] = trayTemp;
+            printf("%d\n", trayTemp);
         }
+        printf("\n");
     });
 
     bmsEventQueue.call_every(200ms, &bms, &BMS::controller);

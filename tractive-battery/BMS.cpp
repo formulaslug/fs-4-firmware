@@ -441,7 +441,7 @@ void BMS::controller() {
     readPackCurrent();
 
     if (currentState == FAULT) {
-        printf("BMS: FAULT STATE\n");
+        // printf("BMS: FAULT STATE\n");
         turnOffBalancing();
         nBMS_Fault_3V3 = 0;
     }
