@@ -13,4 +13,4 @@ target_include_directories(mbed-steering-wheel-board
         .
 )
 
-target_link_libraries(mbed-steering-wheel-board INTERFACE mbed-stm32g441xb)
+target_link_libraries(mbed-steering-wheel-board INTERFACE mbed-stm32g431xb)
