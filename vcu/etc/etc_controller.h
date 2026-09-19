@@ -9,8 +9,8 @@
 // #include "../imu/vectornav_imu.h"
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
-#include "traction_control.h"
 #include "low_pass_filter.h"
+#include "traction_control.h"
 
 struct ETCState {
     float APPS1_voltage = 0.0f;
@@ -26,9 +26,9 @@ struct ETCState {
     float read_BSE_pressure = 0.0f;
     int16_t unfiltered_motor_torque = 0.0f; // -32767 to 32768
     int16_t MAX_SPEED = 7500;
-    uint16_t CHARGE_CURRENT_LIMIT = 100; // amps
+    uint16_t CHARGE_CURRENT_LIMIT = 100;        // amps
     uint16_t MAX_DISCHARGE_CURRENT_LIMIT = 600; // amps
-    uint16_t DISCHARGE_CURRENT_LIMIT = 570; //amps
+    uint16_t DISCHARGE_CURRENT_LIMIT = 570;     // amps
     uint8_t mbb_alive = 0;
     bool rtd_button_pressed = false;
     bool ready_to_drive = false;
@@ -57,7 +57,7 @@ struct ETCState {
     // LowPassFilter<int16_t> motor_torque{40}; // example 40hz frequency for -3db filtering
 
     uint16_t min_battery_voltage = 420; // centivolts
-    uint16_t current_draw = 0; // amps
+    uint16_t current_draw = 0;          // amps
 };
 
 class ETCController {
@@ -68,7 +68,18 @@ public:
     bool shutdown_closed = false;
     TractionController traction_controller;
 
-    ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin); // add ref to imu at end
+    ETCController(
+        PinName APPS1_pin,
+        PinName APPS2_pin,
+        PinName BPPS_pin,
+        PinName front_BSE_pin,
+        PinName rear_BSE_pin,
+        PinName rtd_button_pin,
+        PinName rtd_light_pin,
+        PinName rtd_buzzer_pin,
+        PinName solenoid_pin,
+        PinName brakelight_pin
+    ); // add ref to imu at end
 
     void update_state();
 
@@ -106,22 +117,41 @@ private:
 
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
 
-    static constexpr float APPS1_MIN_VOLTAGE = 0.396;
-    static constexpr float APPS1_MAX_VOLTAGE = 1.086f;
+    // static constexpr float APPS1_MIN_VOLTAGE = 0.396;
+    // static constexpr float APPS1_MAX_VOLTAGE = 1.086f;
+    //
+    // static constexpr float APPS2_MIN_VOLTAGE = 0.439f;
+    // static constexpr float APPS2_MAX_VOLTAGE = 1.133f;
 
-    static constexpr float APPS2_MIN_VOLTAGE = 0.439f;
-    static constexpr float APPS2_MAX_VOLTAGE = 1.133f;
+    // dynamic threshold
+    float APPS1_MIN_VOLTAGE = 0.396;
+    float APPS1_MAX_VOLTAGE = 1.086f;
+
+    float APPS2_MIN_VOLTAGE = 0.439f;
+    float APPS2_MAX_VOLTAGE = 1.133f;
+    //
 
     static constexpr float PEDAL_DEADZONE_PERCENTAGE = 0.03;
 
-    static constexpr float BPPS_MIN_VOLTAGE = 0.615f;
-    static constexpr float BPPS_MAX_VOLTAGE = 0.972f; // 2.8125f;
+    // static constexpr float BPPS_MIN_VOLTAGE = 0.615f;
+    // static constexpr float BPPS_MAX_VOLTAGE = 0.972f; // 2.8125f;
+    //
+    // static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
+    // static constexpr float FRONT_BSE_MAX_VOLTAGE = 2.8125f;
+    //
+    // static constexpr float REAR_BSE_MIN_VOLTAGE = 0.3125f;
+    // static constexpr float REAR_BSE_MAX_VOLTAGE = 2.8125f;
 
-    static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
-    static constexpr float FRONT_BSE_MAX_VOLTAGE = 2.8125f;
+    // dynamic thresholds
+    float BPPS_MIN_VOLTAGE = 0.615f;
+    float BPPS_MAX_VOLTAGE = 0.972f; // 2.8125f;
 
-    static constexpr float REAR_BSE_MIN_VOLTAGE = 0.3125f;
-    static constexpr float REAR_BSE_MAX_VOLTAGE = 2.8125f;
+    float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
+    float FRONT_BSE_MAX_VOLTAGE = 2.8125f;
+
+    float REAR_BSE_MIN_VOLTAGE = 0.3125f;
+    float REAR_BSE_MAX_VOLTAGE = 2.8125f;
+    //
 
     // Using BPPS instead
     // static constexpr float FRONT_BSE_ACTIVATION_VOLTAGE = 0.5f;
@@ -131,8 +161,8 @@ private:
     static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.09f;
     static constexpr float MAX_APPS_POSITION_DEVIATION = 0.10f;
 
-    static constexpr int16_t MAX_TORQUE = 32767*0.65;
-    static constexpr int16_t MAX_REGEN_TORQUE = 32767*0.65;
+    static constexpr int16_t MAX_TORQUE = 32767 * 0.65;
+    static constexpr int16_t MAX_REGEN_TORQUE = 32767 * 0.65;
 
     static constexpr bool REGEN_FORCE_DISABLE = true;
     static constexpr bool TRACTION_CONTROL_FORCE_DISABLE = true;
@@ -157,9 +187,14 @@ private:
 
     void update_implaus();
 
-    void update_implaus_timer(Timer &timer, bool &timer_running, bool implaus_state, bool &etc_implaus);
+    void
+    update_implaus_timer(Timer& timer, bool& timer_running, bool implaus_state, bool& etc_implaus);
 
     void rtd_button_irq();
+
+    void set_apps_thresh();
+
+    void set_brake_thresh();
 
     float accelerator_mapping(float pedal_travel);
 };
