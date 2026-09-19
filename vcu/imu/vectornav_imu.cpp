@@ -47,6 +47,7 @@ VN::Error VectorNavIMU::start() {
     ins_reg.rateDivisor = 8; // 800Hz / 2 = 400Hz
     ins_reg.ins.posLla = true;
     ins_reg.ins.velBody = true;
+    ins_reg.gnss2.gnss2Fix = true;
 
     attitude_reg.asyncMode.emplace();
     attitude_reg.asyncMode->serial1 = false;
@@ -82,6 +83,7 @@ void VectorNavIMU::update_state(VectornavState &state) {
     if (composite_data->matchesMessage(ins_reg)) {
         state.pos = composite_data->ins.posLla.has_value() ? composite_data->ins.posLla.value() : state.pos;
         state.vel = composite_data->ins.velBody.has_value() ? composite_data->ins.velBody.value() : state.vel;
+        state.GnssFix = composite_data->gnss.gnss1Fix.has_value() ? composite_data->gnss.gnss1Fix.value() : state.GnssFix;
     }
     if (composite_data->matchesMessage(attitude_reg)) {
         state.ypr = composite_data->attitude.ypr.has_value() ? composite_data->attitude.ypr.value() : state.ypr;

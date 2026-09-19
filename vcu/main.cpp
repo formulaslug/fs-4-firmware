@@ -294,27 +294,33 @@ void send_imu_CAN_messages() {
     buf_gyro[4] = gyro_r & 0xFF;
     buf_gyro[5] = gyro_r >> 8;
 
-    uint8_t buf_vel[6];
+    uint8_t buf_vel[7];
     int16_t vel_x = static_cast<int16_t>(etc_state.vectornav.vel[0] * 100);
     int16_t vel_y = static_cast<int16_t>(etc_state.vectornav.vel[1] * 100);
     int16_t vel_z = static_cast<int16_t>(etc_state.vectornav.vel[2] * 100);
+    int16_t GnssFix = etc.state.vectornav.GnssFix;
     buf_vel[0] = vel_x & 0xFF;
     buf_vel[1] = vel_x >> 8;
     buf_vel[2] = vel_y & 0xFF;
     buf_vel[3] = vel_y >> 8;
     buf_vel[4] = vel_z & 0xFF;
     buf_vel[5] = vel_z >> 8;
+    buf_vel[6] = GnssFix;
 
-    CANMessage accel_msg    {0x3D0, buf_accel,  6};
+    CANMessage accel_msg    {0x2D0, buf_accel,  6};
     CANMessage ypr_msg      {0x3D0, buf_ypr,    6};
     CANMessage latlon_msg   {0x2D1, buf_latlon, 8};
-    CANMessage gyro_msg     {0x2D2, buf_gyro,   6};
-    CANMessage vel_msg      {0x2D2, buf_vel,    6};
+    CANMessage gyro_msg     {0x3D1, buf_gyro,   6};
+    CANMessage vel_msg      {0x2D2, buf_vel,    7};
 
     canD.write(accel_msg);
+    ThisThread::sleep_for(1ms);
     canD.write(ypr_msg);
+    ThisThread::sleep_for(1ms);
     canD.write(latlon_msg);
+    ThisThread::sleep_for(1ms);
     canD.write(gyro_msg);
+    ThisThread::sleep_for(1ms);
     canD.write(vel_msg);
 }
 

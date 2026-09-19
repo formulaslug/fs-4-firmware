@@ -21,6 +21,8 @@ struct VectornavState {
 
     /// Velocity in Body-Frame [m/s]
     VN::Vec3f vel{0,0,0};
+
+    uint8_t GnssFix = 0;
 };
 
 class VectorNavIMU {

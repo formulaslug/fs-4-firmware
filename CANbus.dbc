@@ -488,6 +488,7 @@ BO_ 722 VCU_VN_BODY_VEL: 6 VCU
  SG_ VCU_VN_BODY_VX : 0|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
  SG_ VCU_VN_BODY_VY : 16|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
  SG_ VCU_VN_BODY_VZ : 32|16@1- (0.01,0) [-327.68|327.67] "m/s" Vector__XXX
+ SG_ VCU_VN_GnssFix : 48|8@1- (1,0) [0|255] "enum" Vector__XXX
 
 CM_ BO_ 128 "CANopen SYNC message. Sent by the VCU.";
 CM_ SG_ 403 VCU_ETC_READY_TO_DRIVE "Whether the Ready-To-Drive sequence has been completed. ETC Implausibilities will disable the motor even though RTD remains true and shutdown remains closed.";
