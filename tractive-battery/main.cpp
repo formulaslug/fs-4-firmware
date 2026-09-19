@@ -3,8 +3,7 @@
 #include "PinNamesTypes.h"
 #include "can.h"
 
-
-inline constexpr uint16_t analogInThreshold = 3.3*1000;
+inline constexpr uint16_t analogInThreshold = 3.3 * 1000;
 inline constexpr uint16_t glvVoltageScaling = 3.3 * 1000 * 3.94 * 2;
 
 Mutex TelemetryLock;
@@ -56,8 +55,28 @@ DS18B20 temp_b {TS1W, 0x520000112fffdd28};
 DS18B20 temp_c {TS1W, 0x7400001130aabd28};
 DS18B20 temp_d {TS1W, 0x3e00001111126d28};
 DS18B20 temp_e {TS1W, 0x0e0000111131fc28};
+
+// DS18B20 temp_f {TS1W, 0x2f8d48110000b628};
+// DS18B20 temp_g {TS1W, 0x75bb481100004f28};
+// DS18B20 temp_h {TS1W, 0x3eb048110000b228};
+// DS18B20 temp_i {TS1W, 0xea9d48110000be28};
+// DS18B20 temp_j {TS1W, 0x4ca8481100000628};
+// DS18B20 temp_k {TS1W, 0xb8b348110000a428};
 // clang-format on
-DS18B20 trayTempSensors[NUM_TRAY_TEMP_SENSORS] = {temp_a, temp_b, temp_c, temp_d, temp_e};
+DS18B20 trayTempSensors[NUM_TRAY_TEMP_SENSORS] = {
+    temp_a,
+    temp_b,
+    temp_c,
+    temp_d,
+    temp_e
+
+    // temp_f,
+    // temp_g,
+    // temp_h,
+    // temp_i,
+    // temp_j,
+    // temp_k
+};
 uint8_t trayTemps[NUM_TRAY_TEMP_SENSORS];
 
 uint32_t dcBusVoltageMv;
@@ -69,7 +88,7 @@ bool shutdownClosed();
 void updatePrecharge();
 void controlFans();
 // void updateSoc();
-void sendCanMessages(CAN &can_train);
+void sendCanMessages(CAN& can_train);
 
 int main() {
     TS_READY = 0;
@@ -117,13 +136,24 @@ int main() {
         canPowertrain.filter(0x682, 0xfff);
         canDatatrain.filter(0x682, 0xfff);
     }
-    //canPowertrain.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
+    // canPowertrain.attach([]() { queue.call(&processCanRx); }, CAN::IrqType::RxIrq);
 
     // Start updating precharge, and also again whenever shutdown opens
     queue.call_every(10ms, &updatePrecharge);
     queue.call_every(5ms, &processCanRx);
 
     queue.call_every(500ms, controlFans);
+
+    queue.call_every(1s, [&]() {
+        for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) {
+            trayTempSensors[i].start_conversion(true); // assume no e meter here CHANGE LATER
+        }
+        ThisThread::sleep_for(10ms);
+        for (uint8_t i = 0; i < NUM_TRAY_TEMP_SENSORS; i++) {
+            uint8_t trayTemp = trayTempSensors[i].retrieve_conversion() / 2;
+            trayTemps[i] = trayTemp;
+        }
+    });
 
     bmsEventQueue.call_every(200ms, &bms, &BMS::controller);
     bmsControllerThread.start(callback(&bmsEventQueue, &EventQueue::dispatch_forever));
@@ -173,7 +203,7 @@ void processCanRx() {
         case BMS::ACTIVE: {
             switch (msg.id) {
             case 0x682: // SME_TPDO_Temperature
-                dcBusVoltageMv = (msg.data[2] | (msg.data[3] << 8))*100;
+                dcBusVoltageMv = (msg.data[2] | (msg.data[3] << 8)) * 100;
             }
             break;
         }
@@ -183,7 +213,7 @@ void processCanRx() {
     }
 }
 
-bool shutdownClosed() { return ((Shutdown_Final_3V3_Filtered.read()*analogInThreshold)>700); }
+bool shutdownClosed() { return ((Shutdown_Final_3V3_Filtered.read() * analogInThreshold) > 700); }
 
 uint16_t glvVoltageMv() { return (uint16_t)(GLV_Voltage.read() * glvVoltageScaling); }
 
@@ -209,10 +239,9 @@ void updatePrecharge() {
         prechargeDone = false;
         TS_READY = 0;
     }
-
 }
 
-void sendCanMessages(CAN &can_train) {
+void sendCanMessages(CAN& can_train) {
     // TelemetryLock.lock();
     CANMessage msg;
 
@@ -229,20 +258,23 @@ void sendCanMessages(CAN &can_train) {
     can_train.write(msg);
     msg = CanGenerator::BuildStatusMessage(
         bms,
-        ((nIMD_Fault_3V3.read()*analogInThreshold)<700),
-        ((Shutdown_Final_3V3_Filtered.read()*analogInThreshold)>700),
-        ((Shutdown_In_3V3_Filtered.read()*analogInThreshold)>700),
-        ((Shutdown_Out_3V3_Filtered.read()*analogInThreshold)>700),
+        ((nIMD_Fault_3V3.read() * analogInThreshold) < 700),
+        ((Shutdown_Final_3V3_Filtered.read() * analogInThreshold) > 700),
+        ((Shutdown_In_3V3_Filtered.read() * analogInThreshold) > 700),
+        ((Shutdown_Out_3V3_Filtered.read() * analogInThreshold) > 700),
         precharging,
         prechargeDone,
         glvVoltageMv(),
         fanPwmDuty
     );
     can_train.write(msg);
+    msg = CanGenerator::BuildTrayTempMessage(trayTemps);
+    can_train.write(msg);
 
-    //printf("\033[2J");
-    //printf("IMD fault voltage (normally high): %f\n", nIMD_Fault_3V3.read()*3.3);
-    //printf("CAN    RTRN: %d, TDERRCNT: %d, RDERRCNT: %d\n", canPowertrain.write(msg), canPowertrain.tderror(), canPowertrain.rderror());
+    // printf("\033[2J");
+    // printf("IMD fault voltage (normally high): %f\n", nIMD_Fault_3V3.read()*3.3);
+    // printf("CAN    RTRN: %d, TDERRCNT: %d, RDERRCNT: %d\n", canPowertrain.write(msg),
+    // canPowertrain.tderror(), canPowertrain.rderror());
 
     can_train.reset();
     // TelemetryLock.unlock();
