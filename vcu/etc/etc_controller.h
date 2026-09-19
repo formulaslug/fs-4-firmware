@@ -106,11 +106,13 @@ private:
 
     static constexpr std::chrono::seconds RTD_BUZZER_DURATION = 2s;
 
-    static constexpr float APPS1_MIN_VOLTAGE = 0.406;
-    static constexpr float APPS1_MAX_VOLTAGE = 1.036f;
+    static constexpr float APPS1_MIN_VOLTAGE = 0.396;
+    static constexpr float APPS1_MAX_VOLTAGE = 1.086f;
 
-    static constexpr float APPS2_MIN_VOLTAGE = 0.449f;
-    static constexpr float APPS2_MAX_VOLTAGE = 1.083f;
+    static constexpr float APPS2_MIN_VOLTAGE = 0.439f;
+    static constexpr float APPS2_MAX_VOLTAGE = 1.133f;
+
+    static constexpr float PEDAL_DEADZONE_PERCENTAGE = 0.03;
 
     static constexpr float BPPS_MIN_VOLTAGE = 0.615f;
     static constexpr float BPPS_MAX_VOLTAGE = 0.972f; // 2.8125f;
@@ -129,8 +131,8 @@ private:
     static constexpr float BPPS_BRAKE_ENGAGE_PERCENT = 0.09f;
     static constexpr float MAX_APPS_POSITION_DEVIATION = 0.10f;
 
-    static constexpr int16_t MAX_TORQUE = 32767;
-    static constexpr int16_t MAX_REGEN_TORQUE = 32767;
+    static constexpr int16_t MAX_TORQUE = 32767*0.65;
+    static constexpr int16_t MAX_REGEN_TORQUE = 32767*0.65;
 
     static constexpr bool REGEN_FORCE_DISABLE = true;
     static constexpr bool TRACTION_CONTROL_FORCE_DISABLE = true;

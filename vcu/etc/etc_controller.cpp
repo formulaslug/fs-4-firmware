@@ -94,12 +94,12 @@ void ETCController::update_state() {
     state.front_BSE_pressure = ((state.front_BSE_voltage * 1000.0f - 330.0f) / (3300.0f - 660.0f)) * 2000.0f;
     state.read_BSE_pressure = ((state.rear_BSE_voltage * 1000.0f - 330.0f) / (3300.0f - 660.0f)) * 2000.0f;
 
-    state.APPS1_position = clamp(
+    state.APPS1_position = (clamp(
         (state.APPS1_voltage - APPS1_MIN_VOLTAGE) / (APPS1_MAX_VOLTAGE - APPS1_MIN_VOLTAGE)
-    );
-    state.APPS2_position = clamp(
+    ) - PEDAL_DEADZONE_PERCENTAGE) / (1 - 2*PEDAL_DEADZONE_PERCENTAGE);
+    state.APPS2_position = (clamp(
         (state.APPS2_voltage - APPS2_MIN_VOLTAGE) / (APPS2_MAX_VOLTAGE - APPS2_MIN_VOLTAGE)
-    );
+    ) - PEDAL_DEADZONE_PERCENTAGE) / (1 - 2*PEDAL_DEADZONE_PERCENTAGE);
     state.BPPS_position =
         clamp((state.BPPS_voltage - BPPS_MIN_VOLTAGE) / (BPPS_MAX_VOLTAGE - BPPS_MIN_VOLTAGE));
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;
@@ -108,6 +108,8 @@ void ETCController::update_state() {
 
     state.APPS_position_avg = accelerator_mapping(state.APPS_position_avg);
 
+    // const float APPS_position_within_deadzone = (state.APPS_position_avg - PEDAL_DEADZONE_PERCENTAGE / (1 - 2*PEDAL_DEADZONE_PERCENTAGE));
+    // const float BPPS_position_within_deadzone = (state.BPPS_position - PEDAL_DEADZONE_PERCENTAGE / (1 - 2*PEDAL_DEADZONE_PERCENTAGE));
     if (!REGEN_FORCE_DISABLE && state.regen_mode != 0) {
         state.unfiltered_motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE) - static_cast<int16_t>(state.BPPS_position * MAX_REGEN_TORQUE);
     } else {
