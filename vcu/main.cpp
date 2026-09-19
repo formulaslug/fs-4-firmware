@@ -68,6 +68,14 @@ int main() {
                 etc.update_regen_state(ground_speed);
                 break;
             }
+            case 0x4c0: { // BATT_TPDO_TRAY_TEMPS
+                uint8_t tray_temp_x2 = rx.data[1];
+                float tray_temp = tray_temp_x2 / 2.0;
+                if (tray_temp > 48.0){
+                    etc.turn_off_rtd();
+                }
+                break;
+            }
             }
         }
         if (canD.read(rx)) {
