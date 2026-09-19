@@ -69,11 +69,3 @@ struct VehicleState{
     uint8_t batt_mod_volts[5][6];
 
 };
-
-void readLayoutButton();
-void readDials();
-void drawScreenLayout();
-void canISR();
-void processCANMessage();
-void sendCANMessage();
-void readFPS();

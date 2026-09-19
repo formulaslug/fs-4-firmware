@@ -30,15 +30,23 @@ uint32_t lastFrame = 0;
 uint32_t curFrame = 0;
 uint16_t fps = 0;
 
+
+void readLayoutButton();
+void readDials();
+void drawScreenLayout();
+void processCANMessage();
+void sendCANMessage();
+void readFPS();
+
 int main() {
     printf("Steering Wheel!!\n");
     screen.init(EvePresets::CFAF800480H0);
     screen.setRotate(1); //Inverted Landscape since dash is mounted upsidedown
     // debouncedLayoutBtn.set_valid_read_count(7);
-    can.attach(&canISR, CAN::RxIrq); // callback function to handle CAN interrupts
-    queue.call_every(10ms, &readLayoutButton);
-    queue.call_every(10ms, &readDials);
-    queue.call_every(10ms, &drawScreenLayout); //100hz
+    queue.call_every(100ms, &readLayoutButton);
+    queue.call_every(100ms, &readDials);
+    queue.call_every(5ms, &processCANMessage);
+    queue.call_every(10ms, &drawScreenLayout);
     queue.call_every(100ms, []() { tick++; }); //Lambda expression to increase ticks every 100ms, or I hope it runs every 100ms
     queue.call_every(1s, &readFPS);
     queue.dispatch_forever();
@@ -201,13 +209,7 @@ void drawScreenLayout() {
         break;
     }
 }
-/**
- * @brief Called when there is an incomming CAN message from interrupt
- *  Just adds the decoding process to the queue
- */
-void canISR() {
-    queue.call(processCANMessage);
-}
+
 /**
  * @brief Decoding the CAN message receieved
  * Worried about if the eventQueue is busy with other tasks and the original message is missed
