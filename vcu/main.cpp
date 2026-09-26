@@ -28,7 +28,14 @@ void send_sme_CAN_messages_data();
 void update_traction_control();
 
 namespace {
-constexpr float RAD_TO_DEG = 57.2957795f;
+static constexpr float RAD_TO_DEG = 57.2957795f;
+
+static constexpr float STEERING_MIN_VOLTAGE = 0.218;
+static constexpr float STEERING_MAX_VOLTAGE = 1.042;
+static constexpr float STEERING_AVG_VOLTAGE = (STEERING_MAX_VOLTAGE + STEERING_MIN_VOLTAGE) / 2.0f;
+static constexpr float STEERING_VOLTAGE_RANGE = STEERING_MAX_VOLTAGE - STEERING_AVG_VOLTAGE;
+static constexpr float STEERING_MAX_ANGLE = 75.82; // Degrees
+
 }
 
 int main() {
@@ -133,7 +140,9 @@ void send_etc_CAN_messages() {
     uint8_t tpdo_status[8] = {0};
     uint16_t front_BSE_pressure = static_cast<uint16_t>(etc_state.front_BSE_pressure);
     uint16_t read_BSE_pressure = static_cast<uint16_t>(etc_state.read_BSE_pressure);
-    uint16_t steering_position_mv = steering_position.read_voltage() * 1000;
+    float steering_position_V = steering_position.read_voltage();
+    float steering_angle = ((steering_position_V - STEERING_AVG_VOLTAGE) / STEERING_VOLTAGE_RANGE) * STEERING_MAX_ANGLE;
+    int16_t steering_angle_x100 = static_cast<int16_t>(steering_angle * 100);
     tpdo_status[0] = etc_state.ready_to_drive
                      | (etc_state.motor_enabled << 1)
                      | (etc_state.rtd_button_pressed << 2)
@@ -153,8 +162,8 @@ void send_etc_CAN_messages() {
     tpdo_status[3] = front_BSE_pressure >> 8;
     tpdo_status[4] = read_BSE_pressure & 0xFF;
     tpdo_status[5] = read_BSE_pressure >> 8;
-    tpdo_status[6] = steering_position_mv & 0xFF;
-    tpdo_status[7] = steering_position_mv >> 8;
+    tpdo_status[6] = steering_angle_x100 & 0xFF;
+    tpdo_status[7] = steering_angle_x100 >> 8;
 
     CANMessage msg1{402, tpdo_pedal_travel, 8};
     CANMessage msg2{403, tpdo_status, 8};
