@@ -65,12 +65,12 @@ constexpr PinName PIN_DIP_0 = PA_0;
 constexpr PinName PIN_DIP_1 = PA_1;
 constexpr PinName PIN_WHEEL_SENSOR = PA_5;
 constexpr PinName PIN_SUSPENSION = PA_7;
-constexpr PinName PIN_I2C1_SDA = PA_8;  //1x8 tire temp sense
-constexpr PinName PIN_I2C1_SCL = PA_9;  //1x8 tire temp sense
+constexpr PinName PIN_I2C2_SDA = PB_7;  //1x8 tire temp sense
+constexpr PinName PIN_I2C2_SCL = PA_15;  //1x8 tire temp sense
 constexpr PinName PIN_CAN1_RX = PA_11;
 constexpr PinName PIN_CAN1_TX = PA_12;
-constexpr PinName PIN_I2C2_SDA = PB_7;  //1x1 tire temp sense
-constexpr PinName PIN_I2C2_SCL = PA_15; //1x1 tire temp sense
+constexpr PinName PIN_I2C1_SDA = PA_8;  //1x1 tire temp sense
+constexpr PinName PIN_I2C1_SCL = PA_9; //1x1 tire temp sense
 
 constexpr uint32_t CAN_FREQUENCY = 1000000; //1Mhz
 constexpr uint8_t TEETH_PER_REV = 24;
