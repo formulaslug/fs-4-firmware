@@ -31,10 +31,11 @@ CornerConfig getCornerConfig(Corner pos) {
             return {0x1A6, 0x2A6, false, false};
 
         case Corner::BL:
-            return {0x1A7, 0x2A7, false, false};
+            return {0x1A7, 0x2A7, true, false};
 
         case Corner::BR:
-            return {0x1A8, 0x2A8, false, false};
+            return {0x1A8, 0x2A8, true, false};
+        // It's two dip switches, it can't really fail.
         default:
             return {0x1A6, 0x2A6, false, false};
             //Can Message id for struct CornerConfig {tpdo_data_id, tpdo_tiretemp_id, has_tiretemp_1x8, has_tiretemp_1x1};
