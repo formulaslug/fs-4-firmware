@@ -23,6 +23,7 @@ Corner readCorner() {
 
 // Could probably just make a lookup table for this
 CornerConfig getCornerConfig(Corner pos) {
+    printf("%d\n", pos);
     switch (pos) {
         case Corner::FL:
             return {0x1A5, 0x2A5, false, false};

@@ -55,15 +55,28 @@ int main() {
     // Set the D6T bus speed before any sensor I/O
     i2c.frequency(D6T_I2C_HZ);
     i2c1.frequency(D6T_I2C_HZ);
-    if (cfg.has_tiretemp_1x8 & !d6t8.setup()) {
-        printf("d68t init fail ): !!\n");
+
+    if (cfg.has_tiretemp_1x8) {
+        printf("d68t enabled. Attempting Init:\n");
+        if (d6t8.setup()){
+            printf("d68t init success :D !!\n");
+        }
+        else {
+            printf("d68t init fail ): !!\n");
+        }
     } else {
-        printf("d68t init success :D !!\n");
+        printf("d68t disabled.\n");
     }
-    if (cfg.has_tiretemp_1x1 & !d6t1.setup()) {
-        printf("d6t1 init fail ):\n");
+
+    if (cfg.has_tiretemp_1x1) {
+        printf("d6t1 enabled. Attempting Init:\n");
+        if (d6t1.setup()) {
+            printf("d6t1 init success :D !!\n");
+        } else {
+            printf("d6t1 init fail ):\n");
+        }
     } else {
-        printf("d6t1 init success :D !!\n");
+        printf("d6t1 disabled.\n");
     }
 
     // TODO: Uncomment when StrainGuage PR is merged
