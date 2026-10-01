@@ -30,8 +30,8 @@ void update_traction_control();
 namespace {
 static constexpr float RAD_TO_DEG = 57.2957795f;
 
-static constexpr float STEERING_MIN_VOLTAGE = 0.218;
-static constexpr float STEERING_MAX_VOLTAGE = 1.042;
+static constexpr float STEERING_MIN_VOLTAGE = 0.227;
+static constexpr float STEERING_MAX_VOLTAGE = 1.069;
 static constexpr float STEERING_AVG_VOLTAGE = (STEERING_MAX_VOLTAGE + STEERING_MIN_VOLTAGE) / 2.0f;
 static constexpr float STEERING_VOLTAGE_RANGE = STEERING_MAX_VOLTAGE - STEERING_AVG_VOLTAGE;
 static constexpr float STEERING_MAX_ANGLE = 75.82; // Degrees
