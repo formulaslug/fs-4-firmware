@@ -41,7 +41,7 @@ uint8_t i2c1_fail_count = 0; // sensor-thread only
 // Guarded by sensorMutex (held only for the brief copy, never during I2C).
 Mutex sensorMutex;
 uint8_t shared_pixels8lh[D6T8LH::N_PIXEL] = {0}; //D6t-8L 8 pixel temp
-uint8_t shared_side_temp = 0; // D6T-1A side tire temp (DATA_SIDE_TIRE_TEMP)
+uint16_t shared_side_temp = 0; // D6T-1A side tire temp (DATA_SIDE_TIRE_TEMP)
 
 // For Debugging prints for frequency of CAN sending
 volatile uint32_t dbg_tpdo_count = 0;
@@ -128,7 +128,7 @@ void sendCANtpdo() {
     uint16_t sus_travel_raw = 0;
     // 1 pixel side temp sensor (DATA_SIDE_TIRE_TEMP), produced by the sensor thread
     sensorMutex.lock();
-    uint8_t px0 = shared_side_temp;
+    uint16_t px0 = shared_side_temp;
     sensorMutex.unlock();
 
     // Wheel Speed Readings
@@ -175,10 +175,11 @@ void sendCANtpdo() {
         0x00,
         // strain_raw & 0xFF,
         // (strain_raw & 0xFF00) >> 8,
-        px0,
+        static_cast<uint8_t>(px0 & 0xFF),
+        static_cast<uint8_t>((px0 & 0xFF00) >> 8),
     };
 
-    CANMessage tpdo_msg(cfg.tpdo_data_id, tpdo_data, 7);
+    CANMessage tpdo_msg(cfg.tpdo_data_id, tpdo_data, 8);
     // printf("%d:: WRITE START \n", canMsgTimer.elapsed_time().count());
     sendCANmessage(tpdo_msg);
     last_sent_tpdo = canMsgTimer.elapsed_time().count();
@@ -225,11 +226,11 @@ void readSensors() {
         publish8 = true;
     }
 
-    uint8_t local1 = 0;
+    uint16_t local1 = 0;
     bool publish1 = false;
     if (cfg.has_tiretemp_1x1 && i2c1_fail_count < 10) {
         if (d6t1.read()) {
-            local1 = (uint8_t)d6t1.pixel_c();
+            local1 = (uint16_t)(d6t1.pixel_c() * 10.0);
             i2c1_fail_count = 0; // Recover from transient failures
             publish1 = true;
         } else {

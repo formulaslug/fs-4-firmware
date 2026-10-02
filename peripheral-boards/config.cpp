@@ -26,16 +26,16 @@ CornerConfig getCornerConfig(Corner pos) {
     printf("%d\n", pos);
     switch (pos) {
         case Corner::FL:
-            return {0x1A5, 0x2A5, false, false};
+            return {0x1A5, 0x2A5, true, false};
 
         case Corner::FR:
-            return {0x1A6, 0x2A6, false, false};
+            return {0x1A6, 0x2A6, true, false};
 
         case Corner::BL:
-            return {0x1A7, 0x2A7, true, false};
+            return {0x1A7, 0x2A7, true, true};
 
         case Corner::BR:
-            return {0x1A8, 0x2A8, true, false};
+            return {0x1A8, 0x2A8, true, true};
         // It's two dip switches, it can't really fail.
         default:
             return {0x1A6, 0x2A6, false, false};
