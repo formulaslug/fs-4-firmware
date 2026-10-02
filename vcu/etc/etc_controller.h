@@ -6,7 +6,7 @@
 #define ETC_CONTROLLER_H
 
 #include "mbed.h"
-// #include "../imu/vectornav_imu.h"
+#include "../imu/vectornav_imu.h"
 #include "debounced_digital_in.h"
 #include "filtered_analog_in.h"
 #include "traction_control.h"
@@ -50,7 +50,7 @@ struct ETCState {
     float wheel_rpm_bl = 0.0f;
     float wheel_rpm_br = 0.0f;
     float tc_torque_reduction_factor = 1.0f;
-    // VectornavState vectornav;
+    VectornavState vectornav;
     uint8_t drive_mode = 0;
     uint8_t traction_mode = 0;
     uint8_t regen_mode = 0;
@@ -62,11 +62,10 @@ struct ETCState {
 
 class ETCController {
 public:
-    ETCState state;
-    // Set during CAN reads in main
     bool battery_precharged = false;
     bool shutdown_closed = false;
     TractionController traction_controller;
+    ETCState state;
 
     ETCController(PinName APPS1_pin, PinName APPS2_pin, PinName BPPS_pin, PinName front_BSE_pin, PinName rear_BSE_pin, PinName rtd_button_pin, PinName rtd_light_pin, PinName rtd_buzzer_pin, PinName solenoid_pin, PinName brakelight_pin); // add ref to imu at end
 

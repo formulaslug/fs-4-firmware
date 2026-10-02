@@ -1,20 +1,20 @@
 #include "etc_controller.h"
-// #include "imu/vectornav_imu.h"
+#include "imu/vectornav_imu.h"
 #include "traction_control.h"
 #include "mbed.h"
 #include <cstdio>
-// #include "../imu/vectornav_imu.h"
+#include "../imu/vectornav_imu.h"
 
 EventQueue etc_queue;
 EventQueue imu_queue;
 Thread etc_thread;
-// Thread imu_queue_thread;
+Thread imu_queue_thread;
 
 AnalogIn steering_position{PC_5};
 DigitalIn bspd_fault{PA_2};
 DigitalIn bspd_shutdown_out{PA_3};
 
-// VectorNavIMU imu{PC_12, PD_2}; // TX = PC_12, RX = PD_2
+VectorNavIMU imu{PC_12, PD_2}; // TX = PC_12, RX = PD_2
 
 CAN canP{PB_8, PB_9, 500000};
 CAN canD{PB_5, PB_6, 1000000};
@@ -24,7 +24,7 @@ ETCState& etc_state = etc.state;
 void send_etc_CAN_messages();
 void send_sme_CAN_messages_powertrain();
 void send_sme_CAN_messages_data();
-// void send_imu_CAN_messages();
+void send_imu_CAN_messages();
 void update_traction_control();
 
 namespace {
@@ -44,12 +44,12 @@ int main() {
     etc_queue.call_every(50ms, &send_etc_CAN_messages);
     etc_queue.call_every(40ms, &send_sme_CAN_messages_powertrain);
     etc_queue.call_every(80ms, &send_sme_CAN_messages_data);
-    // imu_queue.call_every(10ms, &send_imu_CAN_messages); // 100Hz
-    // imu_queue.call_every(1ms,  []() { imu.update_state(etc_state.vectornav); }); // 1000hz
+    imu_queue.call_every(10ms, &send_imu_CAN_messages); // 100Hz
+    imu_queue.call_every(1ms,  []() { imu.update_state(etc_state.vectornav); }); // 1000hz
     etc_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
-    // imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
+    imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
 
-    // imu.start();
+    imu.start();
 
     CANMessage rx;
     while (true) {
@@ -252,84 +252,91 @@ void update_traction_control() {
   etc.traction_controller.update(etc.state.wheel_rpm_fl, etc.state.wheel_rpm_fr, etc.state.wheel_rpm_bl, etc.state.wheel_rpm_br);
 }
 
-/// 100Hz VectorNav Messages
-// void send_imu_CAN_messages() {
-//     uint8_t buf_accel[6];
-//     int16_t ax = static_cast<int16_t>(etc_state.vectornav.accel[0] * 100);
-//     int16_t ay = static_cast<int16_t>(etc_state.vectornav.accel[1] * 100);
-//     int16_t az = static_cast<int16_t>(etc_state.vectornav.accel[2] * 100);
-//     buf_accel[0] = ax & 0xFF;
-//     buf_accel[1] = ax >> 8;
-//     buf_accel[2] = ay & 0xFF;
-//     buf_accel[3] = ay >> 8;
-//     buf_accel[4] = az & 0xFF;
-//     buf_accel[5] = az >> 8;
-//
-//     uint8_t buf_gyro[6];
-//     int16_t wx = static_cast<int16_t>(etc_state.vectornav.ang_rate[0] * RAD_TO_DEG * 10);
-//     int16_t wy = static_cast<int16_t>(etc_state.vectornav.ang_rate[1] * RAD_TO_DEG * 10);
-//     int16_t wz = static_cast<int16_t>(etc_state.vectornav.ang_rate[2] * RAD_TO_DEG * 10);
-//     buf_gyro[0] = wx & 0xFF;
-//     buf_gyro[1] = wx >> 8;
-//     buf_gyro[2] = wy & 0xFF;
-//     buf_gyro[3] = wy >> 8;
-//     buf_gyro[4] = wz & 0xFF;
-//     buf_gyro[5] = wz >> 8;
-//
-//     uint8_t buf_ypr[6];
-//     int16_t yaw = static_cast<int16_t>(etc_state.vectornav.ypr.yaw * 100);
-//     int16_t pitch = static_cast<int16_t>(etc_state.vectornav.ypr.pitch * 100);
-//     int16_t roll = static_cast<int16_t>(etc_state.vectornav.ypr.roll * 100);
-//     buf_ypr[0] = yaw & 0xFF;
-//     buf_ypr[1] = yaw >> 8;
-//     buf_ypr[2] = pitch & 0xFF;
-//     buf_ypr[3] = pitch >> 8;
-//     buf_ypr[4] = roll & 0xFF;
-//     buf_ypr[5] = roll >> 8;
-//
-//     uint8_t buf_vel[6];
-//     int16_t vx = static_cast<int16_t>(etc_state.vectornav.vel[0] * 100);
-//     int16_t vy = static_cast<int16_t>(etc_state.vectornav.vel[1] * 100);
-//     int16_t vz = static_cast<int16_t>(etc_state.vectornav.vel[2] * 100);
-//     buf_vel[0] = vx & 0xFF;
-//     buf_vel[1] = vx >> 8;
-//     buf_vel[2] = vy & 0xFF;
-//     buf_vel[3] = vy >> 8;
-//     buf_vel[4] = vz & 0xFF;
-//     buf_vel[5] = vz >> 8;
-//
-//     uint8_t buf_latlon[8];
-//     int32_t lat = static_cast<int32_t>(etc_state.vectornav.pos.lat * 1e7);
-//     int32_t lon = static_cast<int32_t>(etc_state.vectornav.pos.lon * 1e7);
-//     buf_latlon[0] = lat & 0xFF;
-//     buf_latlon[1] = (lat >> 8) & 0xFF;
-//     buf_latlon[2] = (lat >> 16) & 0xFF;
-//     buf_latlon[3] = (lat >> 24) & 0xFF;
-//     buf_latlon[4] = lon & 0xFF;
-//     buf_latlon[5] = (lon >> 8) & 0xFF;
-//     buf_latlon[6] = (lon >> 16) & 0xFF;
-//     buf_latlon[7] = (lon >> 24) & 0xFF;
-//
-//     uint8_t buf_alt[4];
-//     int32_t alt = static_cast<int32_t>(etc_state.vectornav.pos.alt * 1000);
-//     buf_alt[0] =  alt        & 0xFF;
-//     buf_alt[1] = (alt >> 8)  & 0xFF;
-//     buf_alt[2] = (alt >> 16) & 0xFF;
-//     buf_alt[3] = (alt >> 24) & 0xFF;
-//
-//     CANMessage accel_msg    {0x3D0, buf_accel,    6};
-//     CANMessage gyro_msg    {0x2D2, buf_gyro,     6};
-//     CANMessage ypr_msg    {0x3D0, buf_ypr,    6};
-//     CANMessage vel_msg    {0x2D2, buf_vel,     6};
-//     CANMessage latlon_msg {0x2D1, buf_latlon,  8};
-//     CANMessage alt_msg    {0x3D2, buf_alt,     4};
-//
-//     canD.write(accel_msg);
-//     canD.write(gyro_msg);
-//     canD.write(ypr_msg);
-//     canD.write(vel_msg);
-//     canD.write(latlon_msg);
-//     canD.write(alt_msg);
-// }
+// 100Hz VectorNav Messages
+void send_imu_CAN_messages() {
+    uint8_t buf_accel[6];
+    int16_t ax = static_cast<int16_t>(etc_state.vectornav.accel[0] * 100);
+    int16_t ay = static_cast<int16_t>(etc_state.vectornav.accel[1] * 100);
+    int16_t az = static_cast<int16_t>(etc_state.vectornav.accel[2] * 100);
+    buf_accel[0] = ax & 0xFF;
+    buf_accel[1] = ax >> 8;
+    buf_accel[2] = ay & 0xFF;
+    buf_accel[3] = ay >> 8;
+    buf_accel[4] = az & 0xFF;
+    buf_accel[5] = az >> 8;
+
+    uint8_t buf_gyro[6];
+    int16_t wx = static_cast<int16_t>(etc_state.vectornav.ang_rate[0] * RAD_TO_DEG * 10);
+    int16_t wy = static_cast<int16_t>(etc_state.vectornav.ang_rate[1] * RAD_TO_DEG * 10);
+    int16_t wz = static_cast<int16_t>(etc_state.vectornav.ang_rate[2] * RAD_TO_DEG * 10);
+    buf_gyro[0] = wx & 0xFF;
+    buf_gyro[1] = wx >> 8;
+    buf_gyro[2] = wy & 0xFF;
+    buf_gyro[3] = wy >> 8;
+    buf_gyro[4] = wz & 0xFF;
+    buf_gyro[5] = wz >> 8;
+
+    uint8_t buf_ypr[6];
+    int16_t yaw = static_cast<int16_t>(etc_state.vectornav.ypr.yaw * 100);
+    int16_t pitch = static_cast<int16_t>(etc_state.vectornav.ypr.pitch * 100);
+    int16_t roll = static_cast<int16_t>(etc_state.vectornav.ypr.roll * 100);
+    buf_ypr[0] = yaw & 0xFF;
+    buf_ypr[1] = yaw >> 8;
+    buf_ypr[2] = pitch & 0xFF;
+    buf_ypr[3] = pitch >> 8;
+    buf_ypr[4] = roll & 0xFF;
+    buf_ypr[5] = roll >> 8;
+
+    uint8_t buf_vel[7];
+    int16_t vx = static_cast<int16_t>(etc_state.vectornav.vel[0] * 100);
+    int16_t vy = static_cast<int16_t>(etc_state.vectornav.vel[1] * 100);
+    int16_t vz = static_cast<int16_t>(etc_state.vectornav.vel[2] * 100);
+    buf_vel[0] = vx & 0xFF;
+    buf_vel[1] = vx >> 8;
+    buf_vel[2] = vy & 0xFF;
+    buf_vel[3] = vy >> 8;
+    buf_vel[4] = vz & 0xFF;
+    buf_vel[5] = vz >> 8;
+    buf_vel[6] = etc_state.vectornav.gnss_fix;
+
+    uint8_t buf_latlon[8];
+    int32_t lat = static_cast<int32_t>(etc_state.vectornav.pos.lat * 1e7);
+    int32_t lon = static_cast<int32_t>(etc_state.vectornav.pos.lon * 1e7);
+    buf_latlon[0] = lat & 0xFF;
+    buf_latlon[1] = (lat >> 8) & 0xFF;
+    buf_latlon[2] = (lat >> 16) & 0xFF;
+    buf_latlon[3] = (lat >> 24) & 0xFF;
+    buf_latlon[4] = lon & 0xFF;
+    buf_latlon[5] = (lon >> 8) & 0xFF;
+    buf_latlon[6] = (lon >> 16) & 0xFF;
+    buf_latlon[7] = (lon >> 24) & 0xFF;
+
+    uint8_t buf_alt[4];
+    int32_t alt = static_cast<int32_t>(etc_state.vectornav.pos.alt * 1000);
+    buf_alt[0] =  alt        & 0xFF;
+    buf_alt[1] = (alt >> 8)  & 0xFF;
+    buf_alt[2] = (alt >> 16) & 0xFF;
+    buf_alt[3] = (alt >> 24) & 0xFF;
+
+    CANMessage accel_msg    {0x2D0, buf_accel,  6};
+    CANMessage gyro_msg     {0x3D1, buf_gyro,   6};
+    CANMessage ypr_msg      {0x3D0, buf_ypr,    6};
+    CANMessage vel_msg      {0x2D2, buf_vel,    7};
+    CANMessage latlon_msg   {0x2D1, buf_latlon, 8};
+    // Not in the DBC yet. TODO: make these the same as the FS-4 CAN IDs spreadsheet
+    // CANMessage alt_msg    {0x3D2, buf_alt,     4};
+
+    canD.write(accel_msg);
+    ThisThread::sleep_for(1ms);
+    canD.write(gyro_msg);
+    ThisThread::sleep_for(1ms);
+    canD.write(ypr_msg);
+    ThisThread::sleep_for(1ms);
+    canD.write(vel_msg);
+    ThisThread::sleep_for(1ms);
+    canD.write(latlon_msg);
+    // ThisThread::sleep_for(1ms);
+    // canD.write(alt_msg);
+}
 
 void send_sync() { canP.write(CANMessage{0x80, (uint8_t*)nullptr, 0}); }
