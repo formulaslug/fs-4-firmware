@@ -44,7 +44,7 @@ VN::Error VectorNavIMU::start() {
     ins_reg.asyncMode.emplace();
     ins_reg.asyncMode->serial1 = false;
     ins_reg.asyncMode->serial2 = true;
-    ins_reg.rateDivisor = 4; // 800Hz / 4 = 200Hz
+    ins_reg.rateDivisor = 16; // 800Hz / 4 = 200Hz
     ins_reg.ins.posLla = true;
     // ins_reg.ins.posU = true;
     ins_reg.ins.velBody = true;
