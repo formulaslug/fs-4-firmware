@@ -36,14 +36,14 @@ VN::Error VectorNavIMU::start() {
     imu_reg.asyncMode.emplace();
     imu_reg.asyncMode->serial1 = false;
     imu_reg.asyncMode->serial2 = true;
-    imu_reg.rateDivisor = 4; // 800Hz / 4 = 200Hz
+    imu_reg.rateDivisor = 8; // 800Hz / 4 = 200Hz
     imu_reg.imu.accel = true;
     imu_reg.imu.angularRate = true;
 
     ins_reg.asyncMode.emplace();
     ins_reg.asyncMode->serial1 = false;
     ins_reg.asyncMode->serial2 = true;
-    ins_reg.rateDivisor = 16; // 800Hz / 4 = 200Hz
+    ins_reg.rateDivisor = 32; // 800Hz / 4 = 200Hz
     ins_reg.ins.posLla = true;
     // ins_reg.ins.posU = true;
     ins_reg.ins.velBody = true;
@@ -55,7 +55,7 @@ VN::Error VectorNavIMU::start() {
     attitude_reg.asyncMode.emplace();
     attitude_reg.asyncMode->serial1 = false;
     attitude_reg.asyncMode->serial2 = true;
-    attitude_reg.rateDivisor = 4; // 800Hz / 80 = 10Hz
+    attitude_reg.rateDivisor = 8; // 800Hz / 80 = 10Hz
     attitude_reg.attitude.ypr = true;
     // gps_reg.attitude.yprU = true;
     // gps_reg.time.timeGps = true;

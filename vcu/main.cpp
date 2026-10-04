@@ -1,9 +1,9 @@
+#include "../imu/vectornav_imu.h"
 #include "etc_controller.h"
 #include "imu/vectornav_imu.h"
-#include "traction_control.h"
 #include "mbed.h"
+#include "traction_control.h"
 #include <cstdio>
-#include "../imu/vectornav_imu.h"
 
 EventQueue etc_queue;
 EventQueue imu_queue;
@@ -37,7 +37,7 @@ static constexpr float STEERING_AVG_VOLTAGE = (STEERING_MAX_VOLTAGE + STEERING_M
 static constexpr float STEERING_VOLTAGE_RANGE = STEERING_MAX_VOLTAGE - STEERING_AVG_VOLTAGE;
 static constexpr float STEERING_MAX_ANGLE = 75.82; // Degrees
 
-}
+} // namespace
 
 int main() {
     printf("Hello World!!\n");
@@ -78,7 +78,7 @@ int main() {
             case 0x4c0: { // BATT_TPDO_TRAY_TEMPS
                 uint8_t tray_temp_x2 = rx.data[1];
                 float tray_temp = tray_temp_x2 / 2.0;
-                if (tray_temp > 40.0){
+                if (tray_temp > 40.0) {
                     etc.turn_off_rtd();
                 }
                 break;
@@ -89,29 +89,29 @@ int main() {
             }
         }
         if (canD.read(rx)) {
-          switch (rx.id) {
-              case 421: {
-                  etc.state.wheel_rpm_fl = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
-                  break;
-              }
-              case 422: {
-                  etc.state.wheel_rpm_fr = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
-                  break;
-              }
-              case 423: {
-                  etc.state.wheel_rpm_bl = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
-                  break;
-              }
-              case 424: {
-                  etc.state.wheel_rpm_br = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
-                  break;
-              }
-              case 432: {
-                  const uint8_t modes = rx.data[0];
-                  etc.state.drive_mode = modes & 0b00000011;
-                  etc.state.traction_mode = (modes >> 2) & 0b00000011;
-                  etc.state.regen_mode = (modes >> 4) & 0b00000011;
-              }
+            switch (rx.id) {
+            case 421: {
+                etc.state.wheel_rpm_fl = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                break;
+            }
+            case 422: {
+                etc.state.wheel_rpm_fr = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                break;
+            }
+            case 423: {
+                etc.state.wheel_rpm_bl = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                break;
+            }
+            case 424: {
+                etc.state.wheel_rpm_br = (rx.data[0] + (rx.data[1] << 8)) * 0.1f;
+                break;
+            }
+            case 432: {
+                const uint8_t modes = rx.data[0];
+                etc.state.drive_mode = modes & 0b00000011;
+                etc.state.traction_mode = (modes >> 2) & 0b00000011;
+                etc.state.regen_mode = (modes >> 4) & 0b00000011;
+            }
             }
         }
 
@@ -140,7 +140,8 @@ void send_etc_CAN_messages() {
     uint16_t front_BSE_pressure = static_cast<uint16_t>(etc_state.front_BSE_pressure);
     uint16_t read_BSE_pressure = static_cast<uint16_t>(etc_state.read_BSE_pressure);
     float steering_position_V = steering_position.read_voltage();
-    float steering_angle = ((steering_position_V - STEERING_AVG_VOLTAGE) / STEERING_VOLTAGE_RANGE) * STEERING_MAX_ANGLE;
+    float steering_angle = ((steering_position_V - STEERING_AVG_VOLTAGE) / STEERING_VOLTAGE_RANGE)
+                           * STEERING_MAX_ANGLE;
     int16_t steering_angle_x100 = static_cast<int16_t>(steering_angle * 100);
     tpdo_status[0] = etc_state.ready_to_drive
                      | (etc_state.motor_enabled << 1)
@@ -180,11 +181,15 @@ void send_sme_CAN_messages_powertrain() {
     uint8_t tpdo_throttle_demand[8];
     tpdo_throttle_demand[0] = etc_state.unfiltered_motor_torque & 0xFF;
     tpdo_throttle_demand[1] = etc_state.unfiltered_motor_torque >> 8;
-    tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
-    tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
-    tpdo_throttle_demand[4] = (!etc_state.reversing)
-                              | (etc_state.reversing << 1) 
-                              | (etc_state.motor_enabled << 3);
+    if (etc_state.reversing) {
+        tpdo_throttle_demand[2] = 100;
+        tpdo_throttle_demand[3] = 0;
+    } else {
+        tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
+        tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
+    }
+    tpdo_throttle_demand[4] =
+        (!etc_state.reversing) | (etc_state.reversing << 1) | (etc_state.motor_enabled << 3);
     tpdo_throttle_demand[5] = etc_state.mbb_alive;
 
     uint8_t tpdo_max_currents[8];
@@ -211,9 +216,8 @@ void send_sme_CAN_messages_data() {
     tpdo_throttle_demand[1] = etc_state.unfiltered_motor_torque >> 8;
     tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
     tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
-    tpdo_throttle_demand[4] = (!etc_state.reversing)
-                              | (etc_state.reversing << 1) 
-                              | (etc_state.motor_enabled << 3);
+    tpdo_throttle_demand[4] =
+        (!etc_state.reversing) | (etc_state.reversing << 1) | (etc_state.motor_enabled << 3);
     tpdo_throttle_demand[5] = etc_state.mbb_alive;
 
     uint8_t tpdo_max_currents[8];
@@ -227,8 +231,10 @@ void send_sme_CAN_messages_data() {
     uint8_t tc_output = static_cast<uint8_t>(etc.traction_controller.get_output() * 100.0f);
     uint8_t tc_integral = static_cast<uint8_t>(etc.traction_controller.get_integral() * 100.0f);
     uint8_t tc_loop_time = static_cast<uint8_t>(etc.traction_controller.get_loop_time() * 1000.0f);
-    int16_t tc_raw_derivative = static_cast<int16_t>(etc.traction_controller.get_raw_derivative() * 1000.0f);
-    int16_t tc_smoothed_derivative = static_cast<int16_t>(etc.traction_controller.get_smoothed_derivative() * 1000.0f);
+    int16_t tc_raw_derivative =
+        static_cast<int16_t>(etc.traction_controller.get_raw_derivative() * 1000.0f);
+    int16_t tc_smoothed_derivative =
+        static_cast<int16_t>(etc.traction_controller.get_smoothed_derivative() * 1000.0f);
     tpdo_traction_data[0] = tc_slip;
     tpdo_traction_data[1] = tc_output;
     tpdo_traction_data[2] = tc_integral;
@@ -248,7 +254,12 @@ void send_sme_CAN_messages_data() {
 }
 
 void update_traction_control() {
-  etc.traction_controller.update(etc.state.wheel_rpm_fl, etc.state.wheel_rpm_fr, etc.state.wheel_rpm_bl, etc.state.wheel_rpm_br);
+    etc.traction_controller.update(
+        etc.state.wheel_rpm_fl,
+        etc.state.wheel_rpm_fr,
+        etc.state.wheel_rpm_bl,
+        etc.state.wheel_rpm_br
+    );
 }
 
 // 100Hz VectorNav Messages
@@ -312,16 +323,16 @@ void send_imu_CAN_messages() {
 
     uint8_t buf_alt[4];
     int32_t alt = static_cast<int32_t>(etc_state.vectornav.pos.alt * 1000);
-    buf_alt[0] =  alt        & 0xFF;
-    buf_alt[1] = (alt >> 8)  & 0xFF;
+    buf_alt[0] = alt & 0xFF;
+    buf_alt[1] = (alt >> 8) & 0xFF;
     buf_alt[2] = (alt >> 16) & 0xFF;
     buf_alt[3] = (alt >> 24) & 0xFF;
 
-    CANMessage accel_msg    {0x2D0, buf_accel,  6};
-    CANMessage gyro_msg     {0x3D1, buf_gyro,   6};
-    CANMessage ypr_msg      {0x3D0, buf_ypr,    6};
-    CANMessage vel_msg      {0x2D2, buf_vel,    7};
-    CANMessage latlon_msg   {0x2D1, buf_latlon, 8};
+    CANMessage accel_msg{0x2D0, buf_accel, 6};
+    CANMessage gyro_msg{0x3D1, buf_gyro, 6};
+    CANMessage ypr_msg{0x3D0, buf_ypr, 6};
+    CANMessage vel_msg{0x2D2, buf_vel, 7};
+    CANMessage latlon_msg{0x2D1, buf_latlon, 8};
     // Not in the DBC yet. TODO: make these the same as the FS-4 CAN IDs spreadsheet
     // CANMessage alt_msg    {0x3D2, buf_alt,     4};
 
@@ -347,6 +358,6 @@ void start_imu() {
         return;
     }
 
-    imu_queue.call_every(10ms, &send_imu_CAN_messages); // 100Hz
-    imu_queue.call_every(1ms,  [&]() { imu.update_state(etc_state.vectornav); }); // 1000hz
+    imu_queue.call_every(10ms, &send_imu_CAN_messages);                          // 100Hz
+    imu_queue.call_every(1ms, [&]() { imu.update_state(etc_state.vectornav); }); // 1000hz
 }
