@@ -77,7 +77,7 @@ void VectorNavIMU::disconnect() {
 
 // if it doesn't update often enough, place IN A NEW THREAD and run in while(1) loop
 VN::Error VectorNavIMU::update_state(VectornavState &state) {
-    composite_data = sensor.getNextMeasurement();
+    composite_data = sensor.getNextMeasurement(false);
     // Check to make sure that a measurement is available
     if (!composite_data) return VN::Error::None;
 

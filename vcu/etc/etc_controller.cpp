@@ -123,6 +123,10 @@ void ETCController::update_state() {
         state.unfiltered_motor_torque = static_cast<int16_t>(state.APPS_position_avg * MAX_TORQUE);
     }
 
+    if (state.reversing) {
+        state.unfiltered_motor_torque *= -1;
+    }
+
     // if (!TRACTION_CONTROL_FORCE_DISABLE && state.traction_mode != 0 && state.motor_torque.read()
     // > 0) {
     //   // state.unfiltered_motor_torque = static_cast<int16_t>(state.motor_torque.read() *
