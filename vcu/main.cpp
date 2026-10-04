@@ -47,8 +47,8 @@ int main() {
     etc_queue.call_every(80ms, &send_sme_CAN_messages_data);
     etc_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
 
-    imu_queue.call_in(100ms, &start_imu); // 100Hz
-    imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
+    // imu_queue.call_in(100ms, &start_imu);
+    // imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
 
     CANMessage rx;
     while (true) {
@@ -78,7 +78,7 @@ int main() {
             case 0x4c0: { // BATT_TPDO_TRAY_TEMPS
                 uint8_t tray_temp_x2 = rx.data[1];
                 float tray_temp = tray_temp_x2 / 2.0;
-                if (tray_temp > 40.0) {
+                if (tray_temp > 55.0) {
                     etc.turn_off_rtd();
                 }
                 break;
@@ -155,7 +155,7 @@ void send_etc_CAN_messages() {
                      | (etc_state.reversing << 1)
                      | (etc_state.brakelight_enabled << 2)
                      | (etc_state.regen_allowed << 3)
-                     | (etc_state.solenoid_open << 4)
+                     | (!etc_state.solenoid_open << 4)
                      | (bspd_fault.read() << 6)
                      | (bspd_shutdown_out.read() << 7);
     tpdo_status[2] = front_BSE_pressure & 0xFF;
@@ -203,9 +203,10 @@ void send_sme_CAN_messages_powertrain() {
 
     canP.write(throttle_msg);
     canP.write(currents_msg);
-    ThisThread::sleep_for(5ms);
+    ThisThread::sleep_for(2ms);
     canD.write(throttle_msg);
     canD.write(currents_msg);
+    ThisThread::sleep_for(2ms);
 }
 
 void send_sme_CAN_messages_data() {
@@ -214,8 +215,13 @@ void send_sme_CAN_messages_data() {
     uint8_t tpdo_throttle_demand[8];
     tpdo_throttle_demand[0] = etc_state.unfiltered_motor_torque & 0xFF;
     tpdo_throttle_demand[1] = etc_state.unfiltered_motor_torque >> 8;
-    tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
-    tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
+    if (etc_state.reversing) {
+        tpdo_throttle_demand[2] = 100;
+        tpdo_throttle_demand[3] = 0;
+    } else {
+        tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
+        tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
+    }
     tpdo_throttle_demand[4] =
         (!etc_state.reversing) | (etc_state.reversing << 1) | (etc_state.motor_enabled << 3);
     tpdo_throttle_demand[5] = etc_state.mbb_alive;
@@ -251,6 +257,7 @@ void send_sme_CAN_messages_data() {
     canD.write(throttle_msg);
     canD.write(traction_msg);
     canD.write(currents_msg);
+    ThisThread::sleep_for(2ms);
 }
 
 void update_traction_control() {
@@ -337,13 +344,10 @@ void send_imu_CAN_messages() {
     // CANMessage alt_msg    {0x3D2, buf_alt,     4};
 
     canD.write(accel_msg);
-    ThisThread::sleep_for(1ms);
     canD.write(gyro_msg);
-    ThisThread::sleep_for(1ms);
     canD.write(ypr_msg);
-    ThisThread::sleep_for(1ms);
+    ThisThread::sleep_for(2ms);
     canD.write(vel_msg);
-    ThisThread::sleep_for(1ms);
     canD.write(latlon_msg);
     // ThisThread::sleep_for(1ms);
     // canD.write(alt_msg);
@@ -359,5 +363,5 @@ void start_imu() {
     }
 
     imu_queue.call_every(10ms, &send_imu_CAN_messages);                          // 100Hz
-    imu_queue.call_every(1ms, [&]() { imu.update_state(etc_state.vectornav); }); // 1000hz
+    imu_queue.call_every(10ms, [&]() { imu.update_state(etc_state.vectornav); }); // 1000hz
 }
