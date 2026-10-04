@@ -16,8 +16,7 @@
                 __FILE_NAME__,                                                                     \
                 __LINE__                                                                           \
             );                                                                                     \
-        } else {                                                                                   \
-            printf("Binary output messages configured.\n");                                        \
+            return vn_err;                                                                         \
         }                                                                                          \
     } while (0)
 
@@ -65,7 +64,7 @@ public:
      * whenever you need data
      *
      */
-    void update_state(VectornavState& state);
+    VN::Error update_state(VectornavState& state);
 
 private:
     // Pins

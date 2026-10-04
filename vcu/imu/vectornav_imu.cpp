@@ -7,16 +7,16 @@ VectorNavIMU::VectorNavIMU(PinName tx, PinName rx)
     : tx(tx), rx(rx) {}
 
 VN::Error VectorNavIMU::start() {
+    // sensor.disconnect();
+    // ThisThread::sleep_for(50ms)
     VN::Error err = sensor.connect(tx, rx, VN::Registers::System::BaudRate::BaudRates::Baud115200);
-    if (err != VN::Error::None) {
-        printf("Error connecting to sensor! (%hu)\n", static_cast<uint16_t>(err));
-    }
+    return_if_vn_error(err);
     printf("Connected to sensor!\n");
 
     // Poll and print the model number using a read register command
     // Create an empty register object of the necessary type, where the data member will be populated when the sensor responds to our "read register" request
     VN::Registers::System::Model model_register;
-    err = sensor.readRegister(&model_register);
+    err = sensor.readRegister(&model_register, true);
     return_if_vn_error(err);
 
     const char* model_number = model_register.model.c_str();
@@ -30,9 +30,8 @@ VN::Error VectorNavIMU::start() {
     //     VN::Registers::System::BaudRate::SerialPort::Serial2
     // );
     // check_vn_error(err);
-
-    baud = sensor.connectedBaudRate();
-    printf("baud: %u\n", static_cast<uint32_t>(*baud));
+    // baud = sensor.connectedBaudRate();
+    // printf("baud: %u\n", static_cast<uint32_t>(*baud));
 
     imu_reg.asyncMode.emplace();
     imu_reg.asyncMode->serial1 = false;
@@ -77,10 +76,10 @@ void VectorNavIMU::disconnect() {
 }
 
 // if it doesn't update often enough, place IN A NEW THREAD and run in while(1) loop
-void VectorNavIMU::update_state(VectornavState &state) {
+VN::Error VectorNavIMU::update_state(VectornavState &state) {
     composite_data = sensor.getNextMeasurement();
     // Check to make sure that a measurement is available
-    if (!composite_data) return;
+    if (!composite_data) return VN::Error::None;
 
     if (composite_data->matchesMessage(imu_reg)) {
         // printf("\x1b[2J");
@@ -117,6 +116,9 @@ void VectorNavIMU::update_state(VectornavState &state) {
     // Handle asynchronous errors
     std::optional<VN::AsyncError> asyncError = sensor.getNextAsyncError();
     if (asyncError.has_value()) {
-        printf("Received async error: %s\n", asyncError.value().message.data());
+        // printf("Received async error: %s\n", asyncError.value().message.data());
+        return_if_vn_error(asyncError->error);
     }
+    
+    return VN::Error::None;
 }

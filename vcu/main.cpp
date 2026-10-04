@@ -25,6 +25,7 @@ void send_etc_CAN_messages();
 void send_sme_CAN_messages_powertrain();
 void send_sme_CAN_messages_data();
 void send_imu_CAN_messages();
+void start_imu();
 void update_traction_control();
 
 namespace {
@@ -44,12 +45,10 @@ int main() {
     etc_queue.call_every(50ms, &send_etc_CAN_messages);
     etc_queue.call_every(40ms, &send_sme_CAN_messages_powertrain);
     etc_queue.call_every(80ms, &send_sme_CAN_messages_data);
-    imu_queue.call_every(10ms, &send_imu_CAN_messages); // 100Hz
-    imu_queue.call_every(1ms,  []() { imu.update_state(etc_state.vectornav); }); // 1000hz
     etc_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
-    imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
 
-    imu.start();
+    imu_queue.call_in(100ms, &start_imu); // 100Hz
+    imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
 
     CANMessage rx;
     while (true) {
@@ -340,3 +339,14 @@ void send_imu_CAN_messages() {
 }
 
 void send_sync() { canP.write(CANMessage{0x80, (uint8_t*)nullptr, 0}); }
+
+void start_imu() {
+    VN::Error err = imu.start();
+    if (err != VN::Error::None) {
+        printf("Failed to start imu! CAN messages will not be sent.\n");
+        return;
+    }
+
+    imu_queue.call_every(10ms, &send_imu_CAN_messages); // 100Hz
+    imu_queue.call_every(1ms,  [&]() { imu.update_state(etc_state.vectornav); }); // 1000hz
+}

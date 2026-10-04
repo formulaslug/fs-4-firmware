@@ -26,10 +26,10 @@ CornerConfig getCornerConfig(Corner pos) {
     printf("%d\n", pos);
     switch (pos) {
         case Corner::FL:
-            return {0x1A5, 0x2A5, true, false};
+            return {0x1A5, 0x2A5, true, true};
 
         case Corner::FR:
-            return {0x1A6, 0x2A6, true, false};
+            return {0x1A6, 0x2A6, true, true};
 
         case Corner::BL:
             return {0x1A7, 0x2A7, true, true};
