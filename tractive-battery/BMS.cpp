@@ -332,9 +332,9 @@ void BMS::readPackCurrent() {
     // At very low current values the negative value jumps up crazy so we should
     // return a value of the total current based on the voltage difference
     if (voutPos >= voutNeg) {
-        packCurrent = packCurrentAmpsOutput;
+        packCurrent = -1 * packCurrentAmpsOutput;
     } else {
-        packCurrent = -1 * packCurrentAmpsInput;
+        packCurrent = packCurrentAmpsInput;
     }
 
     // Keeping this here for debug purposes
