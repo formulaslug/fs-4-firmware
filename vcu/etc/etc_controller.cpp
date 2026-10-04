@@ -140,7 +140,7 @@ void ETCController::update_state() {
     state.brakelight_enabled = (state.front_BSE_pressure > 30);
     brakelight.write(state.brakelight_enabled);
 
-    state.solenoid_open = SOLENOID_FORCE_OPEN ? true : state.regen_allowed;
+    state.solenoid_open = SOLENOID_FORCE_OPEN ? true : !state.regen_allowed;
     solenoid.write(!state.solenoid_open);
 
     state.rtd_button_pressed = rtd_button.read();
