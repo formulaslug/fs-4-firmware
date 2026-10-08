@@ -141,34 +141,29 @@ CANMessage BuildCellStatsMessage(BMS& bms) {
 }
 
 CANMessage BuildPowerMessage(BMS& bms, uint16_t socEstimate) {
+    
+    // scale of 0.01
     uint8_t data[8] = {0};
     uint16_t packVolts = (uint16_t)(bms.packVoltageMv / 10);
+    data[0] = packVolts;
+    data[1] = packVolts >> 8;
+
     // scale of 0.1
-
-    data[0] = (uint8_t)(packVolts);
-    data[1] = (uint8_t)(packVolts >> 8);
-
-    int16_t curr = (uint16_t)(bms.packCurrent * 10);
-    data[2] = (uint8_t)(curr);
-    data[3] = (uint8_t)(curr >> 8);
-
-    // again scale of 0.1
+    int16_t curr = (int16_t)(bms.packCurrent * 10);
+    data[2] = curr;
+    data[3] = curr >> 8;
 
     int32_t totalPower = bms.packCurrent * bms.packVoltageMv / 1000.0f;
-    uint8_t top2bits = (uint8_t)((totalPower & 0x00300000) << 8);
-    data[4] = (uint8_t)(totalPower << 24);
-    data[5] = (uint8_t)(totalPower << 16);
-    data[6] |= top2bits;
+    // uint8_t top2bits = ;
+    data[4] = totalPower;
+    data[5] = totalPower >> 8;
+    data[6] = (totalPower >> 16) & 0x00000003;
 
     // state of charge remains to be done ...
 
-    uint16_t socEstimateShift = socEstimate;
-    socEstimateShift &= 0xFFC0;
-    // isolate the top 10 bits
-    socEstimateShift = socEstimateShift >> 2;
-    // shift it over in accordance with this cursed can message
-    data[6] |= (uint8_t)(socEstimateShift & 0x3f);
-    data[7] |= (int8_t)(socEstimateShift & 0x00f);
+    uint16_t socEstimateShift = (uint16_t)(socEstimate * 10.0);
+    data[6] |= socEstimateShift << 2; // don't touch bottom 2 bits
+    data[7] = socEstimateShift >> 6; // 6 bits are grabbed by the above message (8 - 2 = 6). Remaining 4 go into the next byte here.
 
     return CANMessage{BATT_TPDO_POWER, data, 8};
 }
