@@ -23,18 +23,20 @@ Corner readCorner() {
 
 // Could probably just make a lookup table for this
 CornerConfig getCornerConfig(Corner pos) {
+    printf("%d\n", pos);
     switch (pos) {
         case Corner::FL:
-            return {0x1A5, 0x2A5, true, false};
+            return {0x1A5, 0x2A5, true, true};
 
         case Corner::FR:
-            return {0x1A6, 0x2A6, true, false};
+            return {0x1A6, 0x2A6, true, true};
 
         case Corner::BL:
-            return {0x1A7, 0x2A7, true, false};
+            return {0x1A7, 0x2A7, true, true};
 
         case Corner::BR:
-            return {0x1A8, 0x2A8, true, false};
+            return {0x1A8, 0x2A8, true, true};
+        // It's two dip switches, it can't really fail.
         default:
             return {0x1A6, 0x2A6, false, false};
             //Can Message id for struct CornerConfig {tpdo_data_id, tpdo_tiretemp_id, has_tiretemp_1x8, has_tiretemp_1x1};

@@ -1,20 +1,20 @@
+#include "../imu/vectornav_imu.h"
 #include "etc_controller.h"
-// #include "imu/vectornav_imu.h"
-#include "traction_control.h"
+#include "imu/vectornav_imu.h"
 #include "mbed.h"
+#include "traction_control.h"
 #include <cstdio>
-// #include "../imu/vectornav_imu.h"
 
 EventQueue etc_queue;
 EventQueue imu_queue;
 Thread etc_thread;
-// Thread imu_queue_thread;
+Thread imu_queue_thread;
 
 AnalogIn steering_position{PC_5};
 DigitalIn bspd_fault{PA_2};
 DigitalIn bspd_shutdown_out{PA_3};
 
-// VectorNavIMU imu{PC_12, PD_2}; // TX = PC_12, RX = PD_2
+VectorNavIMU imu{PC_12, PD_2}; // TX = PC_12, RX = PD_2
 
 CAN canP{PB_8, PB_9, 500000};
 CAN canD{PB_5, PB_6, 1000000};
@@ -24,12 +24,20 @@ ETCState& etc_state = etc.state;
 void send_etc_CAN_messages();
 void send_sme_CAN_messages_powertrain();
 void send_sme_CAN_messages_data();
-// void send_imu_CAN_messages();
+void send_imu_CAN_messages();
+void start_imu();
 void update_traction_control();
 
 namespace {
-constexpr float RAD_TO_DEG = 57.2957795f;
-}
+static constexpr float RAD_TO_DEG = 57.2957795f;
+
+static constexpr float STEERING_MIN_VOLTAGE = 0.227;
+static constexpr float STEERING_MAX_VOLTAGE = 1.069;
+static constexpr float STEERING_AVG_VOLTAGE = (STEERING_MAX_VOLTAGE + STEERING_MIN_VOLTAGE) / 2.0f;
+static constexpr float STEERING_VOLTAGE_RANGE = STEERING_MAX_VOLTAGE - STEERING_AVG_VOLTAGE;
+static constexpr float STEERING_MAX_ANGLE = 75.82; // Degrees
+
+} // namespace
 
 int main() {
     printf("Hello World!!\n");
@@ -37,12 +45,10 @@ int main() {
     etc_queue.call_every(50ms, &send_etc_CAN_messages);
     etc_queue.call_every(40ms, &send_sme_CAN_messages_powertrain);
     etc_queue.call_every(80ms, &send_sme_CAN_messages_data);
-    // imu_queue.call_every(10ms, &send_imu_CAN_messages); // 100Hz
-    // imu_queue.call_every(1ms,  []() { imu.update_state(etc_state.vectornav); }); // 1000hz
     etc_thread.start(callback(&etc_queue, &EventQueue::dispatch_forever));
-    // imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
 
-    // imu.start();
+    // imu_queue.call_in(100ms, &start_imu);
+    // imu_queue_thread.start(callback(&imu_queue, &EventQueue::dispatch_forever));
 
     CANMessage rx;
     while (true) {
@@ -66,8 +72,20 @@ int main() {
                 ground_speed *= 60.0f / 1000.0f;              // km / hr
 
                 etc.update_regen_state(ground_speed);
+                canD.write(rx);
                 break;
             }
+            case 0x4c0: { // BATT_TPDO_TRAY_TEMPS
+                uint8_t tray_temp_x2 = rx.data[1];
+                float tray_temp = tray_temp_x2 / 2.0;
+                if (tray_temp > 55.0) {
+                    etc.turn_off_rtd();
+                }
+                break;
+            }
+            case 1666:
+                canD.write(rx);
+                break;
             }
         }
         if (canD.read(rx)) {
@@ -102,16 +120,16 @@ int main() {
                   }
                   switch (rx.data[0]) {
                       case 0:
-                          etc_state.APPS1_MIN_VOLTAGE = etc_state.APPS1_voltage;
-                          etc_state.APPS2_MIN_VOLTAGE = etc_state.APPS2_voltage;
+                          etc_state.APPS1_MIN_VOLTAGE_EXPECTED = etc_state.APPS1_voltage;
+                          etc_state.APPS2_MIN_VOLTAGE_EXPECTED = etc_state.APPS2_voltage;
 
                           printf("Setting APPS1_MIN to %.3fV\n", etc_state.APPS1_voltage);
                           printf("Setting APPS2_MIN to %.3fV\n", etc_state.APPS2_voltage);
 
                           break;
                       case 1:
-                          etc_state.APPS1_MAX_VOLTAGE = etc_state.APPS1_voltage;
-                          etc_state.APPS2_MAX_VOLTAGE = etc_state.APPS2_voltage;
+                          etc_state.APPS1_MAX_VOLTAGE_EXPECTED = etc_state.APPS1_voltage;
+                          etc_state.APPS2_MAX_VOLTAGE_EXPECTED = etc_state.APPS2_voltage;
 
                           printf("Setting APPS1_MAX to %.3fV\n", etc_state.APPS1_voltage);
                           printf("Setting APPS2_MAX to %.3fV\n", etc_state.APPS2_voltage);
@@ -159,7 +177,10 @@ void send_etc_CAN_messages() {
     uint8_t tpdo_status[8] = {0};
     uint16_t front_BSE_pressure = static_cast<uint16_t>(etc_state.front_BSE_pressure);
     uint16_t read_BSE_pressure = static_cast<uint16_t>(etc_state.read_BSE_pressure);
-    uint16_t steering_position_mv = steering_position.read_voltage() * 1000;
+    float steering_position_V = steering_position.read_voltage();
+    float steering_angle = ((steering_position_V - STEERING_AVG_VOLTAGE) / STEERING_VOLTAGE_RANGE)
+                           * STEERING_MAX_ANGLE;
+    int16_t steering_angle_x100 = static_cast<int16_t>(steering_angle * 100);
     tpdo_status[0] = etc_state.ready_to_drive
                      | (etc_state.motor_enabled << 1)
                      | (etc_state.rtd_button_pressed << 2)
@@ -172,15 +193,15 @@ void send_etc_CAN_messages() {
                      | (etc_state.reversing << 1)
                      | (etc_state.brakelight_enabled << 2)
                      | (etc_state.regen_allowed << 3)
-                     | (etc_state.solenoid_open << 4)
+                     | (!etc_state.solenoid_open << 4)
                      | (bspd_fault.read() << 6)
                      | (bspd_shutdown_out.read() << 7);
     tpdo_status[2] = front_BSE_pressure & 0xFF;
     tpdo_status[3] = front_BSE_pressure >> 8;
     tpdo_status[4] = read_BSE_pressure & 0xFF;
     tpdo_status[5] = read_BSE_pressure >> 8;
-    tpdo_status[6] = steering_position_mv & 0xFF;
-    tpdo_status[7] = steering_position_mv >> 8;
+    tpdo_status[6] = steering_angle_x100 & 0xFF;
+    tpdo_status[7] = steering_angle_x100 >> 8;
 
     CANMessage msg1{402, tpdo_pedal_travel, 8};
     CANMessage msg2{403, tpdo_status, 8};
@@ -198,11 +219,15 @@ void send_sme_CAN_messages_powertrain() {
     uint8_t tpdo_throttle_demand[8];
     tpdo_throttle_demand[0] = etc_state.unfiltered_motor_torque & 0xFF;
     tpdo_throttle_demand[1] = etc_state.unfiltered_motor_torque >> 8;
-    tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
-    tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
-    tpdo_throttle_demand[4] = (!etc_state.reversing)
-                              | (etc_state.reversing << 1) 
-                              | (etc_state.motor_enabled << 3);
+    if (etc_state.reversing) {
+        tpdo_throttle_demand[2] = 100;
+        tpdo_throttle_demand[3] = 0;
+    } else {
+        tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
+        tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
+    }
+    tpdo_throttle_demand[4] =
+        (!etc_state.reversing) | (etc_state.reversing << 1) | (etc_state.motor_enabled << 3);
     tpdo_throttle_demand[5] = etc_state.mbb_alive;
 
     uint8_t tpdo_max_currents[8];
@@ -216,6 +241,10 @@ void send_sme_CAN_messages_powertrain() {
 
     canP.write(throttle_msg);
     canP.write(currents_msg);
+    ThisThread::sleep_for(2ms);
+    canD.write(throttle_msg);
+    canD.write(currents_msg);
+    ThisThread::sleep_for(2ms);
 }
 
 void send_sme_CAN_messages_data() {
@@ -224,11 +253,15 @@ void send_sme_CAN_messages_data() {
     uint8_t tpdo_throttle_demand[8];
     tpdo_throttle_demand[0] = etc_state.unfiltered_motor_torque & 0xFF;
     tpdo_throttle_demand[1] = etc_state.unfiltered_motor_torque >> 8;
-    tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
-    tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
-    tpdo_throttle_demand[4] = (!etc_state.reversing)
-                              | (etc_state.reversing << 1) 
-                              | (etc_state.motor_enabled << 3);
+    if (etc_state.reversing) {
+        tpdo_throttle_demand[2] = 100;
+        tpdo_throttle_demand[3] = 0;
+    } else {
+        tpdo_throttle_demand[2] = etc_state.MAX_SPEED & 0xFF;
+        tpdo_throttle_demand[3] = etc_state.MAX_SPEED >> 8;
+    }
+    tpdo_throttle_demand[4] =
+        (!etc_state.reversing) | (etc_state.reversing << 1) | (etc_state.motor_enabled << 3);
     tpdo_throttle_demand[5] = etc_state.mbb_alive;
 
     uint8_t tpdo_max_currents[8];
@@ -242,8 +275,10 @@ void send_sme_CAN_messages_data() {
     uint8_t tc_output = static_cast<uint8_t>(etc.traction_controller.get_output() * 100.0f);
     uint8_t tc_integral = static_cast<uint8_t>(etc.traction_controller.get_integral() * 100.0f);
     uint8_t tc_loop_time = static_cast<uint8_t>(etc.traction_controller.get_loop_time() * 1000.0f);
-    int16_t tc_raw_derivative = static_cast<int16_t>(etc.traction_controller.get_raw_derivative() * 1000.0f);
-    int16_t tc_smoothed_derivative = static_cast<int16_t>(etc.traction_controller.get_smoothed_derivative() * 1000.0f);
+    int16_t tc_raw_derivative =
+        static_cast<int16_t>(etc.traction_controller.get_raw_derivative() * 1000.0f);
+    int16_t tc_smoothed_derivative =
+        static_cast<int16_t>(etc.traction_controller.get_smoothed_derivative() * 1000.0f);
     tpdo_traction_data[0] = tc_slip;
     tpdo_traction_data[1] = tc_output;
     tpdo_traction_data[2] = tc_integral;
@@ -260,90 +295,111 @@ void send_sme_CAN_messages_data() {
     canD.write(throttle_msg);
     canD.write(traction_msg);
     canD.write(currents_msg);
+    ThisThread::sleep_for(2ms);
 }
 
 void update_traction_control() {
-  etc.traction_controller.update(etc.state.wheel_rpm_fl, etc.state.wheel_rpm_fr, etc.state.wheel_rpm_bl, etc.state.wheel_rpm_br);
+    etc.traction_controller.update(
+        etc.state.wheel_rpm_fl,
+        etc.state.wheel_rpm_fr,
+        etc.state.wheel_rpm_bl,
+        etc.state.wheel_rpm_br
+    );
 }
 
-/// 100Hz VectorNav Messages
-// void send_imu_CAN_messages() {
-//     uint8_t buf_accel[6];
-//     int16_t ax = static_cast<int16_t>(etc_state.vectornav.accel[0] * 100);
-//     int16_t ay = static_cast<int16_t>(etc_state.vectornav.accel[1] * 100);
-//     int16_t az = static_cast<int16_t>(etc_state.vectornav.accel[2] * 100);
-//     buf_accel[0] = ax & 0xFF;
-//     buf_accel[1] = ax >> 8;
-//     buf_accel[2] = ay & 0xFF;
-//     buf_accel[3] = ay >> 8;
-//     buf_accel[4] = az & 0xFF;
-//     buf_accel[5] = az >> 8;
-//
-//     uint8_t buf_gyro[6];
-//     int16_t wx = static_cast<int16_t>(etc_state.vectornav.ang_rate[0] * RAD_TO_DEG * 10);
-//     int16_t wy = static_cast<int16_t>(etc_state.vectornav.ang_rate[1] * RAD_TO_DEG * 10);
-//     int16_t wz = static_cast<int16_t>(etc_state.vectornav.ang_rate[2] * RAD_TO_DEG * 10);
-//     buf_gyro[0] = wx & 0xFF;
-//     buf_gyro[1] = wx >> 8;
-//     buf_gyro[2] = wy & 0xFF;
-//     buf_gyro[3] = wy >> 8;
-//     buf_gyro[4] = wz & 0xFF;
-//     buf_gyro[5] = wz >> 8;
-//
-//     uint8_t buf_ypr[6];
-//     int16_t yaw = static_cast<int16_t>(etc_state.vectornav.ypr.yaw * 100);
-//     int16_t pitch = static_cast<int16_t>(etc_state.vectornav.ypr.pitch * 100);
-//     int16_t roll = static_cast<int16_t>(etc_state.vectornav.ypr.roll * 100);
-//     buf_ypr[0] = yaw & 0xFF;
-//     buf_ypr[1] = yaw >> 8;
-//     buf_ypr[2] = pitch & 0xFF;
-//     buf_ypr[3] = pitch >> 8;
-//     buf_ypr[4] = roll & 0xFF;
-//     buf_ypr[5] = roll >> 8;
-//
-//     uint8_t buf_vel[6];
-//     int16_t vx = static_cast<int16_t>(etc_state.vectornav.vel[0] * 100);
-//     int16_t vy = static_cast<int16_t>(etc_state.vectornav.vel[1] * 100);
-//     int16_t vz = static_cast<int16_t>(etc_state.vectornav.vel[2] * 100);
-//     buf_vel[0] = vx & 0xFF;
-//     buf_vel[1] = vx >> 8;
-//     buf_vel[2] = vy & 0xFF;
-//     buf_vel[3] = vy >> 8;
-//     buf_vel[4] = vz & 0xFF;
-//     buf_vel[5] = vz >> 8;
-//
-//     uint8_t buf_latlon[8];
-//     int32_t lat = static_cast<int32_t>(etc_state.vectornav.pos.lat * 1e7);
-//     int32_t lon = static_cast<int32_t>(etc_state.vectornav.pos.lon * 1e7);
-//     buf_latlon[0] = lat & 0xFF;
-//     buf_latlon[1] = (lat >> 8) & 0xFF;
-//     buf_latlon[2] = (lat >> 16) & 0xFF;
-//     buf_latlon[3] = (lat >> 24) & 0xFF;
-//     buf_latlon[4] = lon & 0xFF;
-//     buf_latlon[5] = (lon >> 8) & 0xFF;
-//     buf_latlon[6] = (lon >> 16) & 0xFF;
-//     buf_latlon[7] = (lon >> 24) & 0xFF;
-//
-//     uint8_t buf_alt[4];
-//     int32_t alt = static_cast<int32_t>(etc_state.vectornav.pos.alt * 1000);
-//     buf_alt[0] =  alt        & 0xFF;
-//     buf_alt[1] = (alt >> 8)  & 0xFF;
-//     buf_alt[2] = (alt >> 16) & 0xFF;
-//     buf_alt[3] = (alt >> 24) & 0xFF;
-//
-//     CANMessage accel_msg    {0x3D0, buf_accel,    6};
-//     CANMessage gyro_msg    {0x2D2, buf_gyro,     6};
-//     CANMessage ypr_msg    {0x3D0, buf_ypr,    6};
-//     CANMessage vel_msg    {0x2D2, buf_vel,     6};
-//     CANMessage latlon_msg {0x2D1, buf_latlon,  8};
-//     CANMessage alt_msg    {0x3D2, buf_alt,     4};
-//
-//     canD.write(accel_msg);
-//     canD.write(gyro_msg);
-//     canD.write(ypr_msg);
-//     canD.write(vel_msg);
-//     canD.write(latlon_msg);
-//     canD.write(alt_msg);
-// }
+// 100Hz VectorNav Messages
+void send_imu_CAN_messages() {
+    uint8_t buf_accel[6];
+    int16_t ax = static_cast<int16_t>(etc_state.vectornav.accel[0] * 100);
+    int16_t ay = static_cast<int16_t>(etc_state.vectornav.accel[1] * 100);
+    int16_t az = static_cast<int16_t>(etc_state.vectornav.accel[2] * 100);
+    buf_accel[0] = ax & 0xFF;
+    buf_accel[1] = ax >> 8;
+    buf_accel[2] = ay & 0xFF;
+    buf_accel[3] = ay >> 8;
+    buf_accel[4] = az & 0xFF;
+    buf_accel[5] = az >> 8;
+
+    uint8_t buf_gyro[6];
+    int16_t wx = static_cast<int16_t>(etc_state.vectornav.ang_rate[0] * RAD_TO_DEG * 10);
+    int16_t wy = static_cast<int16_t>(etc_state.vectornav.ang_rate[1] * RAD_TO_DEG * 10);
+    int16_t wz = static_cast<int16_t>(etc_state.vectornav.ang_rate[2] * RAD_TO_DEG * 10);
+    buf_gyro[0] = wx & 0xFF;
+    buf_gyro[1] = wx >> 8;
+    buf_gyro[2] = wy & 0xFF;
+    buf_gyro[3] = wy >> 8;
+    buf_gyro[4] = wz & 0xFF;
+    buf_gyro[5] = wz >> 8;
+
+    uint8_t buf_ypr[6];
+    int16_t yaw = static_cast<int16_t>(etc_state.vectornav.ypr.yaw * 100);
+    int16_t pitch = static_cast<int16_t>(etc_state.vectornav.ypr.pitch * 100);
+    int16_t roll = static_cast<int16_t>(etc_state.vectornav.ypr.roll * 100);
+    buf_ypr[0] = yaw & 0xFF;
+    buf_ypr[1] = yaw >> 8;
+    buf_ypr[2] = pitch & 0xFF;
+    buf_ypr[3] = pitch >> 8;
+    buf_ypr[4] = roll & 0xFF;
+    buf_ypr[5] = roll >> 8;
+
+    uint8_t buf_vel[7];
+    int16_t vx = static_cast<int16_t>(etc_state.vectornav.vel[0] * 100);
+    int16_t vy = static_cast<int16_t>(etc_state.vectornav.vel[1] * 100);
+    int16_t vz = static_cast<int16_t>(etc_state.vectornav.vel[2] * 100);
+    buf_vel[0] = vx & 0xFF;
+    buf_vel[1] = vx >> 8;
+    buf_vel[2] = vy & 0xFF;
+    buf_vel[3] = vy >> 8;
+    buf_vel[4] = vz & 0xFF;
+    buf_vel[5] = vz >> 8;
+    buf_vel[6] = etc_state.vectornav.gnss_fix;
+
+    uint8_t buf_latlon[8];
+    int32_t lat = static_cast<int32_t>(etc_state.vectornav.pos.lat * 1e7);
+    int32_t lon = static_cast<int32_t>(etc_state.vectornav.pos.lon * 1e7);
+    buf_latlon[0] = lat & 0xFF;
+    buf_latlon[1] = (lat >> 8) & 0xFF;
+    buf_latlon[2] = (lat >> 16) & 0xFF;
+    buf_latlon[3] = (lat >> 24) & 0xFF;
+    buf_latlon[4] = lon & 0xFF;
+    buf_latlon[5] = (lon >> 8) & 0xFF;
+    buf_latlon[6] = (lon >> 16) & 0xFF;
+    buf_latlon[7] = (lon >> 24) & 0xFF;
+
+    uint8_t buf_alt[4];
+    int32_t alt = static_cast<int32_t>(etc_state.vectornav.pos.alt * 1000);
+    buf_alt[0] = alt & 0xFF;
+    buf_alt[1] = (alt >> 8) & 0xFF;
+    buf_alt[2] = (alt >> 16) & 0xFF;
+    buf_alt[3] = (alt >> 24) & 0xFF;
+
+    CANMessage accel_msg{0x2D0, buf_accel, 6};
+    CANMessage gyro_msg{0x3D1, buf_gyro, 6};
+    CANMessage ypr_msg{0x3D0, buf_ypr, 6};
+    CANMessage vel_msg{0x2D2, buf_vel, 7};
+    CANMessage latlon_msg{0x2D1, buf_latlon, 8};
+    // Not in the DBC yet. TODO: make these the same as the FS-4 CAN IDs spreadsheet
+    // CANMessage alt_msg    {0x3D2, buf_alt,     4};
+
+    canD.write(accel_msg);
+    canD.write(gyro_msg);
+    canD.write(ypr_msg);
+    ThisThread::sleep_for(2ms);
+    canD.write(vel_msg);
+    canD.write(latlon_msg);
+    // ThisThread::sleep_for(1ms);
+    // canD.write(alt_msg);
+}
 
 void send_sync() { canP.write(CANMessage{0x80, (uint8_t*)nullptr, 0}); }
+
+void start_imu() {
+    VN::Error err = imu.start();
+    if (err != VN::Error::None) {
+        printf("Failed to start imu! CAN messages will not be sent.\n");
+        return;
+    }
+
+    imu_queue.call_every(10ms, &send_imu_CAN_messages);                          // 100Hz
+    imu_queue.call_every(10ms, [&]() { imu.update_state(etc_state.vectornav); }); // 1000hz
+}

@@ -49,3 +49,6 @@ tempPrecharge.*
 # The above gitignores cannot apply within ./mbed-os, so we exclude everything
 # from this gitignore. This line MUST be last
 !mbed-os/**
+dataBus.cfx
+CANbus.log
+CANbus.dbf

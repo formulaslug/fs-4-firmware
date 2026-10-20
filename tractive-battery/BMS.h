@@ -11,7 +11,7 @@
 inline constexpr uint8_t NUM_BATTERY_MODULES = 5;
 inline constexpr uint8_t NUM_VOLTAGES_PER_MODULE = 6;
 inline constexpr uint8_t NUM_TEMP_SENSORS_PER_MODULE = 12;
-inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 5;
+inline constexpr uint8_t NUM_TRAY_TEMP_SENSORS = 5; // 9; //5;
 inline constexpr uint8_t FAULT_LIMIT = 4; // this is the total number of times we detect a fault state before we actually throw a fault
 // okay so ive looked at the kicad and these have not been wired differently so 11/12 sensors have
 // the address of 0x48 (based on the data sheet) based on how they are wired
@@ -29,7 +29,7 @@ inline constexpr uint64_t TRAYTEMP_SENSOR_ADDRESSES[NUM_TRAY_TEMP_SENSORS] = {
 // battery cell info for inr-18650-p30b - based on datasheet
 inline constexpr int8_t MAX_CELL_TEMP_CHARGING = 60;
 inline constexpr int8_t MIN_CELL_TEMP_CHARGING = 0;
-inline constexpr int8_t MAX_CELL_TEMP = 60;
+inline constexpr int8_t MAX_CELL_TEMP = 55;
 inline constexpr int8_t MIN_CELL_TEMP = -40;
 
 inline constexpr uint16_t MAX_CELL_VOLTAGE_MV = 4200; // 4.2 volts
