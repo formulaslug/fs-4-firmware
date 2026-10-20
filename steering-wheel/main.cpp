@@ -36,6 +36,14 @@ uint32_t lastFrame = 0;
 uint32_t curFrame = 0;
 uint16_t fps = 0;
 
+
+void readLayoutButton();
+void readDials();
+void drawScreenLayout();
+void processCANMessage();
+void sendCANMessage();
+void readFPS();
+
 int main() {
     printf("Steering Wheel!!\n");
     screen.init(EvePresets::CFAF800480H0);
@@ -198,10 +206,10 @@ void drawScreenLayout() {
             vsm_state.batt_stat_high_cell_temp,
             vsm_state.sme_temp_motortemperature,
             vsm_state.sme_temp_controllertemperature,
-            avgTireTemps(vsm_state.tperiph_fl_tire_temps), (float)vsm_state.tperiph_fl_side_temp,
-            avgTireTemps(vsm_state.tperiph_fr_tire_temps), (float)vsm_state.tperiph_fr_side_temp,
-            avgTireTemps(vsm_state.tperiph_bl_tire_temps), (float)vsm_state.tperiph_bl_side_temp,
-            avgTireTemps(vsm_state.tperiph_br_tire_temps), (float)vsm_state.tperiph_br_side_temp,
+            avgTireTemps(vsm_state.tperiph_fl_tire_temps), (float)vsm_state.tperiph_fl_side_temp/10,
+            avgTireTemps(vsm_state.tperiph_fr_tire_temps), (float)vsm_state.tperiph_fr_side_temp/10,
+            avgTireTemps(vsm_state.tperiph_bl_tire_temps), (float)vsm_state.tperiph_bl_side_temp/10,
+            avgTireTemps(vsm_state.tperiph_br_tire_temps), (float)vsm_state.tperiph_br_side_temp/10,
             vsm_state.izze_brake_fl, vsm_state.izze_brake_fr,
             vsm_state.izze_brake_rl, vsm_state.izze_brake_rr,
             (float)vsm_state.vcu_etc_brake_pressure_front,
@@ -247,13 +255,7 @@ void drawScreenLayout() {
         break;
     }
 }
-/**
- * @brief Called when there is an incomming CAN message from interrupt
- *  Just adds the decoding process to the queue
- */
-void canISR() {
-    queue.call(processCANMessage);
-}
+
 /**
  * @brief Decoding the CAN message receieved
  * Worried about if the eventQueue is busy with other tasks and the original message is missed
