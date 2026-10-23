@@ -130,19 +130,25 @@ int main() {
                       case 1:
                           etc_state.APPS1_MAX_VOLTAGE_EXPECTED = etc_state.APPS1_voltage;
                           etc_state.APPS2_MAX_VOLTAGE_EXPECTED = etc_state.APPS2_voltage;
+                          etc_state.APPS1_DEADZONE_VOLTAGE =
+                              0.05 * (etc_state.APPS1_MAX_VOLTAGE_EXPECTED - etc_state.APPS1_MIN_VOLTAGE_EXPECTED);
+                          etc_state.APPS2_DEADZONE_VOLTAGE =
+                              0.05 * (etc_state.APPS2_MAX_VOLTAGE_EXPECTED - etc_state.APPS2_MIN_VOLTAGE_EXPECTED);
 
                           printf("Setting APPS1_MAX to %.3fV\n", etc_state.APPS1_voltage);
                           printf("Setting APPS2_MAX to %.3fV\n", etc_state.APPS2_voltage);
 
                           break;
                       case 2:
-                          etc_state.BPPS_MIN_VOLTAGE = etc_state.BPPS_voltage;
+                          etc_state.BPPS_MIN_VOLTAGE_EXPECTED = etc_state.BPPS_voltage;
 
                           printf("Setting BPPS_MIN to %.3fV\n", etc_state.BPPS_voltage);
 
                           break;
                       case 3:
-                          etc_state.BPPS_MAX_VOLTAGE = etc_state.BPPS_voltage;
+                          etc_state.BPPS_MAX_VOLTAGE_EXPECTED = etc_state.BPPS_voltage;
+                          etc_state.BPPS_DEADZONE_VOLTAGE =
+                              0.05 * (etc_state.BPPS_MAX_VOLTAGE_EXPECTED - etc_state.BPPS_MIN_VOLTAGE_EXPECTED);
 
                           printf("Setting BPPS_MAX to %.3fV\n", etc_state.BPPS_voltage);
                           

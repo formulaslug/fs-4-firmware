@@ -97,16 +97,16 @@ void ETCController::update_state() {
         ((state.rear_BSE_voltage * 1000.0f - 330.0f) / (3300.0f - 660.0f)) * 2000.0f;
 
     state.APPS1_position = clamp(
-        ((state.APPS1_voltage - APPS1_MIN_VOLTAGE_EXPECTED - APPS1_DEADZONE_VOLTAGE)
-         / (APPS1_MAX_VOLTAGE_EXPECTED - APPS1_MIN_VOLTAGE_EXPECTED - 2 * APPS1_DEADZONE_VOLTAGE))
+        ((state.APPS1_voltage - state.APPS1_MIN_VOLTAGE_EXPECTED - state.APPS1_DEADZONE_VOLTAGE)
+         / (state.APPS1_MAX_VOLTAGE_EXPECTED - state.APPS1_MIN_VOLTAGE_EXPECTED - 2 * state.APPS1_DEADZONE_VOLTAGE))
     );
     state.APPS2_position = clamp(
-        ((state.APPS2_voltage - APPS2_MIN_VOLTAGE_EXPECTED - APPS2_DEADZONE_VOLTAGE)
-         / (APPS2_MAX_VOLTAGE_EXPECTED - APPS2_MIN_VOLTAGE_EXPECTED - 2 * APPS2_DEADZONE_VOLTAGE))
+        ((state.APPS2_voltage - state.APPS2_MIN_VOLTAGE_EXPECTED - state.APPS2_DEADZONE_VOLTAGE)
+         / (state.APPS2_MAX_VOLTAGE_EXPECTED - state.APPS2_MIN_VOLTAGE_EXPECTED - 2 * state.APPS2_DEADZONE_VOLTAGE))
     );
     state.BPPS_position = clamp(
-        ((state.BPPS_voltage - BPPS_MIN_VOLTAGE_EXPECTED - BPPS_DEADZONE_VOLTAGE)
-         / (BPPS_MAX_VOLTAGE_EXPECTED - BPPS_MIN_VOLTAGE_EXPECTED - 2 * BPPS_DEADZONE_VOLTAGE))
+        ((state.BPPS_voltage - state.BPPS_MIN_VOLTAGE_EXPECTED - state.BPPS_DEADZONE_VOLTAGE)
+         / (state.BPPS_MAX_VOLTAGE_EXPECTED - state.BPPS_MIN_VOLTAGE_EXPECTED - 2 * state.BPPS_DEADZONE_VOLTAGE))
     );
 
     state.APPS_position_avg = (state.APPS1_position + state.APPS2_position) / 2.0f;

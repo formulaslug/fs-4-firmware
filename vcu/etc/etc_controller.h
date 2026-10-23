@@ -65,8 +65,15 @@ struct ETCState {
     float APPS2_MIN_VOLTAGE_EXPECTED = 0.449f;
     float APPS2_MAX_VOLTAGE_EXPECTED = 1.083f;
     
-    float BPPS_MIN_VOLTAGE = 0.615f;
-    float BPPS_MAX_VOLTAGE = 0.972f; // 2.8125f;
+    float BPPS_MIN_VOLTAGE_EXPECTED = 0.615f;
+    float BPPS_MAX_VOLTAGE_EXPECTED = 0.972f; // 2.8125f;
+
+    float APPS1_DEADZONE_VOLTAGE =
+        0.05 * (APPS1_MAX_VOLTAGE_EXPECTED - APPS1_MIN_VOLTAGE_EXPECTED);
+    float APPS2_DEADZONE_VOLTAGE =
+        0.05 * (APPS2_MAX_VOLTAGE_EXPECTED - APPS2_MIN_VOLTAGE_EXPECTED);
+    float BPPS_DEADZONE_VOLTAGE =
+        0.05 * (BPPS_MAX_VOLTAGE_EXPECTED - BPPS_MIN_VOLTAGE_EXPECTED);
 };
 
 class ETCController {
@@ -127,20 +134,12 @@ private:
 
     static constexpr float APPS1_MIN_VOLTAGE_FAULT = 0.300;
     static constexpr float APPS1_MAX_VOLTAGE_FAULT = 1.5f;
-    static constexpr float APPS1_DEADZONE_VOLTAGE =
-        0.05 * (APPS1_MAX_VOLTAGE_EXPECTED - APPS1_MIN_VOLTAGE_EXPECTED);
 
     static constexpr float APPS2_MIN_VOLTAGE_FAULT = 0.300f;
     static constexpr float APPS2_MAX_VOLTAGE_FAULT = 1.5f;
-    static constexpr float APPS2_DEADZONE_VOLTAGE =
-        0.05 * (APPS2_MAX_VOLTAGE_EXPECTED - APPS2_MIN_VOLTAGE_EXPECTED);
 
     static constexpr float BPPS_MIN_VOLTAGE_FAULT = 0.300f;
-    static constexpr float BPPS_MIN_VOLTAGE_EXPECTED = 0.650f;
-    static constexpr float BPPS_MAX_VOLTAGE_EXPECTED = 0.912f; // 2.8125f;
     static constexpr float BPPS_MAX_VOLTAGE_FAULT = 1.5f;      // 2.8125f;
-    static constexpr float BPPS_DEADZONE_VOLTAGE =
-        0.05 * (BPPS_MAX_VOLTAGE_EXPECTED - BPPS_MIN_VOLTAGE_EXPECTED);
 
     static constexpr float FRONT_BSE_MIN_VOLTAGE = 0.3125f;
     static constexpr float FRONT_BSE_MAX_VOLTAGE = 2.8125f;
