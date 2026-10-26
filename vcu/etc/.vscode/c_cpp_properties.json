@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/Users/sultansheikh/Downloads/suasheik/Common/**",
+                "/Users/sultansheikh/Downloads/suasheik/Lab05/**",
+                "/Users/sultansheikh/Documents/GitHub/fs-4-firmware/**",
+                "/Users/sultansheikh/Documents/GitHub/fs-4-firmware/mbed-os**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "macos-clang-arm64"
+        }
+    ],
+    "version": 4
+}
