@@ -60,8 +60,9 @@ public:
      *
      * @param tx UART TX pin
      * @param rx UART RX pin
+     * @param restore VN-200 RESTORE pin
      */
-    VectorNavIMU(PinName tx, PinName rx);
+    VectorNavIMU(PinName tx, PinName rx, PinName restore);
 
     /** Connects to the IMU
      *
@@ -96,6 +97,7 @@ private:
     // Pins
     const PinName tx; // TX pin
     const PinName rx; // RX pin
+    DigitalOut restore;
 
     // Sensor and latest data
     VN::Sensor sensor{}; // IMU Sensor object
@@ -112,6 +114,7 @@ private:
     uint16_t errors = 0;
     VN::Error latest_error = VN::Error::None;
 
+    void restore_factory_settings();
     VN::Error find_sensor();
     VN::Error configure();
     void record_error(VN::Error err);

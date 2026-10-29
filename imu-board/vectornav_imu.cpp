@@ -3,8 +3,8 @@
 #include "vectornav/Interface/Registers.hpp"
 #include <cstdio>
 
-VectorNavIMU::VectorNavIMU(PinName tx, PinName rx)
-    : tx(tx), rx(rx) {
+VectorNavIMU::VectorNavIMU(PinName tx, PinName rx, PinName restore)
+    : tx(tx), rx(rx), restore(restore, 0) {
 
     // Fixed: originally 100Hz (IMU), 25Hz (INS) and 100Hz (attitude),
     // original the rate comments had the math wrong
@@ -40,12 +40,24 @@ VN::Error VectorNavIMU::start() {
     last_configure = Kernel::Clock::now();
 
     if (!connected) {
+        restore_factory_settings();
         VN::Error err = sensor.connect(tx, rx, DEFAULT_BAUD);
         if (err != VN::Error::None) record_error(err);
         return_if_vn_error(err);
         connected = true;
         link_state = VectornavLink::Configuring;
         printf("Connected to sensor!\n");
+
+        // Fixed: the sensor varies 4-6s to restart after factory reset. Asking it
+        // anything while resetting gets answered late, so wait for its factory-default ASCII output
+        // instead
+        auto give_up = Kernel::Clock::now() + 10s;
+        while (!sensor.getNextMeasurement(false) && Kernel::Clock::now() < give_up) {
+            ThisThread::sleep_for(10ms);
+        }
+        while (sensor.getNextMeasurement(false)) {
+        }
+        last_configure = Kernel::Clock::now();
     }
 
     VN::Error err = configure();
@@ -57,6 +69,27 @@ VN::Error VectorNavIMU::start() {
         record_error(err);
     }
     return err;
+}
+
+// Fixed: when only the STM32 reset or boots up, the sensor was still at whatever baud it was last
+// switched to. The VN-200 restores its factory settings (115200 baud) if RESTORE is high while it
+// starts up, so hold RESTORE high and reset the sensor. We don't know its baud yet, so send the
+// reset at both.
+void VectorNavIMU::restore_factory_settings() {
+    restore = 1;
+    {
+        BufferedSerial port{tx, rx};
+        for (BaudRates baud : {FAST_BAUD, DEFAULT_BAUD}) {
+            port.set_baud(static_cast<int>(baud));
+            port.write(
+                "$VNRST*XX\r\n", 11
+            ); //$VNRST is the reset command *XX forces IMU to skip checksum
+            port.sync();
+        }
+    }
+    ThisThread::sleep_for(2500ms);
+    restore = 0;
+    printf("Restored sensor factory settings\n");
 }
 
 // Fixed: sensor is at DEFAULT_BAUD after it powers up, but still at FAST_BAUD if only this
@@ -88,9 +121,6 @@ VN::Error VectorNavIMU::configure() {
 
     if (baud() != static_cast<uint32_t>(FAST_BAUD)) {
         err = sensor.changeBaudRate(FAST_BAUD);
-        return_if_vn_error(err);
-        VN::Registers::System::Model model_register;
-        err = sensor.readRegister(&model_register, true);
         return_if_vn_error(err);
         printf("baud: %lu\n", baud());
     }
@@ -169,7 +199,11 @@ VN::Error VectorNavIMU::update_state(VectornavState& state) {
     // unseen. switch to draining the error queues.
     VN::Error result = VN::Error::None;
     while (std::optional<VN::AsyncError> async_error = sensor.getNextAsyncError()) {
-        printf("Received async error: %s\n", std::string(VN::errorCodeToString(async_error->error)).c_str());
+        printf(
+            "Received async error: %s %s\n",
+            std::string(VN::errorCodeToString(async_error->error)).c_str(),
+            async_error->message.c_str()
+        );
         record_error(async_error->error);
         result = async_error->error;
     }
