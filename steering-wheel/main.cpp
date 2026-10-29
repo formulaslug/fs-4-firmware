@@ -38,6 +38,7 @@ uint16_t fps = 0;
 
 
 void readLayoutButton();
+void readPedalCalButton();
 void readDials();
 void drawScreenLayout();
 void processCANMessage();
@@ -50,6 +51,7 @@ int main() {
     screen.setRotate(1); //Inverted Landscape since dash is mounted upsidedown
     // debouncedLayoutBtn.set_valid_read_count(7);
     queue.call_every(100ms, &readLayoutButton);
+    queue.call_every(100ms, &readPedalCalButton);
     queue.call_every(100ms, &readDials);
     queue.call_every(5ms, &processCANMessage);
     queue.call_every(10ms, &drawScreenLayout);
@@ -66,7 +68,7 @@ int main() {
 void readLayoutButton() {
     // const bool debounced_button_state = debouncedLayoutBtn.read();
     const bool debounced_button_state = layoutBtn.read();
-    if (debounced_button_state && !lastLayoutBtnState) {
+    if (debounced_button_state && !lastLayoutBtnState && !pedalCalActive)) {
         currentScreen = (currentScreen >= 4) ? 0 : (currentScreen + 1);
     }
     lastLayoutBtnState = debounced_button_state;

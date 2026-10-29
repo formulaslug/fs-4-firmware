@@ -128,6 +128,11 @@ int main() {
 
                           break;
                       case 1:
+                          if (etc_state.APPS1_voltage - etc_state.APPS1_MIN_VOLTAGE_EXPECTED < 0.2f ||
+                            etc_state.APPS2_voltage - etc_state.APPS2_MIN_VOLTAGE_EXPECTED < 0.2f) {
+                            printf("APPS max too close to min\n");
+                            break;
+                          }
                           etc_state.APPS1_MAX_VOLTAGE_EXPECTED = etc_state.APPS1_voltage;
                           etc_state.APPS2_MAX_VOLTAGE_EXPECTED = etc_state.APPS2_voltage;
 
@@ -142,6 +147,10 @@ int main() {
 
                           break;
                       case 3:
+                          if (etc_state.BPPS_voltage - etc_state.BPPS_MIN_VOLTAGE < 0.1f) {
+                            printf("BPPS max too close to min\n");
+                            break;
+                          }
                           etc_state.BPPS_MAX_VOLTAGE = etc_state.BPPS_voltage;
 
                           printf("Setting BPPS_MAX to %.3fV\n", etc_state.BPPS_voltage);
