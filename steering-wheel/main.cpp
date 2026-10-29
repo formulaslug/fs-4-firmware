@@ -8,7 +8,7 @@
 
 // TODO: I had to put this here to get it to compile, but I have no
 // idea what the actual clock setup on steering wheel board is supposed to be
-extern "C" void SetSysClock(void) {}
+// extern "C" void SetSysClock(void) {}
 
 DashScreen screen{
     PIN_MOSI, PIN_MISO, PIN_SCK, PIN_CS, PIN_PDN, PIN_IRQ, EvePresets::CFAF800480H0
@@ -88,7 +88,7 @@ void readPedalCalButton() {
     if (state) {
         heldTicks++;
     } else {
-        if (lastState && heldTicks >= 300) {
+        if (lastState && heldTicks >= 30) {
             if (!vsm_state.vcu_etc_batt_precharge_done) {
                 pedalCalActive = !pedalCalActive;
                 pedalCalStep = 0;
