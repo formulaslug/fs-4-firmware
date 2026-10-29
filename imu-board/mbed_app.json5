@@ -1,0 +1,19 @@
+{
+  "target_overrides": {
+    "*": {
+      "platform.stdio-baud-rate": 115200,
+      "platform.stdio-buffered-serial": 1,
+
+      // Uncomment to use mbed-baremetal instead of mbed-os
+      //"target.application-profile": "bare-metal",
+      "rtos.thread-stack-size": 16384,
+      "rtos.main-thread-stack-size": 16384,
+
+      // Fixed: Mbed's default 256 B RX buffer is only ~3ms of data at 921600 baud and overflowed;
+      // 2 KiB is ~22ms
+      "drivers.uart-serial-rxbuf-size": 2048,
+      "drivers.uart-serial-txbuf-size": 1024,
+      "platform.minimal-printf-set-floating-point-max-decimals": 3,
+    },
+  }
+}
