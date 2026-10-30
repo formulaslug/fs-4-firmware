@@ -2,7 +2,7 @@
 #include "vectornav_imu.h"
 #include <cstdio>
 
-VectorNavIMU imu{PC_12, PD_2, PA_8}; // TX = PC_12, RX = PD_2, RESTORE = PA_8 (D7)
+VectorNavIMU imu{PC_12, PD_2, PA_8, PB_10}; // TX = PC_12, RX = PD_2, RESTORE = PA_8 (D7), POWER = PB_10 (D6)
 DigitalOut status_led{LED1};
 VectornavState vn_state;
 

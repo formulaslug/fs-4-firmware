@@ -3,8 +3,8 @@
 #include "vectornav/Interface/Registers.hpp"
 #include <cstdio>
 
-VectorNavIMU::VectorNavIMU(PinName tx, PinName rx, PinName restore)
-    : tx(tx), rx(rx), restore(restore, 0) {
+VectorNavIMU::VectorNavIMU(PinName tx, PinName rx, PinName restore, PinName power)
+    : tx(tx), rx(rx), restore(restore, 0), power(power, 1) {
 
     // Fixed: originally 100Hz (IMU), 25Hz (INS) and 100Hz (attitude),
     // original the rate comments had the math wrong
@@ -77,16 +77,12 @@ VN::Error VectorNavIMU::start() {
 // reset at both.
 void VectorNavIMU::restore_factory_settings() {
     restore = 1;
-    {
-        BufferedSerial port{tx, rx};
-        for (BaudRates baud : {FAST_BAUD, DEFAULT_BAUD}) {
-            port.set_baud(static_cast<int>(baud));
-            port.write(
-                "$VNRST*XX\r\n", 11
-            ); //$VNRST is the reset command *XX forces IMU to skip checksum
-            port.sync();
-        }
-    }
+    // Fixed: the datasheet only guarantees the restore when RESTORE is high as the sensor powers
+    // on, so power-cycle it through the power switch. The reset command below stays as a fallback
+    // for when there's no switch.
+    power = 0;
+    ThisThread::sleep_for(500ms);
+    power = 1;
     ThisThread::sleep_for(2500ms);
     restore = 0;
     printf("Restored sensor factory settings\n");

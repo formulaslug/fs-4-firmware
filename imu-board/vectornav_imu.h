@@ -61,8 +61,9 @@ public:
      * @param tx UART TX pin
      * @param rx UART RX pin
      * @param restore VN-200 RESTORE pin
+     * @param power IMU power switch enable pin
      */
-    VectorNavIMU(PinName tx, PinName rx, PinName restore);
+    VectorNavIMU(PinName tx, PinName rx, PinName restore, PinName power);
 
     /** Connects to the IMU
      *
@@ -98,6 +99,7 @@ private:
     const PinName tx; // TX pin
     const PinName rx; // RX pin
     DigitalOut restore;
+    DigitalOut power;
 
     // Sensor and latest data
     VN::Sensor sensor{}; // IMU Sensor object
