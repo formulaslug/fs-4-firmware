@@ -6,6 +6,7 @@
 #define LAYOUTS_H
 
 #include "BT817Q.hpp"
+#include "lap_counter.hpp"
 
 struct Faults {
     bool fans : 1;
@@ -78,7 +79,9 @@ public:
         uint8_t mtr_temp,
         uint8_t ctrl_temp,
         uint16_t dc_bus,
-        uint8_t regen_state
+        uint8_t regen_state,
+        int32_t gps_lat,
+        int32_t gps_long
     );
 
     void debugCellTemps(const uint8_t seg_temps_A[5][6], const uint8_t seg_temps_B[5][6]);
@@ -94,6 +97,8 @@ public:
     Color cellVoltToColor(uint16_t volt);
 
     Color socToColor(uint8_t soc);
+    Timer lap_timestamp_timer;
+    int64_t lap_timestamp_ms;
 };
 
 #endif // LAYOUTS_H

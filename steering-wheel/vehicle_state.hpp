@@ -33,6 +33,8 @@ struct VehicleState{
     uint8_t vcu_etc_implausibility_apps_deviation;
     uint8_t vcu_etc_implausibility_bse_out_of_range;
     uint8_t vcu_etc_implausibility_brake_and_accel;
+    int32_t vn_gps_long;
+    int32_t vn_gps_lat;
     uint16_t vdm_gps_speed;
     uint8_t batt_stat_high_cell_temp;
 

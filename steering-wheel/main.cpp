@@ -145,7 +145,9 @@ void drawScreenLayout() {
             vsm_state.sme_temp_motortemperature,
             vsm_state.sme_temp_controllertemperature,
             vsm_state.sme_temp_dc_bus_v,
-            regenState
+            regenState, 
+            vsm_state.vn_gps_lat,
+            vsm_state.vn_gps_long
         );
         break;
     case 1: {
@@ -228,6 +230,7 @@ void processCANMessage() {
         case 0x391:   // BATT_TPDO_STATUS
         case 0x392:   // BATT_TPDO_POWER
         case 0x393:   // BATT_TPDO_CELL_STATS
+        case 0x2D1: // VCU_VN_LATLON
         case 0xa0001: // VDM_GPS_DATA
         case 0x1a5:   // TPERIPH_FL_TPDO_DATA
         case 0x1a6:   // TPERIPH_FR_TPDO_DATA
@@ -318,6 +321,14 @@ void processCANMessage() {
             } else if (msg.id == 0x393) { // BATT_TPDO_CELL_STATS
                 // High cell temp: byte 1 (bits 8-15), scaling 0.25 → raw/4 = °C
                 vsm_state.batt_stat_high_cell_temp = msg.data[1] / 4;
+            } else if (msg.id == 0x2D1) { // VCU_VN_LATLON — little-endian, signed
+                // GPS Latitude: bits 0 - 31
+                vsm_state.vn_gps_lat = ((int32_t)msg.data[3] << 24) | ((int32_t)msg.data[2] << 16)
+                                       | ((int32_t)msg.data[1] << 8) | ((int32_t)msg.data[0]);
+                     
+                // GPS Latitude: bits 32 - 63
+                vsm_state.vn_gps_long = ((int32_t)msg.data[7] << 24) | ((int32_t)msg.data[6] << 16)
+                                        | ((int32_t)msg.data[5] << 8) | ((int32_t)msg.data[4]);
             } else if (msg.id == 0xa0001) { // VDM_GPS_DATA — Motorola/big-endian
                 // GPS speed: Motorola start-bit 7, 16-bit big-endian at bytes 0-1
                 // raw = speed * 100; display * 0.01 = km/h

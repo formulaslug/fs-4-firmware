@@ -2,10 +2,13 @@
 // Created by Nova Mondal on 5/12/25.
 // Edited for FS-4 by Sid Shastri on 2/23/26
 #include "dash_screen.hpp"
+#include "Timer.h"
 #include "mbed.h"
 
 DashScreen::DashScreen(PinName mosi, PinName miso, PinName sck, PinName cs, PinName pdn, PinName irq, EvePanel panel)
     : BT817Q(mosi, miso, sck, cs, pdn, irq, panel) {}
+
+LapCounter::LapCounter(){}
 
 static constexpr uint8_t ACC_WARNING_VOLT = 94;
 static constexpr uint8_t ACC_WARNING2 = 100;
@@ -149,31 +152,31 @@ void DashScreen::drawThermalScreen(
     endFrame();
 }
 void DashScreen::drawDebugFaultLayout(
-    uint8_t bms,           // BMS_FAULT
-    uint8_t imd,           // IMD_FAULT
-    uint8_t sdwn,          // SHUTDOWN
-    uint8_t pchgd,         // PRECHARGED
-    uint8_t pchgi,         // PRECHARGING
-    uint8_t chging,        // CHARGING
-    uint16_t packv,        // PACK_VOLTAGE
-    uint16_t glv,          // GROUNDED LOW VOLTAGE
-    uint32_t cellfault,    // CELL FAULT INDEX
-    uint8_t rtd,           // READY TO DRIVE
-    uint8_t implausiblity, // BRAKE PEDAL SYSTEM IMPLAUSIBILITY
-    uint8_t tsactive,      // TRACTICE SYSTEM ACTIVE
-    uint8_t pedaltravel,   // PEDAL TRAVEL PERCENT
-    uint8_t brakesensev,   // BRAKE SENSOR VOLTAGE
-    uint8_t ctrlovertemp,  // CONTROLLER OVERTEMP
-    uint8_t running,       // RUNNING
-    uint8_t poweron,       // POWER ON
-    uint8_t powerrdy,      // POWER READY
-    uint8_t motortemp,     // MOTOR TEMP
-    uint8_t faultcode,     // FAULT CODE
-    uint8_t faultlevel,    // FAULT LEVEL
-    uint16_t fps,
-    //uint8_t (&tperiph_br_tire_temps)[8],
-    int tick
-) {
+        uint8_t bms,           // BMS_FAULT
+        uint8_t imd,           // IMD_FAULT
+        uint8_t sdwn,          // SHUTDOWN
+        uint8_t pchgd,         // PRECHARGED
+        uint8_t pchgi,         // PRECHARGING
+        uint8_t chging,        // CHARGING
+        uint16_t packv,        // PACK_VOLTAGE
+        uint16_t glv,          // GROUNDED LOW VOLTAGE
+        uint32_t cellfault,    // CELL FAULT INDEX
+        uint8_t rtd,           // READY TO DRIVE
+        uint8_t implausiblity, // BRAKE PEDAL SYSTEM IMPLAUSIBILITY
+        uint8_t tsactive,      // TRACTICE SYSTEM ACTIVE
+        uint8_t pedaltravel,   // PEDAL TRAVEL PERCENT
+        uint8_t brakesensev,   // BRAKE SENSOR VOLTAGE
+        uint8_t ctrlovertemp,  // CONTROLLER OVERTEMP
+        uint8_t running,       // RUNNING
+        uint8_t poweron,       // POWER ON
+        uint8_t powerrdy,      // POWER READY
+        uint8_t motortemp,     // MOTOR TEMP
+        uint8_t faultcode,     // FAULT CODE
+        uint8_t faultlevel,    // FAULT LEVEL
+        uint16_t fps,
+        //uint8_t (&tperiph_br_tire_temps)[8],
+        int tick
+    ) {
 
     if (failure == startFrame()) {
         return;
@@ -358,9 +361,38 @@ void DashScreen::drawDebugFaultLayout(
 
 }
 
-void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, bool fans, uint16_t acc_volt, uint8_t acc_temp, uint8_t soc, int tick, uint16_t speed, const char* lap_time, uint16_t glv, uint8_t mtr_temp, uint8_t ctrl_temp, uint16_t dc_bus, uint8_t regen_state) {
+void DashScreen::drawMainDisplay(
+    bool shtd, 
+    bool mtr_ctrl, 
+    bool rtd, 
+    bool pchg, 
+    bool fans, 
+    uint16_t acc_volt, 
+    uint8_t acc_temp, 
+    uint8_t soc, 
+    int tick, 
+    uint16_t speed, 
+    const char* 
+    lap_time, 
+    uint16_t glv, 
+    uint8_t mtr_temp, 
+    uint8_t ctrl_temp, 
+    uint16_t dc_bus, 
+    uint8_t regen_state,
+    int32_t gps_lat,
+    int32_t gps_long
+    ) {
     // init
     if (!startFrame()) return;
+
+    if (tick == 0){
+        lap_timestamp_timer.reset();
+        lap_timestamp_timer.start();
+        LapCounter::resetLapCounter()
+    }
+
+    lap_timestamp_ms = lap_timestamp_timer.elapsed_time().count() / 1000;
+
     clear(white.red, white.green, white.blue);
     loadFonts();
 
@@ -422,8 +454,10 @@ void DashScreen::drawMainDisplay(bool shtd, bool mtr_ctrl, bool rtd, bool pchg, 
     // data
     setMainColor(black);
     // LAP
+    LapCounter::updateLapCounter((double)gps_lat * 1e-7, (double)gps_long * 1e-7, lap_timestamp_ms);
+
     drawText(500, 225, "LAP", 31, OPT_CENTERY);
-    drawText(600, 225, lap_time, 31, OPT_CENTERY);
+    drawText(600, 225, LapCounter::getTime(), 31, OPT_CENTERY);
     // GLV
     drawText(500, 275, "GLV", 31, OPT_CENTERY);
     drawFormattedText(600, 275, "%d.%dV", 31, OPT_CENTERY, glv / 1000, glv % 1000);

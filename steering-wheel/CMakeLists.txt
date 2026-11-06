@@ -18,6 +18,7 @@ include(../mbed-os/tools/cmake/mbed_project_setup.cmake)
 
 add_subdirectory(../mbed-os mbed-os)
 add_subdirectory(../libraries/bt817q bt817q)
+add_subdirectory(../libraries/LapCounter lap-counter)
 #add_subdirectory(../libraries/FilterUtils debounced_digital_in)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -58,5 +59,5 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME} PUBLIC . ${CMAKE_CURRENT_BINARY_DIR})
 #removed filter_utils since buttons already contains hardware filtering
-target_link_libraries(${PROJECT_NAME} mbed-os bt817q)
+target_link_libraries(${PROJECT_NAME} mbed-os bt817q lap-counter)
 mbed_set_post_build(${PROJECT_NAME})
