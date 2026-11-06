@@ -68,7 +68,7 @@ int main() {
 void readLayoutButton() {
     // const bool debounced_button_state = debouncedLayoutBtn.read();
     const bool debounced_button_state = layoutBtn.read();
-    if (debounced_button_state && !lastLayoutBtnState && !pedalCalActive)) {
+    if (debounced_button_state && !lastLayoutBtnState && !pedalCalActive) {
         currentScreen = (currentScreen >= 4) ? 0 : (currentScreen + 1);
     }
     lastLayoutBtnState = debounced_button_state;
