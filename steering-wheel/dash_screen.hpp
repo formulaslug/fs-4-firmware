@@ -99,6 +99,8 @@ public:
     Color socToColor(uint8_t soc);
     Timer lap_timestamp_timer;
     int64_t lap_timestamp_ms;
+
+    LapCounter lap_counter;
 };
 
 #endif // LAYOUTS_H

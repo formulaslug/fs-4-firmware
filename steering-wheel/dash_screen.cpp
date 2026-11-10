@@ -8,8 +8,6 @@
 DashScreen::DashScreen(PinName mosi, PinName miso, PinName sck, PinName cs, PinName pdn, PinName irq, EvePanel panel)
     : BT817Q(mosi, miso, sck, cs, pdn, irq, panel) {}
 
-LapCounter::LapCounter(){}
-
 static constexpr uint8_t ACC_WARNING_VOLT = 94;
 static constexpr uint8_t ACC_WARNING2 = 100;
 static constexpr uint8_t ACC_WARNING3 = 103;
@@ -388,10 +386,11 @@ void DashScreen::drawMainDisplay(
     if (tick == 0){
         lap_timestamp_timer.reset();
         lap_timestamp_timer.start();
-        LapCounter::resetLapCounter()
+        lap_counter.resetLapCounter();
     }
 
     lap_timestamp_ms = lap_timestamp_timer.elapsed_time().count() / 1000;
+    lap_counter.updateLapCounter((double)gps_lat * 1e-7, (double)gps_long * 1e-7, lap_timestamp_ms);
 
     clear(white.red, white.green, white.blue);
     loadFonts();
@@ -454,10 +453,8 @@ void DashScreen::drawMainDisplay(
     // data
     setMainColor(black);
     // LAP
-    LapCounter::updateLapCounter((double)gps_lat * 1e-7, (double)gps_long * 1e-7, lap_timestamp_ms);
-
-    drawText(500, 225, "LAP", 31, OPT_CENTERY);
-    drawText(600, 225, LapCounter::getTime(), 31, OPT_CENTERY);
+    drawFormattedText(500, 225, "LAP %i", 31, OPT_CENTERY, lap_counter.getLapCount());
+    drawFormattedText(650, 225, "%ds", 31, OPT_CENTERY, lap_counter.getTime());
     // GLV
     drawText(500, 275, "GLV", 31, OPT_CENTERY);
     drawFormattedText(600, 275, "%d.%dV", 31, OPT_CENTERY, glv / 1000, glv % 1000);

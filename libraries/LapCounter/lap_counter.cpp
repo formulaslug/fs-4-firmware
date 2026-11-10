@@ -64,7 +64,7 @@ bool LapCounter::check_crossing(uint64_t timestamp_ms) {
     double d_curr = data.lap_curr_x * gate_nx + data.lap_curr_y * gate_ny;
 
     // Lateral distance perpendicular to forward direction
-    double lateral_curr = std::abs(-data.lap_curr_x * gate_ny + data.lap_curr_y * gate_nx);
+    double lateral_curr = abs(-data.lap_curr_x * gate_ny + data.lap_curr_y * gate_nx);
 
     // Gate crossing check: crossed plane within lateral gate width
     if (d_prev < 0.0 && d_curr >= 0.0 && lateral_curr <= (GATE_WIDTH / 2.0)) {
@@ -79,7 +79,12 @@ void LapCounter::record_lap(double d_prev, double d_curr, uint64_t timestamp_ms)
     // Sub-sample linear interpolation for millisecond-level lap time precision
     double denom = d_curr - d_prev;
     double fraction = (denom > 1e-6) ? (-d_prev / denom) : 0.0;
-    fraction = std::clamp(fraction, 0.0, 1.0);
+
+    if (fraction > 1.0) {
+        fraction = 1.0;
+    } else if (fraction < 0.0) {
+        fraction = 0.0;
+    }
 
     uint64_t dt = timestamp_ms - prev_timestamp_ms;
     uint64_t t_cross_ms = prev_timestamp_ms + static_cast<uint64_t>(fraction * static_cast<double>(dt));

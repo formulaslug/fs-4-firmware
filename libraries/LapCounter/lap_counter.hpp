@@ -27,7 +27,7 @@ struct LapCounterData {
 
 class LapCounter {
 public:
-    static constexpr double DEG_TO_RAD = std::numbers::pi / 180.0;
+    static constexpr double DEG_TO_RAD = M_PI / 180.0;
     static constexpr double EARTH_RADIUS = 6378137.0; // Earth radius in meters
     static constexpr double GATE_WIDTH = 16.0;        // Lateral tolerance (+/- 8 meters)
     static constexpr double MIN_LAP_TIME = 10.0;      // Minimum lap time in seconds
@@ -39,6 +39,7 @@ public:
     void resetLapCounter(double lat = 0.0, double lon = 0.0);
     bool updateLapCounter(double lat, double lon, uint64_t timestamp_ms);
     double getTime() const { return data.lap_time; }
+    double getLapCount() const { return data.lap_counter;}
 
 private:
     void lat_lon_to_xy(double lat, double lon, double& x, double& y) const;
