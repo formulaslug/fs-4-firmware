@@ -71,7 +71,7 @@ void pollADC() {
 void selectWriteAddress(uint8_t addr) {
     const uint8_t txBuf[1] = {
       (uint8_t)(dev_address 
-        || addr << 2 
+        || addr << 2
         || 0xA) // Incremental Read Mode (00000011)
     };
     gauge.write(txBuf, sizeof(txBuf), nullptr, 0);
