@@ -21,7 +21,7 @@ void write8(uint8_t addr, uint8_t data);
 void write24(uint8_t addr, uint32_t data);
 uint8_t read8(uint8_t addr);
 uint16_t read16(uint8_t addr);
-uint32_t read24(uint8_t addr);
+uint32_t read32(uint8_t addr);
 
 int main() {
     init();
@@ -33,7 +33,7 @@ void init() {
     
     cs = 1;
     gauge.format(8, 0);
-    gauge.frequency(30*100000);
+    gauge.frequency(3'000'000);
 
     cs = 0;
 
@@ -46,8 +46,8 @@ void init() {
     // Current Bias = 1x, x64 Gain
     write8(CONFIG2, 0b10111001);
 
-    // Continuous Conversion Mode, 24 bit output, no checksum
-    write8(CONFIG3, 0b11000000);
+    // Continuous Conversion Mode, 32 bit output with Channel ID, no checksum
+    write8(CONFIG3, 0b11110000);
 
     // Using ~IRQ Pin with no pull up
     write8(IRQ, 0b00000111);
@@ -63,16 +63,29 @@ void init() {
 
 void pollADC() {
     if (irq) {
-        printf("Getting Data!");
-        uint32_t data = read24(ADCDATA);
+        uint32_t data = read32(ADCDATA);
+        uint8_t channel = data >> 28;
+        data = (data & 0x1FFFFFF);
+
+        if (channel == 0x8) {
+            printf("Data from Left Gauge: 0b%" PRIu32 "\n", data);
+        } else if (channel == 0x9) {
+            printf("Data from Center Gauge: 0b%" PRIu32 "\n", data);
+        } else if (channel == 0xA) {
+            printf("Data from Right Gauge: 0b%" PRIu32 "\n", data);
+        } else if (channel == 0xB) {
+            printf("Data from Radial Gauge: 0b%" PRIu32 "\n", data);
+        } else {
+            printf("Data from unknown channel (0b%" PRIu8 "): 0b%" PRIu32 "\n", channel, data);
+        }
     }
 }
 
 void selectWriteAddress(uint8_t addr) {
     const uint8_t txBuf[1] = {
       (uint8_t)(dev_address 
-        || addr << 2
-        || 0xA) // Incremental Read Mode (00000011)
+        | addr << 2
+        | 0xA) // Incremental Read Mode (00000011)
     };
     gauge.write(txBuf, sizeof(txBuf), nullptr, 0);
 }
@@ -80,8 +93,8 @@ void selectWriteAddress(uint8_t addr) {
 void selectReadAddress(uint8_t addr) {
     const uint8_t txBuf[1] = {
       (uint8_t)(dev_address 
-        || addr << 2 
-        || 0xB) // Single Write Mode (00000010)
+        | addr << 2 
+        | 0xB) // Single Write Mode (00000010)
     };
    gauge.write(txBuf, sizeof(txBuf), nullptr, 0);
 }
@@ -124,7 +137,7 @@ uint16_t read16(uint8_t addr) {
     return d;
 }
 
-uint32_t read24(uint8_t addr) {
+uint32_t read32(uint8_t addr) {
     cs = 0;
 
     selectReadAddress(addr);
@@ -132,6 +145,7 @@ uint32_t read24(uint8_t addr) {
     uint32_t d =  gauge.write(0x00);
     d |=  gauge.write(0x00) << 8;
     d |=  gauge.write(0x00) << 16;
+    d |=  gauge.write(0x00) << 24;
 
     cs = 1;
     return d;
