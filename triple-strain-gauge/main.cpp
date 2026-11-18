@@ -1,3 +1,4 @@
+#include "PinNamesTypes.h"
 #include "mbed.h"
 #include <cstring>
 
@@ -7,7 +8,7 @@
 EventQueue queue = EventQueue{EVENTS_EVENT_SIZE * 32};
 SPI gauge(PIN_MOSI, PIN_MISO, PIN_SCK);
 DigitalOut cs(PIN_CS);
-DigitalIn irq(PIN_IRQ);
+InterruptIn irq(PIN_IRQ);
 
 uint8_t dev_address = 0x0;
 
@@ -25,11 +26,13 @@ uint32_t read32(uint8_t addr);
 
 int main() {
     init();
-    queue.call_every(10ms, &pollADC);
 }
 
 void init() {
     printf("Initializing!");
+
+    irq.mode(PullUp);
+    irq.fall(&pollADC);
     
     cs = 1;
     gauge.format(8, 0);
@@ -49,8 +52,8 @@ void init() {
     // Continuous Conversion Mode, 32 bit output with Channel ID, no checksum
     write8(CONFIG3, 0b11110000);
 
-    // Using ~IRQ Pin with no pull up
-    write8(IRQ, 0b00000111);
+    // Using ~IRQ Pin with pull up
+    write8(IRQ, 0b00000011);
 
     // SCAN[15:0] selects channels to scan through
     write24(SCAN, 0b000000000000111100000000);
@@ -62,22 +65,20 @@ void init() {
 }
 
 void pollADC() {
-    if (irq) {
-        uint32_t data = read32(ADCDATA);
-        uint8_t channel = data >> 28;
-        data = (data & 0x1FFFFFF);
+    uint32_t data = read32(ADCDATA);
+    uint8_t channel = data >> 28;
+    data = (data & 0x1FFFFFF);
 
-        if (channel == 0x8) {
-            printf("Data from Left Gauge: 0b%" PRIu32 "\n", data);
-        } else if (channel == 0x9) {
-            printf("Data from Center Gauge: 0b%" PRIu32 "\n", data);
-        } else if (channel == 0xA) {
-            printf("Data from Right Gauge: 0b%" PRIu32 "\n", data);
-        } else if (channel == 0xB) {
-            printf("Data from Radial Gauge: 0b%" PRIu32 "\n", data);
-        } else {
-            printf("Data from unknown channel (0b%" PRIu8 "): 0b%" PRIu32 "\n", channel, data);
-        }
+    if (channel == 0x8) {
+        printf("Data from Left Gauge: 0b%" PRIu32 "\n", data);
+    } else if (channel == 0x9) {
+        printf("Data from Center Gauge: 0b%" PRIu32 "\n", data);
+    } else if (channel == 0xA) {
+        printf("Data from Right Gauge: 0b%" PRIu32 "\n", data);
+    } else if (channel == 0xB) {
+        printf("Data from Radial Gauge: 0b%" PRIu32 "\n", data);
+    } else {
+        printf("Data from unknown channel (0b%" PRIu8 "): 0b%" PRIu32 "\n", channel, data);
     }
 }
 
