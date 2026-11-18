@@ -5,10 +5,11 @@
 #include "mbed.h"
 #include "wheel_speed.hpp"
 #include <cstring>
-// #include "strain_gauge_235sl.h" // TODO: Uncomment when StrainGuage PR is merged
+#include "strain_gauge.hpp"
 
 CAN can{PIN_CAN1_RX, PIN_CAN1_TX, CAN_FREQUENCY};
 WheelSpeed wheelSensor{PIN_WHEEL_SENSOR, TEETH_PER_REV};
+StrainGauge strainGauge{SG_PIN_MOSI, SG_PIN_MISO, SG_PIN_SCK, SG_PIN_IRQ, SG_PIN_CS};
 DigitalIn wheelPin{PIN_WHEEL_SENSOR};
 AnalogIn sus{PIN_SUSPENSION};
 I2C i2c{PIN_I2C2_SDA, PIN_I2C2_SCL};
@@ -52,6 +53,8 @@ int main() {
     wheelPin.mode(PullUp);
     cfg = getCornerConfig(readCorner());
 
+    strainGauge.init();
+
     // Set the D6T bus speed before any sensor I/O
     i2c.frequency(D6T_I2C_HZ);
     i2c1.frequency(D6T_I2C_HZ);
@@ -92,6 +95,7 @@ int main() {
     // Start of Queues
     canQueue.call_every(10ms, &sendCANtpdo);  // 100Hz
     canQueue.call_every(100ms, &sendCANtemp); // 10Hz
+    canQueue.call_every(100ms, &sendCANstrains); // 10Hz
     canThread.start(callback(&canQueue, &EventQueue::dispatch_forever));
     sensorQueue.call_every(100ms, &readSensors); // Happens on the main thread
     // sensorQueue.call_every(100ms, &printSendRates); // DEBUG: report actual CAN send rates every
@@ -101,6 +105,33 @@ int main() {
 
     canMsgTimer.start();
     return 0;
+}
+
+void sendCANstrains() {
+    std::array<uint32_t, 4> vals = strainGauge.getLastVals();
+
+    uint8_t sg_values[8] = {static_cast<uint8_t>((vals[0] >> 24) & 0xF),
+                            static_cast<uint8_t>((vals[0] >> 16) & 0xF) ,
+                            static_cast<uint8_t>((vals[0] >> 8) & 0xF),
+                            static_cast<uint8_t>(vals[0] & 0xF),
+                            static_cast<uint8_t>((vals[1] >> 24) & 0xF),
+                            static_cast<uint8_t>((vals[1] >> 16) & 0xF) ,
+                            static_cast<uint8_t>((vals[1] >> 8) & 0xF),
+                            static_cast<uint8_t>(vals[1] & 0xF),};
+    CANMessage sg_mg(cfg.sg_data_id, sg_values, 8);
+    sendCANmessage(sg_mg);
+
+    uint8_t sg_values2[8] = {static_cast<uint8_t>((vals[2] >> 24) & 0xF),
+                            static_cast<uint8_t>((vals[2] >> 16) & 0xF) ,
+                            static_cast<uint8_t>((vals[2] >> 8) & 0xF),
+                            static_cast<uint8_t>(vals[2] & 0xF),
+                            static_cast<uint8_t>((vals[3] >> 24) & 0xF),
+                            static_cast<uint8_t>((vals[3] >> 16) & 0xF) ,
+                            static_cast<uint8_t>((vals[3] >> 8) & 0xF),
+                            static_cast<uint8_t>(vals[3] & 0xF),};
+    CANMessage sg_mg2(cfg.sg_data_id, sg_values2, 8);
+    sendCANmessage(sg_mg2);
+
 }
 
 void sendCANtemp() {

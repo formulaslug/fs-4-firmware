@@ -23,6 +23,8 @@ struct CornerConfig {
     uint16_t tpdo_tiretemp_id;
     bool has_tiretemp_1x8;
     bool has_tiretemp_1x1;
+
+    uint16_t sg_data_id = 0x0; //set this in config.cpp
 };
 
 /*
@@ -55,6 +57,8 @@ void sendCANmessage(const CANMessage& msg);
  */
 void readSensors();
 
+void sendCANstrains();
+
 /**
  *  @brief prints how many tpdo/temp frames were actually sent in the last ~1 s (= rate in Hz).
  *  Runs on the sensor thread so the printf can't disturb the CAN-thread timing it's measuring.
@@ -71,6 +75,13 @@ constexpr PinName PIN_CAN1_RX = PA_11;
 constexpr PinName PIN_CAN1_TX = PA_12;
 constexpr PinName PIN_I2C1_SDA = PB_7;  //1x1 tire temp sense
 constexpr PinName PIN_I2C1_SCL = PA_15; //1x1 tire temp sense
+
+// Strain Gauge Pins
+constexpr PinName SG_PIN_MOSI = PA_7;
+constexpr PinName SG_PIN_MISO = PA_6;
+constexpr PinName SG_PIN_SCK = PA_5;
+constexpr PinName SG_PIN_CS = PA_4;
+constexpr PinName SG_PIN_IRQ = PA_3;
 
 constexpr uint32_t CAN_FREQUENCY = 1000000; //1Mhz
 constexpr uint8_t TEETH_PER_REV = 24;
