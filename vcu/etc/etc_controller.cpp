@@ -43,6 +43,21 @@ ETCController::ETCController(
     rtd_button.rise(callback(this, &ETCController::rtd_button_irq));
 }
 
+float ETCController::interp_mu(float input) {
+    float scaled_index = (10 * clamp((input - 100) / 10)) + (75 * clamp((input - 110) / 75)) + (315 * clamp((input - 185)) / 315) + 100;
+    int index = static_cast<int>(scaled_index);
+
+    if (index >= 500) {
+        return 0.39526131;
+    }
+
+    float fraction = scaled_index - static_cast<float>(index);
+
+    // Linear interpolation between table points
+    return PAD_ROTOR_MU[index] + fraction * (PAD_ROTOR_MU[index + 1] - PAD_ROTOR_MU[index]);
+    //not sure how the + 1 affects it. does it increment index + 1 or does it find next value in array
+}
+
 float ETCController::clamp(float value) {
     if (value < 0.0f) return 0.0f;
     if (value > 1.0f) return 1.0f;
