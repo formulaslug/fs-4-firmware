@@ -40,10 +40,11 @@ public:
     bool updateLapCounter(double lat, double lon, uint64_t timestamp_ms);
     double getTime() const { return data.lap_time; }
     double getLapCount() const { return data.lap_counter;}
+    void update_time(uint64_t timestamp_ms);
+
 
 private:
     void lat_lon_to_xy(double lat, double lon, double& x, double& y) const;
-    void update_time(uint64_t timestamp_ms);
     void update_position(double lat, double lon);
     void learn_direction();
     bool check_crossing(uint64_t timestamp_ms);

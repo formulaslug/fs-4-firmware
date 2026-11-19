@@ -117,7 +117,7 @@ bool LapCounter::updateLapCounter(double lat, double lon, uint64_t timestamp_ms)
     if (!armed) {
         return false;
     }
-
+    
     update_time(timestamp_ms);
     update_position(lat, lon);
 

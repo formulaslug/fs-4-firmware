@@ -30,6 +30,9 @@ uint32_t lastFrame = 0;
 uint32_t curFrame = 0;
 uint16_t fps = 0;
 
+LapCounter lap_counter;
+uint64_t currentTime_ms;
+
 
 void readLayoutButton();
 void readDials();
@@ -37,11 +40,18 @@ void drawScreenLayout();
 void processCANMessage();
 void sendCANMessage();
 void readFPS();
+void updateLapCounterGPS();
+void updateLapCounterTime();
 
 int main() {
     printf("Steering Wheel!!\n");
     screen.init(EvePresets::CFAF800480H0);
     screen.setRotate(1); //Inverted Landscape since dash is mounted upsidedown
+    
+    currentTime_ms = uint64_t(Kernel::Clock::now().time_since_epoch().count());
+    lap_counter = LapCounter((double)vsm_state.vn_gps_lat * 1e-7, (double)vsm_state.vn_gps_long * 1e-7);
+
+
     // debouncedLayoutBtn.set_valid_read_count(7);
     queue.call_every(100ms, &readLayoutButton);
     queue.call_every(100ms, &readDials);
@@ -49,6 +59,8 @@ int main() {
     queue.call_every(10ms, &drawScreenLayout);
     queue.call_every(100ms, []() { tick++; }); //Lambda expression to increase ticks every 100ms, or I hope it runs every 100ms
     queue.call_every(1s, &readFPS);
+    queue.call_every(30ms, &updateLapCounterGPS);
+    queue.call_every(1s, &updateLapCounterTime);
     queue.dispatch_forever();
     return 0;
 }
@@ -140,14 +152,13 @@ void drawScreenLayout() {
             vsm_state.batt_power_soc,
             tick,
             vsm_state.sme_trqspd_speed,
-            "lap", // laptime
             vsm_state.batt_status_glv_voltage,
             vsm_state.sme_temp_motortemperature,
             vsm_state.sme_temp_controllertemperature,
             vsm_state.sme_temp_dc_bus_v,
             regenState, 
-            vsm_state.vn_gps_lat,
-            vsm_state.vn_gps_long
+            vsm_state.lapCount,
+            vsm_state.lapTime
         );
         break;
     case 1: {
@@ -448,4 +459,17 @@ void readFPS(){
     fps = curFrame-lastFrame;
     lastFrame = curFrame;
     printf("fps: %d", fps);
+}
+
+void updateLapCounterGPS() {
+    lap_counter.updateLapCounter((double)vsm_state.vn_gps_lat * 1e-7,
+                                 (double)vsm_state.vn_gps_long * 1e-7,
+                                 currentTime_ms);
+    vsm_state.lapCount = lap_counter.getLapCount();
+    vsm_state.lapTime = lap_counter.getTime();
+}
+
+void updateLapCounterTime() {
+    currentTime_ms = uint64_t(Kernel::Clock::now().time_since_epoch().count());
+    lap_counter.update_time(currentTime_ms);
 }

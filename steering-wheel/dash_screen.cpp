@@ -369,28 +369,17 @@ void DashScreen::drawMainDisplay(
     uint8_t acc_temp, 
     uint8_t soc, 
     int tick, 
-    uint16_t speed, 
-    const char* 
-    lap_time, 
+    uint16_t speed,
     uint16_t glv, 
     uint8_t mtr_temp, 
     uint8_t ctrl_temp, 
     uint16_t dc_bus, 
     uint8_t regen_state,
-    int32_t gps_lat,
-    int32_t gps_long
+    float lap_count,
+    float lap_time
     ) {
     // init
     if (!startFrame()) return;
-
-    if (tick == 0){
-        lap_timestamp_timer.reset();
-        lap_timestamp_timer.start();
-        lap_counter.resetLapCounter();
-    }
-
-    lap_timestamp_ms = lap_timestamp_timer.elapsed_time().count() / 1000;
-    lap_counter.updateLapCounter((double)gps_lat * 1e-7, (double)gps_long * 1e-7, lap_timestamp_ms);
 
     clear(white.red, white.green, white.blue);
     loadFonts();
@@ -453,8 +442,9 @@ void DashScreen::drawMainDisplay(
     // data
     setMainColor(black);
     // LAP
-    drawFormattedText(500, 225, "LAP %i", 31, OPT_CENTERY, lap_counter.getLapCount());
-    drawFormattedText(650, 225, "%ds", 31, OPT_CENTERY, lap_counter.getTime());
+    drawFormattedText(500, 225, "LAP %i", 31, OPT_CENTERY, lap_count);
+    drawFormattedText(650, 225, "%d:%ds", 31, OPT_CENTERY, std::trunc(lap_time/60),
+                     std::trunc(std::fmod(lap_count, 60)));
     // GLV
     drawText(500, 275, "GLV", 31, OPT_CENTERY);
     drawFormattedText(600, 275, "%d.%dV", 31, OPT_CENTERY, glv / 1000, glv % 1000);

@@ -70,4 +70,7 @@ struct VehicleState{
     // Battery cell voltages: 5 modules × 6 cells (raw byte)
     uint8_t batt_mod_volts[5][6];
 
+    double lapCount;
+    double lapTime;
+
 };
