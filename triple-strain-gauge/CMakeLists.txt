@@ -9,7 +9,7 @@ set(CUSTOM_UPLOAD_CFG_PATH ../custom_targets/UploadMethods.cmake)
 
 add_subdirectory(../custom_targets custom_targets)
 
-set(MBED_TARGET PERIPHERAL_BOARD)
+set(MBED_TARGET NUCLEO_L432KC)
 
 include(../mbed-os/tools/cmake/mbed_toolchain_setup.cmake)
 project(triple-strain-gauge

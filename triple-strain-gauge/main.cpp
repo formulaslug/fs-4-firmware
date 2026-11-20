@@ -26,20 +26,27 @@ uint32_t read32(uint8_t addr);
 
 int main() {
     init();
+    return 0;
 }
 
 void init() {
-    printf("Initializing!");
+    printf("Initializing!\n");
 
     irq.mode(PullUp);
     irq.fall(&pollADC);
+
+    printf("Set IRQ!\n");
     
     cs = 1;
+    printf("Set CS!\n");
     gauge.format(8, 0);
+    printf("Set format!\n");
     gauge.frequency(3'000'000);
+    printf("Set freq!\n");
 
     cs = 0;
 
+    printf("Configuring!\n");
     // Ext Voltage Reference, Internal Clock with no output, No Current Source, ADC Standby Mode
     write8(CONFIG0, 0b00100010);
 
@@ -65,7 +72,9 @@ void init() {
 }
 
 void pollADC() {
+    cs = 0;
     uint32_t data = read32(ADCDATA);
+    cs = 1;
     uint8_t channel = data >> 28;
     data = (data & 0x1FFFFFF);
 
